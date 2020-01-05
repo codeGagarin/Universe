@@ -203,7 +203,7 @@ class Loader:
 
             # stdout dispatch
             prn_stream = io.StringIO()
-            prn_stream = sys.stdout
+            # prn_stream = sys.stdout
 
             with redirect_stdout(prn_stream):
                 start = datetime.now()
