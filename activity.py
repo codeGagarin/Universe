@@ -405,7 +405,7 @@ class LoaderStateReporter(Activity):
 
 class TestLoader(TestCase):
     def setUp(self):
-        ldr = Loader(KeyChain.LOADER_KEY)
+        ldr = Loader(KeyChain.TEST_LOADER_KEY)
         ldr.register(FakeEmail)
         ldr.register(Email)
         ldr.register(LoaderStateReporter)
