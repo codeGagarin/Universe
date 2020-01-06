@@ -324,7 +324,7 @@ class Email(Activity):
 
 class LoaderStateReporter(Activity):
     def get_crontab(self):
-        return '3 0 * * *'
+        return '0 3 * * *'
     
     def run(self):
         report = self._ldr.get_state()
