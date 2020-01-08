@@ -121,8 +121,8 @@ class Loader:
             next_start = croniter(params['crontab'], datetime.now()).get_next(datetime)
             need_to_plan = True
             for rec in schedule:
-                if rec[1] is activity_type:
-                    if next_start is rec[2]:
+                if rec[1] == activity_type:
+                    if next_start == rec[2]:
                         rec[3] = True
                         need_to_plan = False
                         break
@@ -240,6 +240,7 @@ class Loader:
             ),
             sql.Identifier('id')
         )
+
         def factory(row, res):
             res.append([val for val in row])
         result = self._sql_exec(query, result, factory)
