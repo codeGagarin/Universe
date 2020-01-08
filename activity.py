@@ -89,7 +89,7 @@ class Loader:
 
         query_params = {
             'type': activity.get_type(),
-            'status': 'new',
+            'status': 'todo',
             'start': due_date if due_date else datetime.now(),
             'params': json.dumps(activity.get_params(), default=converter)
         }
@@ -102,7 +102,7 @@ class Loader:
             sql.SQL(', ').join(map(sql.Identifier, ('id', 'type', 'start'))),
             sql.Identifier(self._table_name),
             sql.SQL('{} = {} AND {} > {}').format(
-                sql.Identifier('status'), sql.Literal('new'),
+                sql.Identifier('status'), sql.Literal('todo'),
                 sql.Identifier('start'), sql.Literal(datetime.now()),
             )
         )
@@ -129,7 +129,7 @@ class Loader:
             if need_to_plan:
                 query_params = {
                     'type': activity_type,
-                    'status': 'new',
+                    'status': 'todo',
                     'start': next_start,
                 }
                 query = self._sql_compose('insert', query_params)
@@ -157,7 +157,7 @@ class Loader:
                 'params': None,
             }
             conditions = {
-                'status': ('=', 'new'),
+                'status': ('=', 'todo'),
                 'start': ('<=', datetime.now())
             }
 
@@ -291,7 +291,6 @@ class FakeEmail(Activity):
         return '*/5 * * * *'
 
 
-
 class Email(Activity):
     def _fields(self):
         return ('subject from to cc body').split()
@@ -368,9 +367,8 @@ class LoaderStateReporter(Activity):
 
         def get_row_class(_row):
             style = {
-                'new': '',
+                'todo': '',
                 'working': 'table-warning',
-                'in_progress': 'table-warning',  # TODO: in progress deprecated status
                 'finish': 'table-success',
                 'fail': 'table-danger',
             }
@@ -401,6 +399,16 @@ class LoaderStateReporter(Activity):
         # f.write(html_report)
         # f.close()
         email.apply()
+
+
+class ISActualizer(Activity):
+
+    def get_crontab(self):
+        return '*/10 * * * *'
+
+    def run(self):
+        pass
+
 
 
 class TestLoader(TestCase):
