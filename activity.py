@@ -423,6 +423,8 @@ class TestLoader(TestCase):
     def test_to_plan(self):
         self.ldr.track_schedule()
 
+    def test_get_activity_status(self):
+        self.ldr.get_activity_status(1335)
 
 if __name__ == '__main__':
     unittest.main()
