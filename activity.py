@@ -44,11 +44,14 @@ class Loader:
         sql_str = query.as_string(self._db_conn)
         cursor.execute(sql_str)
         if result is None:
-            result = {}
+            result = []
         try:
             rows = cursor.fetchall()
         except Exception:
-            rows = {}
+            # empty query result
+            if auto_commit:
+                self.sql_commit()
+            return result
 
         if result_factory:
             for row in rows:
@@ -57,7 +60,7 @@ class Loader:
             result = rows
         cursor.close()
         if auto_commit:
-            self._db_conn.commit()
+            self.sql_commit()
         return result
 
     def _sql_compose(self, cmd: str, params: dict, conditions=None):
