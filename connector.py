@@ -782,7 +782,7 @@ class TestPGConnector(TestCase):
 class TestISConnector(TestCase):
     def setUp(self):
         # test db_key
-        self.connector = ISConnector(KeyChain.TEST_INTRA_KEY)
+        self.connector = ISConnector(KeyChain.TEST_IS_KEY)
 
     def test_select_task(self):
         factory = Task
