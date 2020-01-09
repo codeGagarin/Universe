@@ -472,7 +472,7 @@ class ISSync(Activity):
 class ISActualizer(Activity):
 
     def get_crontab(self):
-        return '*/10 * * * *'
+        return '*/3 * * * *'
 
     def _add_job(self, from_date: datetime, to_date: datetime, activity_id: int):
         query = sql.SQL('INSERT INTO {}({},{},{}) VALUES ({},{},{}) RETURNING {}').format(
