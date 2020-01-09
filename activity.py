@@ -492,7 +492,7 @@ class ISActualizer(Activity):
         )
         result = self._ldr.sql_exec(query, auto_commit=False)
         if not len(result):
-            last_update_tic = datetime(2020, 1, 1, 0, 0, 0)
+            last_update_tic = datetime(2019, 1, 10, 0, 0, 0)
             print("First launch detected")
         else:
             state = self._ldr.get_activity_status(result[0][1])
