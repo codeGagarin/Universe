@@ -19,4 +19,6 @@ if __name__ == '__main__':
         ldr.register(Email)
         ldr.register(LoaderStateReporter)
         ldr.register(FakeEmail)
+        ldr.register(ISActualizer)
+        ldr.register(ISSync)
         ldr.track_schedule()

@@ -274,6 +274,12 @@ class Loader:
         result = self.sql_exec(query, result, factory)
         return {'actual_date': date, 'header': fields, 'data': result}
 
+    def get_PG_connector(self):
+        return PGConnector(KeyChain.TEST_PG_KEY)
+
+    def get_IS_connector(self):
+        return ISConnector(KeyChain.TEST_IS_KEY)
+
 
 class Activity:
     def __init__(self, ldr: Loader, params=None):
@@ -285,7 +291,7 @@ class Activity:
 
     def __setitem__(self, key, value):
         # key legal check
-        if key not in self._fields():
+        if key not in self._fields().split():
             raise KeyError
         self._params[key] = value
 
@@ -430,6 +436,39 @@ class LoaderStateReporter(Activity):
         email.apply()
 
 
+class ISSync(Activity):
+    def _fields(self):
+        return 'from to'
+
+    def run(self):
+        pg_con = self._ldr.get_PG_connector()
+        is_con = self._ldr.get_IS_connector()
+
+        update_pack = is_con.get_update_pack(self['from'], self['to'])
+        for task in update_pack['Tasks'].values():
+            pg_con.delete_task_actuals(task)
+            pg_con.update(task)
+
+        for user in update_pack['Users'].values():
+            pg_con.update(user)
+
+        for actual in update_pack['Actuals']:
+            pg_con.update(actual)
+
+        for service in update_pack['Services'].values():
+            pg_con.update(service)
+
+        for executor in update_pack['Executors']:
+            pg_con.update(executor)
+
+        print(f"Ts:{len(update_pack['Tasks'])}, "
+              f"Us:{len(update_pack['Users'])}, "
+              f"Ac:{len(update_pack['Actuals'])}, "
+              f"Sr:{len(update_pack['Services'])}, "
+              f"Ex:{len(update_pack['Executors'])}.")
+
+
+
 class ISActualizer(Activity):
 
     def get_crontab(self):
@@ -468,8 +507,9 @@ class ISActualizer(Activity):
             to_date = datetime.now()
 
         # todo: add here sync activity to_date from_date
-        m = FakeEmail(self._ldr)
-        m['message'] = f'SyncJob ISActualizer from:{from_date} to:{to_date}'
+        m = ISSync(self._ldr)
+        m['from'] = from_date
+        m['to'] = to_date
         activity_id = m.apply()
 
         job_id = self._add_job(from_date, to_date, activity_id)
@@ -484,6 +524,7 @@ class TestLoader(TestCase):
         ldr.register(FakeEmail)
         ldr.register(Email)
         ldr.register(LoaderStateReporter)
+        ldr.register(ISSync)
         self.ldr = ldr
 
     def test_to_plan(self):
