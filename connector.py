@@ -422,8 +422,12 @@ class ISConnector(DataConnector):
         # Make API request
         url = f"{base_url}{resource}"
         r = session.get(url=url, auth=self._auth, params=params)
-        session.close()
         raw_data = dict(r.json())
+        session.close()
+        if r.status_code != 200:
+            print(f"IS API Request error: {url}\r Response: {raw_data}")
+            raise EnvironmentError
+
         result_factory(result, raw_data)
         if raw_data.get('Paginator'):
             page_count = raw_data['Paginator']['PageCount']
@@ -541,7 +545,11 @@ class ISConnector(DataConnector):
                 parent_id = service['ParentId']
                 if parent_id and parent_id not in res['Services'].keys():
                     parent = Service({'Id': parent_id})
-                    self.select(parent)
+                    # todo: IS API BUG, dont forget checkup ticket 135965
+                    try:
+                        self.select(parent)
+                    except EnvironmentError:
+                        continue
                     res['Services'][parent_id] = parent
 
         result = self._api_request_get('task', params, factory, result)
