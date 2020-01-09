@@ -153,6 +153,7 @@ class Loader:
             if not rec[3]:
                 rec_for_delete.append(rec[0])
         if len(rec_for_delete):
+            # todo: delete only crontab activity
             query = sql.SQL('DELETE FROM {} WHERE {} IN ({})').format(
                 sql.Identifier(self._table_name),
                 sql.Identifier('id'),
@@ -293,7 +294,7 @@ class Activity:
         return self._params
 
     def _fields(self):
-        return []
+        return ''
 
     def get_type(self):
         return self.__class__.__name__
@@ -302,7 +303,7 @@ class Activity:
         return None
 
     def apply(self, due_date=None):
-        self._ldr.to_plan(self, due_date)
+        return self._ldr.to_plan(self, due_date)
 
     def run(self):
         pass
@@ -314,9 +315,6 @@ class FakeEmail(Activity):
 
     def run(self):
         print(f'Mail send successfully. Data: {str(self._params)}')
-
-    def get_crontab(self):
-        return '*/5 * * * *'
 
 
 class Email(Activity):
@@ -434,9 +432,47 @@ class ISActualizer(Activity):
     def get_crontab(self):
         return '*/10 * * * *'
 
-    def run(self):
-        pass
+    def _add_job(self, from_date: datetime, to_date: datetime, activity_id: int):
+        query = sql.SQL('INSERT INTO {}({},{},{}) VALUES ({},{},{}) RETURNING {}').format(
+            sql.Identifier('SyncJobs'),
+            sql.Identifier('from'), sql.Identifier('to'), sql.Identifier('activity_id'),
+            sql.Literal(from_date), sql.Literal(to_date), sql.Literal(activity_id),
+            sql.Identifier('id')
+        )
+        return self._ldr.sql_exec(query, auto_commit=False)[0][0]
 
+    def run(self):
+        query = sql.SQL('SELECT {}, {} FROM {} ORDER BY {} DESC LIMIT 1').format(
+            sql.Identifier('to'),
+            sql.Identifier('activity_id'),
+            sql.Identifier('SyncJobs'),
+            sql.Identifier('to')
+        )
+        result = self._ldr.sql_exec(query, auto_commit=False)
+        if not len(result):
+            last_update_tic = datetime(2020, 1, 1, 0, 0, 0)
+            print("First launch detected")
+        else:
+            state = self._ldr.get_activity_status(result[0][1])
+            if state != "finish":
+                return  # actualization in progress
+            last_update_tic = result[0][0]
+
+        from_date = last_update_tic
+        d = timedelta(hours=3)
+        to_date = from_date + d
+        if to_date > datetime.now():
+            to_date = datetime.now()
+
+        # todo: add here sync activity to_date from_date
+        m = FakeEmail(self._ldr)
+        m['message'] = f'SyncJob ISActualizer from:{from_date} to:{to_date}'
+        activity_id = m.apply()
+
+        job_id = self._add_job(from_date, to_date, activity_id)
+        print(f'Job id:{job_id} added.')
+
+        self._ldr.sql_commit()
 
 
 class TestLoader(TestCase):
@@ -452,6 +488,10 @@ class TestLoader(TestCase):
 
     def test_get_activity_status(self):
         self.ldr.get_activity_status(1335)
+
+    def test_ISActuatizer(self):
+        isa = ISActualizer(self.ldr)
+        isa.run()
 
 if __name__ == '__main__':
     unittest.main()
