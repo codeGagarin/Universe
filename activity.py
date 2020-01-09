@@ -126,7 +126,7 @@ class Loader:
             # add record (id, type, start, valid)
             _res.append([_row[0],_row[1], _row[2], False])
 
-        schedule = self._sql_exec(query, schedule, factory, auto_commit=False)
+        schedule = self.sql_exec(query, schedule, factory, auto_commit=False)
 
         for activity_type, params in self._registry.items():
             if params['crontab'] is None:
@@ -146,7 +146,7 @@ class Loader:
                     'start': next_start,
                 }
                 query = self._sql_compose('insert', query_params)
-                self._sql_exec(query, auto_commit=False)
+                self.sql_exec(query, auto_commit=False)
 
         rec_for_delete = []
         for rec in schedule:
@@ -158,9 +158,9 @@ class Loader:
                 sql.Identifier('id'),
                 sql.SQL(', ').join(sql.Literal(_id) for _id in rec_for_delete)
             )
-            self._sql_exec(query, auto_commit=False)
+            self.sql_exec(query, auto_commit=False)
 
-        self._db_conn.commit()
+        self.sql_commit()
 
         # main execution loop
         while True:
@@ -175,7 +175,7 @@ class Loader:
             }
 
             query = self._sql_compose('select', params, conditions)
-            res = self._sql_exec(query, auto_commit=False)
+            res = self.sql_exec(query, auto_commit=False)
 
             if len(res) is 0:
                 break
@@ -183,7 +183,7 @@ class Loader:
             act_type = res[0][1]
 
             # set in progress status
-            self._sql_exec(self._sql_compose('update', {'status': 'working'}, {'id': ('=', act_id)}))
+            self.sql_exec(self._sql_compose('update', {'status': 'working'}, {'id': ('=', act_id)}))
 
             def dict_converter(source):
                 # scan json-source tree and replace datetime strings to datetime objects
@@ -231,7 +231,7 @@ class Loader:
                     status = 'finish'
 
             duration = (datetime.now() - start).seconds
-            self._sql_exec(self._sql_compose('update', {'status': status,
+            self.sql_exec(self._sql_compose('update', {'status': status,
                                                         'duration': duration,
                                                         'result': prn_stream.getvalue(),
                                                         'finish': datetime.now()}, {'id': ('=', act_id)}))
@@ -256,7 +256,7 @@ class Loader:
 
         def factory(row, res):
             res.append([val for val in row])
-        result = self._sql_exec(query, result, factory)
+        result = self.sql_exec(query, result, factory)
         return {'actual_date': date, 'header': fields, 'data': result}
 
 
