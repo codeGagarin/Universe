@@ -100,8 +100,14 @@ class Loader:
             'start': due_date if due_date else datetime.now(),
             'params': json.dumps(activity.get_params(), default=converter)
         }
-        query = self._sql_compose('insert', query_params)
-        self._sql_exec(query)
+        query = sql.SQL("INSERT INTO {}({}) VALUES ({}) RETURNING {}").format(
+            sql.Identifier(self._table_name),
+            sql.SQL(', ').join(sql.Identifier(field) for field in query_params.keys()),
+            sql.SQL(', ').join(sql.Literal(str(value)) for value in query_params.values()),
+            sql.Identifier('id')
+        )
+
+        return self.sql_exec(query)[0]
 
     def track_schedule(self):
         # check crontab activities
