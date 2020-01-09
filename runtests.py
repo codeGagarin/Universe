@@ -6,7 +6,7 @@ import sys
 
 def load_tests(loader, tests, pattern):
     suite = TestSuite()
-    for test_class in (TestIntraConnector, TestPGConnector, TestLoader):
+    for test_class in (TestISConnector, TestPGConnector, TestLoader):
         tests = loader.loadTestsFromTestCase(test_class)
         suite.addTests(tests)
     return suite

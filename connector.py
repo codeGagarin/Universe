@@ -407,7 +407,7 @@ class _INW:
         self._entity[key] = data_adapter[1](value) if data_adapter else value
 
 
-class IntraConnector(DataConnector):
+class ISConnector(DataConnector):
     def _api_request_get(self, resource: str, params: dict, result_factory, result=None):
         if not result:
             result = {}
@@ -779,10 +779,10 @@ class TestPGConnector(TestCase):
         self.assertFalse(pg_con.is_exist(a))
 
 
-class TestIntraConnector(TestCase):
+class TestISConnector(TestCase):
     def setUp(self):
         # test db_key
-        self.connector = IntraConnector(KeyChain.TEST_INTRA_KEY)
+        self.connector = ISConnector(KeyChain.TEST_INTRA_KEY)
 
     def test_select_task(self):
         factory = Task
