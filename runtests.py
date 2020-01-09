@@ -1,6 +1,8 @@
-from connector import TestIntraConnector, TestPGConnector
-from activity import TestLoader
+from connector import *
+from activity import *
 from unittest import TestSuite
+import sys
+
 
 def load_tests(loader, tests, pattern):
     suite = TestSuite()
@@ -10,4 +12,11 @@ def load_tests(loader, tests, pattern):
     return suite
 
 if __name__ == '__main__':
-    unittest.main(verbosity=2)
+    if len(sys.argv) <= 1:
+        unittest.main(verbosity=2)
+    elif sys.argv[1] == 'regular':
+        ldr = Loader(KeyChain.TEST_LOADER_KEY)
+        ldr.register(Email)
+        ldr.register(LoaderStateReporter)
+        ldr.register(FakeEmail)
+        ldr.track_schedule()

@@ -35,7 +35,11 @@ class Loader:
             'crontab': activity.get_crontab(),
         }
 
-    def _sql_exec(self, query, result=None, result_factory=None, auto_commit=True):
+    def sql_commit(self):
+        self._db_conn.commit()
+
+    def sql_exec(self, query, result=None, result_factory=None, auto_commit=True):
+        # todo: result need named tuple implementation
         cursor = self._db_conn.cursor()
         sql_str = query.as_string(self._db_conn)
         cursor.execute(sql_str)
