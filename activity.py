@@ -236,6 +236,17 @@ class Loader:
                                                         'result': prn_stream.getvalue(),
                                                         'finish': datetime.now()}, {'id': ('=', act_id)}))
 
+    def get_activity_status(self, activity_id: int):
+        query = sql.SQL('SELECT {} FROM {} WHERE {}={}').format(
+            sql.Identifier('status'),
+            sql.Identifier('Loader'),
+            sql.Identifier('id'),
+            sql.Literal(activity_id),
+        )
+        result = self.sql_exec(query, auto_commit=False)
+        return None if not len(result) else result[0][0]
+
+
     def get_state(self, date: datetime = None):
         result = []
         if not date:
