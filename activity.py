@@ -13,9 +13,12 @@ from html import escape
 
 import psycopg2
 from psycopg2 import sql
+from croniter import croniter
 
 from keys import KeyChain
-from croniter import croniter
+from connector import PGConnector
+from connector import ISConnector
+
 
 class Loader:
     _table_name = "Loader"
