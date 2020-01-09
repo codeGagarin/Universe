@@ -276,7 +276,7 @@ class Activity:
         if params:
             self._params = params
         else:
-            self._params = {}.fromkeys(self._fields())
+            self._params = {}.fromkeys(self._fields().split())
         self._ldr = ldr
 
     def __setitem__(self, key, value):
@@ -309,6 +309,9 @@ class Activity:
 
 
 class FakeEmail(Activity):
+    def _fields(self):
+        return 'message'
+
     def run(self):
         print(f'Mail send successfully. Data: {str(self._params)}')
 
@@ -318,7 +321,7 @@ class FakeEmail(Activity):
 
 class Email(Activity):
     def _fields(self):
-        return ('subject from to cc body').split()
+        return 'subject from to cc body'
 
     def run(self):
         acc_key = KeyChain.SMTP_KEY
