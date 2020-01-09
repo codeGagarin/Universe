@@ -506,7 +506,6 @@ class ISActualizer(Activity):
         if to_date > datetime.now():
             to_date = datetime.now()
 
-        # todo: add here sync activity to_date from_date
         m = ISSync(self._ldr)
         m['from'] = from_date
         m['to'] = to_date
