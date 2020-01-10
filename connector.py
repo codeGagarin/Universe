@@ -9,6 +9,7 @@ from requests.auth import HTTPBasicAuth
 from requests.adapters import HTTPAdapter
 
 import psycopg2
+from psycopg2 import sql
 
 from keys import KeyChain
 
@@ -243,7 +244,10 @@ class PGConnector(DataConnector):
 
     def _sql_exec(self, sql_str: str):
         cursor = self._db_conn.cursor()
+        # try:
         cursor.execute(sql_str)
+        # except Exception:
+        #     pass
         try:
             result = cursor.fetchall()
         except Exception:
@@ -256,8 +260,11 @@ class PGConnector(DataConnector):
     def select(self, entity: DataEntity):
         table = self._get_entity_table(entity)
         field_map = self.get_fields_map(entity)
-        fields_str = ', '.join(['"' + f + '"' for f in field_map.values()])
-        sql_str = f'SELECT {fields_str} FROM "{table}" WHERE {self._get_where_str(entity)}'
+        sql_str = sql.SQL('SELECT {} FROM {} WHERE {}').format(
+            sql.SQL(', ').join(sql.Identifier(name) for name in field_map.values()),
+            sql.Identifier(table),
+            self._get_where_sql(entity)
+        ).as_string(self._db_conn)
         records = self._sql_exec(sql_str)
 
         result = True
@@ -272,16 +279,24 @@ class PGConnector(DataConnector):
 
         return result
 
-    def _get_where_str(self, entity: DataEntity):
-        """ return where sql-string for multi ids entity"""
-        return ' AND '.join(
-            [f'"{self._field_to_col(key, entity)}" = {_PGW(entity)[key]}' for key in entity.get_key_fields()]
+    def _get_where_sql(self, entity: DataEntity):
+        return sql.SQL(' AND ').join(
+            sql.Composed([
+                sql.Identifier(self.get_fields_map(entity)[key]),
+                sql.SQL(' = '),
+                sql.Literal(entity[key])
+            ]) for key in entity.get_key_fields()
         )
 
     def is_exist(self, entity: DataEntity):
         table = self._get_entity_table(entity)
-        where_str = self._get_where_str(entity)
-        sql_str = f'SELECT * from "{table}" WHERE {where_str}'
+        field_map = self.get_fields_map(entity)
+
+        sql_str = sql.SQL('SELECT * FROM {} WHERE {}').format(
+            sql.Identifier(table),
+            self._get_where_sql(entity)
+        ).as_string(self._db_conn)
+
         records = self._sql_exec(sql_str)
 
         if len(records) is 0:
@@ -291,14 +306,18 @@ class PGConnector(DataConnector):
         else:
             print(f'\nDatabase Layer Warning!!!')
             print(f'Multiple ID store detected.')
-            print(f'table: {table}, id: {where_str}, times: {len(records)}')
+            print(f'table: {table}, id: ?, times: {len(records)}')
             print(f'Database Layer Warning!!!\n')
             return True
 
     def delete(self, entity: DataEntity):
         table = self._get_entity_table(entity)
-        where_str = self._get_where_str(entity)
-        sql_str = f'DELETE FROM "{table}" WHERE {where_str}'
+
+        sql_str = sql.SQL('DELETE FROM {} WHERE {}').format(
+            sql.Identifier(table),
+            self._get_where_sql(entity)
+        ).as_string(self._db_conn)
+
         self._sql_exec(sql_str)
 
     def update(self, entity: DataEntity):
@@ -307,13 +326,19 @@ class PGConnector(DataConnector):
         table = self._get_entity_table(entity)
         if not self.is_exist(entity):
             # INSERT statement
-            param_list_sql = ', '.join(['"' + field_map[f] + '"' for f in entity.get_fields()])
-            value_list_sql = ', '.join([_PGW(entity)[key] for key in entity.get_fields()])
-            sql_str = f'INSERT INTO "{table}" ({param_list_sql}) VALUES ({value_list_sql})'
+            sql_str = sql.SQL('INSERT INTO {} ({}) VALUES ({})').format(
+                sql.Identifier(table),
+                sql.SQL(', ').join(sql.Identifier(field_map[f]) for f in entity.get_fields()),
+                sql.SQL(', ').join(sql.Literal(entity[key]) for key in entity.get_fields())
+            ).as_string(self._db_conn)
         else:
             # UPDATE statement
-            param_list_sql = ', '.join([f'"{field_map[key]}"={_PGW(entity)[key]}' for key in entity.get_fields()])
-            sql_str = f'UPDATE "{table}" SET {param_list_sql} WHERE {self._get_where_str(entity)}'
+            sql_str = sql.SQL('UPDATE {} SET ({}) = ({}) WHERE {}').format(
+                sql.Identifier(table),
+                sql.SQL(', ').join(sql.Identifier(field_map[key]) for key in entity.get_fields()),
+                sql.SQL(', ').join(sql.Literal(entity[key]) for key in entity.get_fields()),
+                self._get_where_sql(entity)
+            ).as_string(self._db_conn)
 
         self._sql_exec(sql_str)
 
@@ -545,7 +570,7 @@ class ISConnector(DataConnector):
                 parent_id = service['ParentId']
                 if parent_id and parent_id not in res['Services'].keys():
                     parent = Service({'Id': parent_id})
-                    # todo: IS API BUG, dont forget checkup ticket 135965
+                    # todo: IS API BUG, don't forget checkup ticket 135965
                     try:
                         self.select(parent)
                     except EnvironmentError:
