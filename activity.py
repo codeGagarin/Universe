@@ -472,7 +472,7 @@ class ISSync(Activity):
 class ISActualizer(Activity):
 
     def get_crontab(self):
-        return '*/3 * * * *'
+        return '* */1 * * *'
 
     def _add_job(self, from_date: datetime, to_date: datetime, activity_id: int):
         query = sql.SQL('INSERT INTO {}({},{},{}) VALUES ({},{},{}) RETURNING {}').format(
@@ -529,8 +529,11 @@ class TestLoader(TestCase):
     def test_to_plan(self):
         self.ldr.track_schedule()
 
+
     def test_get_activity_status(self):
         self.ldr.get_activity_status(1335)
+        # r = LoaderStateReporter(self.ldr)
+        # r.run()
 
     def test_ISActuatizer(self):
         isa = ISActualizer(self.ldr)
