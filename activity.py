@@ -127,7 +127,7 @@ class Loader:
 
         def factory(_row, _res):
             # add record (id, type, start, valid)
-            _res.append([_row[0],_row[1], _row[2], False])
+            _res.append([_row[0], _row[1], _row[2], False])
 
         schedule = self.sql_exec(query, schedule, factory, auto_commit=False)
 
@@ -236,9 +236,9 @@ class Loader:
 
             duration = (datetime.now() - start).seconds
             self.sql_exec(self._sql_compose('update', {'status': status,
-                                                        'duration': duration,
-                                                        'result': prn_stream.getvalue(),
-                                                        'finish': datetime.now()}, {'id': ('=', act_id)}))
+                                                       'duration': duration,
+                                                       'result': prn_stream.getvalue(),
+                                                       'finish': datetime.now()}, {'id': ('=', act_id)}))
 
     def get_activity_status(self, activity_id: int):
         query = sql.SQL('SELECT {} FROM {} WHERE {}={}').format(
@@ -250,11 +250,10 @@ class Loader:
         result = self.sql_exec(query, auto_commit=False)
         return None if not len(result) else result[0][0]
 
-
     def get_state(self, date: datetime = None):
         result = []
         if not date:
-            date = datetime.today()-timedelta(days=1)
+            date = datetime.today() - timedelta(days=1)
         start = datetime(date.year, date.month, date.day)
         finish = start + timedelta(days=1)
         fields = 'id type status start finish duration params result'.split()
@@ -271,6 +270,7 @@ class Loader:
 
         def factory(row, res):
             res.append([val for val in row])
+
         result = self.sql_exec(query, result, factory)
         return {'actual_date': date, 'header': fields, 'data': result}
 
@@ -359,7 +359,7 @@ class Email(Activity):
 class LoaderStateReporter(Activity):
     def get_crontab(self):
         return '0 3 * * *'
-    
+
     def run(self):
         report = self._ldr.get_state()
         actual = report['actual_date']
@@ -377,9 +377,9 @@ class LoaderStateReporter(Activity):
 
         adapter_map = {
             'start': (date_cut,),
-            'finish': (date_cut, ),
-            'params': (long_cut, ),
-            'result': (long_cut, ),
+            'finish': (date_cut,),
+            'params': (long_cut,),
+            'result': (long_cut,),
         }
 
         for row in tbody:
@@ -425,7 +425,7 @@ class LoaderStateReporter(Activity):
 
         html_report = f'<html>\n{html_head}\n<body>' \
                       f'<div class="container">\n' \
-                      f'<h3>{tab_caption}<h3>'\
+                      f'<h3>{tab_caption}<h3>' \
                       f'{html_table}\n</div>' \
                       f'</body>\n</html>\n'
 
@@ -466,7 +466,6 @@ class ISSync(Activity):
               f"Ac:{len(update_pack['Actuals'])}, "
               f"Sr:{len(update_pack['Services'])}, "
               f"Ex:{len(update_pack['Executors'])}.")
-
 
 
 class ISActualizer(Activity):
@@ -529,7 +528,6 @@ class TestLoader(TestCase):
     def test_to_plan(self):
         self.ldr.track_schedule()
 
-
     def test_get_activity_status(self):
         self.ldr.get_activity_status(1335)
         # r = LoaderStateReporter(self.ldr)
@@ -538,6 +536,7 @@ class TestLoader(TestCase):
     def test_ISActuatizer(self):
         isa = ISActualizer(self.ldr)
         isa.run()
+
 
 if __name__ == '__main__':
     unittest.main()
