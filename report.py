@@ -180,9 +180,9 @@ class DiagReport(Report):
 
     def set_up(self):
         if not self._params.get('from'):
-            self._params['from'] = datetime.today().date() - timedelta(days=1)
+            self._params['from'] = (datetime.today() - timedelta(days=1)).date()
         if not self._params.get('to'):
-            self._params['to'] = datetime.today().date() - timedelta(days=1)
+            self._params['to'] = self._params['from']
 
         prev_point = _get_period(self._params['from'], 'day', -1)
         next_point = _get_period(self._params['from'], 'day', 1)
@@ -217,7 +217,7 @@ class DiagReport(Report):
 
     def get_caption(self):
         return "Diagnostic report on {}".format(
-            self._params['from'].date()
+            self._params['from']
         )
 
 
