@@ -6,7 +6,7 @@ import psycopg2
 from psycopg2 import sql
 
 
-def _get_period(now: datetime, period_type: str, delta: int):
+def _get_period(now: date, period_type: str, delta: int):
     """
     Возвращает словарь с параметрами периода
     :param now: текущая дата
@@ -96,8 +96,10 @@ class Report:
     @classmethod
     def _params_to_idx(cls, conn, params):
         def converter(o):
-            if isinstance(o, (datetime, date)):
+            if isinstance(o, datetime):
                 return o.strftime('datetime:%Y-%m-%d %H:%M:%S.%f')
+            elif isinstance(o, date):
+                return o.strftime('date:%Y-%m-%d')
         return {'idx': json.dumps(params, default=converter)}
 
     @classmethod
@@ -108,7 +110,14 @@ class Report:
                 try:
                     return datetime.strptime(s, 'Datetime:%Y-%m-%d %H:%M:%S.%f')
                 except:
-                    return s
+                    pass
+
+                try:
+                    return datetime.strptime(s, 'Date:%Y-%m-%d').date()
+                except:
+                    pass
+
+                return s
 
             def list_converter(lst):
                 for i in range(len(lst)):
