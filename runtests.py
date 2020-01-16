@@ -1,12 +1,15 @@
-from connector import *
-from activity import *
+from connector import TestLoader
+from activity import TestISConnector
+from activity import TestPGConnector
+from report import TestReports
+
 from unittest import TestSuite
 import sys
 
 
 def load_tests(loader, tests, pattern):
     suite = TestSuite()
-    for test_class in (TestISConnector, TestPGConnector, TestLoader):
+    for test_class in (TestISConnector, TestPGConnector, TestLoader, TestReports):
         tests = loader.loadTestsFromTestCase(test_class)
         suite.addTests(tests)
     return suite
