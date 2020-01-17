@@ -1,6 +1,6 @@
-from connector import TestLoader
-from activity import TestISConnector
-from activity import TestPGConnector
+from activity import TestLoader
+from connector import TestISConnector
+from connector import TestPGConnector
 from report import TestReports
 
 from unittest import TestSuite
