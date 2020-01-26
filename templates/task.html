@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Отчет по задачам{% endblock %}
+{% block head %}
+    {{ super() }}
+    <style type="text/css">
+        .important { color: #336699; }
+    </style>
+{% endblock %}
+{% block content %}
+    <h1>Отчет по задачам</h1>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Задача</th>
+            <th>Содержание</th>
+            <th>Создана</th>
+            <th>Инициатор</th>
+            <th>Сервис</th>
+            <th>Исполнители</th>
+            <th>Срок план</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for rec in rpt.get_data().body.values() %}
+        <tr>
+            <td nowrap> <a href="https://prosto12.intraservice.ru/Task/View/{{ rec.task_id }}">{{ rec.task_id }}</a></td>
+            <td>{{ rec.task_name|truncate(70) }}  <small class="text-muted">{% if rec.task_descr %}{{(rec.task_descr)|truncate(200)}}{% endif %}</small></td>
+            <td nowrap>{{ ("%s"|format(rec.created))[: 11] }}</td>
+            <td nowrap>{{ rec.creator }}</td>
+            <td nowrap>{{ rec.service }}</td>
+            <td nowrap>
+                {% for val in rec.executors %}
+                    {{ val }} <br>
+                {% endfor %}
+            </td>
+            <td nowrap>
+            {% if rec.deadline %}
+                {{ ("%s"|format(rec.deadline))[: 11] }}
+            {% endif %}
+            </td>
+
+
+        </tr>
+        {% endfor %}
+
+
+    </tbody>
+</table>
+{% endblock %}

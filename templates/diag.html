@@ -17,35 +17,35 @@
   </ul>
 </nav>
 
-        <table class="table">
-            <thead>
-                <tr>
-                    {% for c in rpt.get_data()['header'] %}
-                    <th>
-                    {{ c }}
-                    </th>
-                    {% endfor %}
-                </tr>
-            </thead>
-            <tbody>
-                {% for row in rpt.get_data()['body'] %}
-                <tr class=
-                {% if row[2] == 'warning' %} "warning"
-                {% elif row[2] == 'finish' %} "success"
-                {% elif row[2] == 'fail' %} "danger"
-                {% else %} ""
-                {% endif %}
-                >
+<table class="table">
+    <thead>
+        <tr>
+            {% for c in rpt.get_data()['header'] %}
+            <th>
+            {{ c }}
+            </th>
+            {% endfor %}
+        </tr>
+    </thead>
+    <tbody>
+        {% for row in rpt.get_data()['body'] %}
+        <tr class=
+        {% if row[2] == 'warning' %} "warning"
+        {% elif row[2] == 'finish' %} "success"
+        {% elif row[2] == 'fail' %} "danger"
+        {% else %} ""
+        {% endif %}
+        >
 
-                <td align="right">{{ row[0] }}</td>
-                <td>{{ row[1] }}</td>
-                <td align="center">{{ row[2] }}</td>
-                <td align="center">{{ ("%s"|format(row[3]))[11: 19] }}</td>
-                <td align="center">{{ ("%s"|format(row[4]))[11: 19] }}</td>
-                <td align="right">{{ row[5] }}</td>
-                <td>{{ (row[6] if row[6] else "")|escape()|truncate(40, True) }}</td>
-                <td>{{ (row[7] if row[7] else "")|escape()|truncate(50, True) }}</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <td align="right">{{ row[0] }}</td>
+        <td>{{ row[1] }}</td>
+        <td align="center">{{ row[2] }}</td>
+        <td align="center">{{ ("%s"|format(row[3]))[11: 19] }}</td>
+        <td align="center">{{ ("%s"|format(row[4]))[11: 19] }}</td>
+        <td align="right">{{ row[5] }}</td>
+        <td>{{ (row[6] if row[6] else "")|escape()|truncate(40, True) }}</td>
+        <td>{{ (row[7] if row[7] else "")|escape()|truncate(50, True) }}</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
 {% endblock %}

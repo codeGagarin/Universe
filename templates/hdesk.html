@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% set frame = rpt._P().frame %}
+    {% if frame == 'daily' %}
+    {% endif %}
+
+    {% if frame == 'daily' %}
+        {% set caption = "[daily] HelpDesk отчет за текущую неделю" %}
+        {% set util_table_class = 'col-md-8' %}
+    {% elif frame == 'weekly' %}
+        {% set caption = "[weekly] HelpDesk отчет за прошлую неделю" %}
+        {% set util_table_class = 'col-md-10' %}
+    {% elif frame == 'monthly' %}
+        {% set caption = "[monthly] HelpDesk отчет за прошлый месяц" %}
+        {% set util_table_class = 'col-md-8' %}
+    {% endif %}
+
+{% block title %}
+    {{caption}}
+{% endblock %}
+{% block head %}
+    {{ super() }}
+{% endblock %}
+{% block content %}
+    <h1>{{ caption }}</h1>
+
+<nav aria-label="Page navigation">
+  <ul class="pagination">
+    {% for cap, params in rpt.get_navigate().items() %}
+    <li><a href="{{ url_for('report', **params) }}">{{ "%s"|format(cap) }}</a></li>
+    {% endfor %}
+  </ul>
+</nav>
+
+<div class="row">
+    <div class="{{ util_table_class }}">
+        <table class="table">
+            <caption>Задачи и оценки</caption>
+            <thead>
+                <!--
+                <tr>
+                    <th colspan="2"></th>
+                    <th class="info" colspan="7">Текущая неделя</th>
+                    <th colspan="3"> Предыдущие недели </th>
+                    <th class="info" colspan="3"> Предыдущие месяцы </th>
+                </tr>
+                -->
+                <tr>
+                    <th>#</th>
+                    <th>ФИО</th>
+                    {% set eval_class = "" %}
+                    {% if frame in ['daily', 'weekly'] %}
+                    <th class="info">ПН</th>
+                    <th class="info">ВТ</th>
+                    <th class="info">СР</th>
+                    <th class="info">ЧТ</th>
+                    <th class="info">ПТ</th>
+                    <th class="info">СБ</th>
+                    <th class="info">ВС</th>
+                    {% endif %}
+                    {% if frame in ['weekly'] %}
+                    <th>{{ rpt._D().utl.head.w1t.params.id }}</th>
+                    <th>{{ rpt._D().utl.head.w2t.params.id }}</th>
+                    <th>{{ rpt._D().utl.head.w3t.params.id }}</th>
+                    {% set eval_class = "info"%}
+                    {% endif %}
+                    {% if frame in ['monthly'] %}
+                    <th class="info">{{ rpt._D().utl.head.m1t.params.id }}</th>
+                    <th class="info">{{ rpt._D().utl.head.m2t.params.id }}</th>
+                    <th class="info">{{ rpt._D().utl.head.m3t.params.id }}</th>
+                    {% endif %}
+                    <th class="{{eval_class}}">5</th>
+                    <th class="{{eval_class}}">4</th>
+                    <th class="{{eval_class}}">3</th>
+                    <th class="{{eval_class}}">2</th>
+                    <th class="{{eval_class}}">1</th>
+
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in rpt._D().utl.body %}
+                <tr>
+                    <td align="right">{{ r.seq }}</td>
+                    <td>{{ r.name }} (<a href="{{ url_for('report', **r.detail_own_tasks) }}">{{ r.own_tasks }}</a>)</td>
+                    {% if frame in ['daily', 'weekly'] %}
+                    <td class="info">
+                        <a href="{{ url_for('report', **r.d1t_d) }}">{{ r.d1t }}</a>
+                        (<a href="{{ url_for('report', **r.d1u_d) }}">{{ (r.d1u/60)|round(1) }}</a>)
+                    </td>
+                    <td class="info">
+                        <a href="{{ url_for('report', **r.d2t_d) }}">{{ r.d2t }}</a>
+                        (<a href="{{ url_for('report', **r.d2u_d) }}">{{ (r.d2u/60)|round(1) }}</a>)
+                    </td>
+                    <td class="info">
+                        <a href="{{ url_for('report', **r.d3t_d) }}">{{ r.d3t }}</a>
+                        (<a href="{{ url_for('report', **r.d3u_d) }}">{{ (r.d3u/60)|round(1) }}</a>)
+                    </td>
+                    <td class="info">
+                        <a href="{{ url_for('report', **r.d4t_d) }}">{{ r.d4t }}</a>
+                        (<a href="{{ url_for('report', **r.d4u_d) }}">{{ (r.d4u/60)|round(1) }}</a>)
+                    </td>
+                    <td class="info">
+                        <a href="{{ url_for('report', **r.d5t_d) }}">{{ r.d5t }}</a>
+                        (<a href="{{ url_for('report', **r.d5u_d) }}">{{ (r.d5u/60)|round(1) }}</a>)
+                    </td>
+                    <td class="info">
+                        <a href="{{ url_for('report', **r.d6t_d) }}">{{ r.d6t }}</a>
+                        (<a href="{{ url_for('report', **r.d6u_d) }}">{{ (r.d6u/60)|round(1) }}</a>)
+                    </td>
+                    <td class="info">
+                        <a href="{{ url_for('report', **r.d7t_d) }}">{{ r.d7t }}</a>
+                        (<a href="{{ url_for('report', **r.d7u_d) }}">{{ (r.d7u/60)|round(1) }}</a>)
+                    </td>
+                    {% endif %}
+                    {% if frame in ['weekly'] %}
+                    <td>
+                        <a href="{{ url_for('report', **r.w1t_d) }}">{{ r.w1t }}</a>
+                        (<a href="{{ url_for('report', **r.w1u_d) }}">{{ (r.w1u/60)|round(1) }}</a>)
+                    </td>
+                    <td>
+                        <a href="{{ url_for('report', **r.w2t_d) }}">{{ r.w2t }}</a>
+                        (<a href="{{ url_for('report', **r.w2u_d) }}">{{ (r.w2u/60)|round(1) }}</a>)
+                    </td>
+                    <td>
+                        <a href="{{ url_for('report', **r.w3t_d) }}">{{ r.w3t }}</a>
+                        (<a href="{{ url_for('report', **r.w3u_d) }}">{{ (r.w3u/60)|round(1) }}</a>)
+                    </td>
+                    {% endif %}
+                    {% if frame in ['monthly'] %}
+                    <td class="info">
+                        <a href="{{ url_for('report', **r.m1t_d) }}">{{ r.m1t }}</a>
+                        (<a href="{{ url_for('report', **r.m1u_d) }}">{{ (r.m1u/60)|round(1) }}</a>)
+                    </td>
+                    <td class="info">
+                        <a href="{{ url_for('report', **r.m2t_d) }}">{{ r.m2t }}</a>
+                        (<a href="{{ url_for('report', **r.m2u_d) }}">{{ (r.m2u/60)|round(1) }}</a>)
+                    </td>
+                    <td class="info">
+                        <a href="{{ url_for('report', **r.m3t_d) }}">{{ r.m2t }}</a>
+                        (<a href="{{ url_for('report', **r.m3u_d) }}">{{ (r.m2u/60)|round(1) }}</a>)
+                    </td>
+                    {% endif %}
+                    <td class="{{ eval_class }}">
+                        <a href="{{ url_for('report', **r.e5_d) }}">{{ r.e5 }}</a>
+                    </td>
+                    <td class="{{ eval_class }}">
+                        <a href="{{ url_for('report', **r.e4_d) }}">{{ r.e4 }}</a>
+                    </td>
+                    <td class="{{ eval_class }}">
+                        <a href="{{ url_for('report', **r.e3_d) }}">{{ r.e3 }}</a>
+                    </td>
+                    <td class="{{ eval_class }}">
+                        <a href="{{ url_for('report', **r.e2_d) }}">{{ r.e2 }}</a>
+                    </td>
+                    <td class="{{ eval_class }}">
+                        <a href="{{ url_for('report', **r.e1_d) }}">{{ r.e1 }}</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+<p align="right"><small class="text-muted"> _EXT: {{rpt._EXT.seconds}}.{{rpt._EXT.microseconds}} sec</small></p>
+
+{% endblock %}
