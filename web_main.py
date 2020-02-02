@@ -5,7 +5,6 @@ from flask import url_for
 import psycopg2
 from psycopg2 import sql
 
-
 from keys import KeyChain
 from report import Report
 
@@ -17,54 +16,43 @@ def index():
     return '.'
 
 
-def _get_con():
+def _get_conn():
     acc_key = KeyChain.PG_KEY
-    return psycopg2.connect(dbname=acc_key["db_name"], user=acc_key["user"],
-                            password=acc_key["pwd"], host=acc_key["host"])
+    cn = psycopg2.connect(dbname=acc_key["db_name"], user=acc_key["user"],
+                          password=acc_key["pwd"], host=acc_key["host"])
+    cn.autocommit = True
+    return cn
 
 
 @app.route('/report/')
 def report():
-    rpt = Report.factory(_get_con(), dict(request.args))
-    return render_template(rpt.get_template(), rpt=rpt)
+    conn = _get_conn()
+    with conn:
+        rpt = Report.factory(conn, dict(request.args))
+        html = render_template(rpt.get_template(), rpt=rpt)
+        conn.commit()
+    return html
 
 
 @app.route('/default/')
 def params():
-    result = "<h1>Defauts map</h1>"
-    for name, params_dict in Report.default_map(_get_con()).items():
+    result = "<h1>Defaults map</h1>"
+    for name, params_dict in Report.default_map(_get_conn()).items():
         url = url_for('report', **params_dict)
         result += f'<a href="{url}">{name}</a><br>'
     return result
 
 
-@app.route('/test/')
-def test():
-    from report import _hash
-    result = ''
-    conn = _get_con()
-    query = sql.SQL('SELECT {}, {} FROM {} ORDER BY {}').format(
-        sql.Identifier('params'),
-        sql.Identifier('id'),
-        sql.Identifier('Params'),
-        sql.Identifier('last_touch')
-    )
-    cursor = conn.cursor()
-    sql_str = query.as_string(conn)
-    cursor.execute(sql_str)
-    rows = {}
-    try:
-        rows = cursor.fetchall()
-    except:
-        pass
+@app.route('/profile/')
+def profile():
+    import cProfile
+    from report import HelpdeskReport
+    from report import Report
+    from web_main import _get_conn
 
-    for row in rows:
-        p = row[0]
-        h = row[1]
-        hh = _hash(p)
-        ok = '[Ok]:' if h == hh else ''
-        result += f'{ok}{h}[{h.bit_length()}]:{hh}[{hh.bit_length()}] -- {p} </br>'
-    return result
+    cn = _get_conn()
+    rpt = Report.factory(cn, HelpdeskReport.get_idx(cn))
+    cProfile.run("rpt._D()")
 
 
 if __name__ == '__main__':

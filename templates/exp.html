@@ -22,7 +22,7 @@
         </tr>
     </thead>
     <tbody>
-        {% for rec in rpt.get_data().body.values() %}
+        {% for rec in rpt._D().body.values() %}
         <tr>
             <td nowrap> <a href="https://prosto12.intraservice.ru/Task/View/{{ rec.task_id }}">{{ rec.task_id }}</a></td>
             <td>{{ rec.task_name|truncate(70) }}  <small class="text-muted">{% if rec.task_descr %}{{(rec.task_descr)|truncate(200)}}{% endif %}</small></td>

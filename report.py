@@ -6,6 +6,7 @@ from collections import namedtuple
 
 import psycopg2
 from psycopg2 import sql
+from psycopg2 import extras
 
 _eval_map = {5: 4, 4: 2, 3: 5, 2: 6, 1: 1}
 
@@ -82,8 +83,13 @@ class Report:
             return self._data
         start = datetime.now()
         self._data = self._prepare_data()
+        self._db_conn.commit()
         self._EXT = datetime.now() - start
+
         return self._data
+
+    def _N(self):
+        return self._navigate
 
     def _P(self):
         """ Jinja call for _params attribute """
@@ -182,6 +188,7 @@ class Report:
 
     @classmethod
     def _params_to_idx(cls, conn, params):
+
         json_params = cls._dict_to_json(params)
         value_hash = _hash(json_params)
 
@@ -253,9 +260,13 @@ class Report:
         return cls._params_to_idx(conn, params)
 
     @classmethod
-    def _sql_exec(cls, conn, query, result=None, result_factory=None, auto_commit=True):
+    def _sql_exec(cls, conn, query, result=None, result_factory=None, named_result=False):
         # todo: result need named tuple implementation
-        cursor = conn.cursor()
+        if named_result:
+            cursor = conn.cursor(cursor_factory=psycopg2.extras.NamedTupleCursor)
+        else:
+            cursor = conn.cursor()
+
         sql_str = query.as_string(conn)
         cursor.execute(sql_str)
         if result is None:
@@ -264,8 +275,6 @@ class Report:
             rows = cursor.fetchall()
         except Exception:
             # empty query result
-            if auto_commit:
-                conn.commit()
             return result
 
         if result_factory:
@@ -274,12 +283,7 @@ class Report:
         else:
             result = rows
         cursor.close()
-        if auto_commit:
-            conn.commit()
         return result
-
-    def get_navigate(self):
-        return self._navigate
 
     def _add_navigate_point(self, caption: str, params: dict):
         self._navigate[caption] = self.get_idx(self._db_conn, params)
@@ -301,7 +305,7 @@ class DiagReport(Report):
         self._add_navigate_point('<< Prev day', {'from': prev_point['from'], 'to': prev_point['to']})
         self._add_navigate_point('Next day >>', {'from': next_point['from'], 'to': next_point['to']})
 
-    def get_data(self):
+    def _prepare_data(self):
         start = datetime.combine(self._params['from'], datetime.min.time())
         fin = datetime.combine(self._params['to'], datetime.max.time())
 
@@ -372,27 +376,47 @@ class HelpdeskReport(Report):
         return {
             'frame': 'daily',
             'executors': (7162, 9131, 8724, 9070),
-            'from': date.today()
+            'from': date.today(),
+            'services': (139, 168),
         }
 
     def _prepare_data(self):
         data = {}
-
-        exs = tuple(self._params['executors'])  # tuple() for correct sql.Literal list converting
-        frame = self._params['frame']
-        body = {i: [] for i in exs}
 
         ss = sql.SQL
         si = sql.Identifier
         sl = sql.Literal
         se = self.__class__._sql_exec
         cn = self._db_conn
+        sp = self._params
+
+        def _unfold(srv_list):
+            result = {}
+            q = ss('select s."Id" as id, s."Name" as name, s."ParentId" as parent from  "Services" s '
+                   'where (s."Id" in {0} or s."ParentId" in {0}) '
+                   'and s."IsArchive" = False order by s."Path"').format(
+                sl(srv_list)
+            )
+
+            def _fact(rec, res):
+                res[rec.id] = rec
+
+            return se(cn, q, result, _fact, named_result=True)
+
+        srv = tuple(sp['services'])  # service filter
+        srv_ufd = _unfold(srv)  # services unfold dict { id : namedtuple(id, name, parent) }
+        srv_ufl = tuple(srv_ufd.keys())  # services unfold list
+        exs = tuple(sp['executors'])  # tuple() for correct sql.Literal list converting
+        frame = sp['frame']  # daily, weekly, monthly
 
         def _fact(row, res):
             res[row[0]] = row[1]
 
-        def _seq(params):
-            return {ex: seq for ex, seq in zip(exs, range(1, len(body)))}
+        def _get_body(index):
+            return {i: [] for i in index}
+
+        def _seq(index):
+            return {ex: seq for ex, seq in zip(index, range(1, len(index) + 1))}
 
         def _get_detail(report: Report.__class__, params: dict):
             res = {}
@@ -401,15 +425,15 @@ class HelpdeskReport(Report):
                 res[ex_id] = report.get_idx(cn, params)
             return res
 
-        def _do_query(query):
+        def _do_query(query, fact=_fact):
             res = {}
-            se(cn, query, res, _fact)
+            se(cn, query, res, fact)
             return res
 
         def _names(params):
             return _do_query(ss('SELECT {}, {} FROM {} WHERE {} IN {}').format(
-                si('Id'), si('Name'), si('Users'),
-                si('Id'), sl(exs))
+                si('Id'), si('Name'), si(params['table']),
+                si('Id'), sl(params['index']))
             )
 
         def _own_tasks_d(params):
@@ -417,9 +441,10 @@ class HelpdeskReport(Report):
 
         def _own_tasks(params):
             return _do_query(ss('SELECT e.{} as id, count(t.{}) as cc FROM {} t, {} e '
-                                'WHERE e.{}=t.{} AND t.{} is NULL AND e.{} IN {} GROUP BY id').format(
+                                'WHERE e.{}=t.{} AND t.{} is NULL AND e.{} IN {} '
+                                'AND t."ServiceId" in {} GROUP BY id').format(
                 si('UserId'), si('Id'), si('Tasks'), si('Executors'),
-                si('TaskId'), si('Id'), si('Closed'), si('UserId'), sl(exs))
+                si('TaskId'), si('Id'), si('Closed'), si('UserId'), sl(exs), sl(srv_ufl))
             )
 
         def _dnt_d(params):
@@ -428,10 +453,10 @@ class HelpdeskReport(Report):
         def _dnt(params):
             q = ss('SELECT e.{} as id, count(t.{}) FROM {} t, {} e '
                    'WHERE e.{}=t.{} AND t.{} BETWEEN {} AND {} '
-                   'AND e.{} IN {} GROUP BY id').format(
+                   'AND e.{} IN {} AND t."ServiceId" in {} GROUP BY id').format(
                 si('UserId'), si('Id'), si('Tasks'), si('Executors'),
                 si('TaskId'), si('Id'), si('Closed'), sl(params['from']), sl(params['to']),
-                si('UserId'), sl(exs)
+                si('UserId'), sl(exs), sl(srv_ufl)
             )
             return _do_query(q)
 
@@ -439,12 +464,12 @@ class HelpdeskReport(Report):
             return _get_detail(ExpensesReport, {'from': params['from'], 'to': params['to']})
 
         def _dnu(params):
-            q = ss('SELECT {} as id, sum({}) FROM {} '
-                   'WHERE {} BETWEEN {} AND {} '
-                   'AND {} IN {} GROUP BY id').format(
-                si('UserId'), si('Minutes'), si('Expenses'),
-                si('DateExp'), sl(params['from']), sl(params['to']),
-                si('UserId'), sl(exs)
+            q = ss('SELECT e."UserId" as id, sum("Minutes") FROM "Expenses" e '
+                   'LEFT JOIN "Tasks" t ON e."TaskId"=t."Id" '
+                   'WHERE e."DateExp" BETWEEN {} AND {} '
+                   'AND e."UserId" IN {} AND t."ServiceId" in {} GROUP BY id').format(
+                sl(params['from']), sl(params['to']),
+                sl(exs), sl(srv_ufl)
             )
             return _do_query(q)
 
@@ -468,8 +493,8 @@ class HelpdeskReport(Report):
                         'from "Executors" e '
                         'left join "Tasks" t on e."TaskId" = t."Id" '
                         'where t."EvaluationId"={} and e."UserId" in {} and t."Closed" between {} and {} '
-                        'group by e."UserId"').format(
-                sl(evaluate), sl(exs), sl(self._params['from']), sl(self._params['to'])
+                        'AND t."ServiceId" in {} group by e."UserId"').format(
+                sl(evaluate), sl(exs), sl(self._params['from']), sl(self._params['to']), sl(srv_ufl)
             )
             return _do_query(q)
 
@@ -479,117 +504,193 @@ class HelpdeskReport(Report):
                 'selector': selector,
             }
 
-        def _sm_header(selector):  # simple header
-            return {'params': None, 'selector': selector}
+        def _sm_header(selector, params=None):  # simple header
+            return {'params': params, 'selector': selector}
 
-        head_map = (
-            ('*', {
-                'seq': _sm_header(_seq),
-                'name': _sm_header(_names),
-                'detail_own_tasks': _sm_header(_own_tasks_d),
-                'own_tasks': _sm_header(_own_tasks),
-            }),
-            ('daily weekly', {
-                'd1t': _dn_header(0, 'day', _dnt),
-                'd1t_d': _dn_header(0, 'day', _dnt_d),
-                'd1u': _dn_header(0, 'day', _dnu),
-                'd1u_d': _dn_header(0, 'day', _dnu_d),
+        def _get_util_map():
+            return (
+                ('*', {
+                    'seq': _sm_header(_seq, exs),
+                    'name': _sm_header(_names, {'table': 'Users', 'index': exs}),
+                    'detail_own_tasks': _sm_header(_own_tasks_d),
+                    'own_tasks': _sm_header(_own_tasks),
+                }),
+                ('daily weekly', {
+                    'd1t': _dn_header(0, 'day', _dnt),
+                    'd1t_d': _dn_header(0, 'day', _dnt_d),
+                    'd1u': _dn_header(0, 'day', _dnu),
+                    'd1u_d': _dn_header(0, 'day', _dnu_d),
 
-                'd2t': _dn_header(-1, 'day', _dnt),
-                'd2t_d': _dn_header(-1, 'day', _dnt_d),
-                'd2u': _dn_header(-1, 'day', _dnu),
-                'd2u_d': _dn_header(-1, 'day', _dnu_d),
+                    'd2t': _dn_header(1, 'day', _dnt),
+                    'd2t_d': _dn_header(1, 'day', _dnt_d),
+                    'd2u': _dn_header(1, 'day', _dnu),
+                    'd2u_d': _dn_header(1, 'day', _dnu_d),
 
-                'd3t': _dn_header(-2, 'day', _dnt),
-                'd3t_d': _dn_header(-2, 'day', _dnt_d),
-                'd3u': _dn_header(-2, 'day', _dnu),
-                'd3u_d': _dn_header(-2, 'day', _dnu_d),
+                    'd3t': _dn_header(2, 'day', _dnt),
+                    'd3t_d': _dn_header(2, 'day', _dnt_d),
+                    'd3u': _dn_header(2, 'day', _dnu),
+                    'd3u_d': _dn_header(2, 'day', _dnu_d),
 
-                'd4t': _dn_header(-3, 'day', _dnt),
-                'd4t_d': _dn_header(-3, 'day', _dnt_d),
-                'd4u': _dn_header(-3, 'day', _dnu),
-                'd4u_d': _dn_header(-3, 'day', _dnu_d),
+                    'd4t': _dn_header(3, 'day', _dnt),
+                    'd4t_d': _dn_header(3, 'day', _dnt_d),
+                    'd4u': _dn_header(3, 'day', _dnu),
+                    'd4u_d': _dn_header(3, 'day', _dnu_d),
 
-                'd5t': _dn_header(-4, 'day', _dnt),
-                'd5t_d': _dn_header(-4, 'day', _dnt_d),
-                'd5u': _dn_header(-4, 'day', _dnu),
-                'd5u_d': _dn_header(-4, 'day', _dnu_d),
+                    'd5t': _dn_header(4, 'day', _dnt),
+                    'd5t_d': _dn_header(4, 'day', _dnt_d),
+                    'd5u': _dn_header(4, 'day', _dnu),
+                    'd5u_d': _dn_header(4, 'day', _dnu_d),
 
-                'd6t': _dn_header(-5, 'day', _dnt),
-                'd6t_d': _dn_header(-5, 'day', _dnt_d),
-                'd6u': _dn_header(-5, 'day', _dnu),
-                'd6u_d': _dn_header(-5, 'day', _dnu_d),
+                    'd6t': _dn_header(5, 'day', _dnt),
+                    'd6t_d': _dn_header(5, 'day', _dnt_d),
+                    'd6u': _dn_header(5, 'day', _dnu),
+                    'd6u_d': _dn_header(5, 'day', _dnu_d),
 
-                'd7t': _dn_header(-6, 'day', _dnt),
-                'd7t_d': _dn_header(-6, 'day', _dnt_d),
-                'd7u': _dn_header(-6, 'day', _dnu),
-                'd7u_d': _dn_header(-6, 'day', _dnu_d),
-            }),
-            ('weekly', {
-                'w1t': _dn_header(-0, 'week', _dnt),
-                'w1t_d': _dn_header(-0, 'week', _dnt_d),
-                'w1u': _dn_header(-0, 'week', _dnu),
-                'w1u_d': _dn_header(-0, 'week', _dnu_d),
+                    'd7t': _dn_header(6, 'day', _dnt),
+                    'd7t_d': _dn_header(6, 'day', _dnt_d),
+                    'd7u': _dn_header(6, 'day', _dnu),
+                    'd7u_d': _dn_header(6, 'day', _dnu_d),
+                }),
+                ('weekly', {
+                    'w1t': _dn_header(-0, 'week', _dnt),
+                    'w1t_d': _dn_header(-0, 'week', _dnt_d),
+                    'w1u': _dn_header(-0, 'week', _dnu),
+                    'w1u_d': _dn_header(-0, 'week', _dnu_d),
 
-                'w2t': _dn_header(-1, 'week', _dnt),
-                'w2t_d': _dn_header(-1, 'week', _dnt_d),
-                'w2u': _dn_header(-1, 'week', _dnu),
-                'w2u_d': _dn_header(-1, 'week', _dnu_d),
+                    'w2t': _dn_header(-1, 'week', _dnt),
+                    'w2t_d': _dn_header(-1, 'week', _dnt_d),
+                    'w2u': _dn_header(-1, 'week', _dnu),
+                    'w2u_d': _dn_header(-1, 'week', _dnu_d),
 
-                'w3t': _dn_header(-2, 'week', _dnt),
-                'w3t_d': _dn_header(-2, 'week', _dnt_d),
-                'w3u': _dn_header(-2, 'week', _dnu),
-                'w3u_d': _dn_header(-2, 'week', _dnu_d),
-            }),
-            ('monthly', {
-                'm1t': _dn_header(-0, 'month', _dnt),
-                'm1t_d': _dn_header(-0, 'month', _dnt_d),
-                'm1u': _dn_header(-0, 'month', _dnu),
-                'm1u_d': _dn_header(-0, 'month', _dnu_d),
+                    'w3t': _dn_header(-2, 'week', _dnt),
+                    'w3t_d': _dn_header(-2, 'week', _dnt_d),
+                    'w3u': _dn_header(-2, 'week', _dnu),
+                    'w3u_d': _dn_header(-2, 'week', _dnu_d),
+                }),
+                ('monthly', {
+                    'm1t': _dn_header(-0, 'month', _dnt),
+                    'm1t_d': _dn_header(-0, 'month', _dnt_d),
+                    'm1u': _dn_header(-0, 'month', _dnu),
+                    'm1u_d': _dn_header(-0, 'month', _dnu_d),
 
-                'm2t': _dn_header(-1, 'month', _dnt),
-                'm2t_d': _dn_header(-1, 'month', _dnt_d),
-                'm2u': _dn_header(-1, 'month', _dnu),
-                'm2u_d': _dn_header(-1, 'month', _dnu_d),
+                    'm2t': _dn_header(-1, 'month', _dnt),
+                    'm2t_d': _dn_header(-1, 'month', _dnt_d),
+                    'm2u': _dn_header(-1, 'month', _dnu),
+                    'm2u_d': _dn_header(-1, 'month', _dnu_d),
 
-                'm3t': _dn_header(-2, 'month', _dnt),
-                'm3t_d': _dn_header(-2, 'month', _dnt_d),
-                'm3u': _dn_header(-2, 'month', _dnu),
-                'm3u_d': _dn_header(-2, 'month', _dnu_d),
-            }),
-            ('*', {
-                'e5': _ev_header(5, _eval),
-                'e5_d': _ev_header(5, _eval_d),
-                'e4': _ev_header(4, _eval),
-                'e4_d': _ev_header(4, _eval_d),
-                'e3': _ev_header(3, _eval),
-                'e3_d': _ev_header(3, _eval_d),
-                'e2': _ev_header(2, _eval),
-                'e2_d': _ev_header(2, _eval_d),
-                'e1': _ev_header(1, _eval),
-                'e1_d': _ev_header(1, _eval_d),
-            })
-        )
-        head = {}
-        for r in head_map:
-            if frame in r[0].split() or '*' in r[0].split():
-                head.update(r[1])
+                    'm3t': _dn_header(-2, 'month', _dnt),
+                    'm3t_d': _dn_header(-2, 'month', _dnt_d),
+                    'm3u': _dn_header(-2, 'month', _dnu),
+                    'm3u_d': _dn_header(-2, 'month', _dnu_d),
+                }),
+                ('*', {
+                    'e5': _ev_header(5, _eval),
+                    'e5_d': _ev_header(5, _eval_d),
+                    'e4': _ev_header(4, _eval),
+                    'e4_d': _ev_header(4, _eval_d),
+                    'e3': _ev_header(3, _eval),
+                    'e3_d': _ev_header(3, _eval_d),
+                    'e2': _ev_header(2, _eval),
+                    'e2_d': _ev_header(2, _eval_d),
+                    'e1': _ev_header(1, _eval),
+                    'e1_d': _ev_header(1, _eval_d),
+                })
+            )
 
-        fields = [key for key in head.keys()]
-        RU = namedtuple('RU', fields)  # record utilization type
+        def _get_head_body(h_map, index):
+            head = {}
+            for r in h_map:
+                if frame in r[0].split() or '*' in r[0].split():
+                    head.update(r[1])
 
-        for val in head.values():
-            column = val['selector'](val['params'])
-            for eid in exs:
-                body[eid].append(column.get(eid, 0))
+            cn.autocommit = False
+            fields = [key for key in head.keys()]
+            RU = namedtuple('RU', fields)  # record utilization type
+            body = _get_body(index)
+            for val in head.values():
+                column = val['selector'](val['params'])
+                for eid in index:
+                    body[eid].append(column.get(eid, 0))
+            cn.commit()
+            cn.autocommit = True
 
-        # namedtuplizer
-        named_body = []
-        for rec in body.values():
-            named_body.append(RU(*rec))
+            # namedtuplizer
+            named_body = []
+            for rec in body.values():
+                named_body.append(RU(*rec))
 
-        # todo: need to do service filter
-        data['utl'] = {'head': head, 'body': named_body}
+            return {'head': head, 'body': named_body}
+
+        head_map = _get_util_map()
+        data['utl'] = _get_head_body(head_map, exs)
+
+        def _parent(params):
+            return _do_query(ss('select s."Id", s."ParentId" from "Services" s where s."Id" in {}').format(sl(srv_ufl)))
+
+        def _do_query_grp(q):
+            result = _do_query(q)
+            result_new = {}
+            for k, v in result.items():
+                result_new[k] = v
+                parent = srv_ufd[k].parent
+                if parent:
+                    result_new[parent] = result_new.get(parent, 0) + v
+            return result_new
+
+        def _income(params):
+            return _do_query_grp(ss('select t."ServiceId", count(t."Id") from "Tasks" t'
+                                    ' where t."Created" between {} and {} and t."ServiceId" in {}'
+                                    ' group by t."ServiceId" ').format(
+                sl(sp['from']), sl(sp['to']), sl(srv_ufl)
+            ))
+
+        def _closed(params):
+            return _do_query_grp(ss('select t."ServiceId", count(t."Id") from "Tasks" t'
+                                    ' where t."Closed" between {} and {} and t."ServiceId" in {}'
+                                    ' group by t."ServiceId" ').format(
+                sl(sp['from']), sl(sp['to']), sl(srv_ufl)
+            ))
+
+        def _open(params):
+            return _do_query_grp(ss('select t."ServiceId", count(t."Id") from "Tasks" t'
+                                    ' where t."Closed" is NULL and t."ServiceId" in {}'
+                                    ' group by t."ServiceId" ').format(
+                sl(srv_ufl)
+            ))
+
+        def _no_exec(params):
+            return _do_query_grp(ss('select t."ServiceId", count(t."Id") from "Tasks" t'
+                                    ' where t."Closed" is NULL and t."ServiceId" in {}'
+                                    ' and t."Id" not in (select "TaskId" from "Executors")'
+                                    ' group by t."ServiceId" ').format(
+                sl(srv_ufl)
+            ))
+
+        def _no_deadline(params):
+            return _do_query_grp(ss('select t."ServiceId", count(t."Id") from "Tasks" t'
+                                    ' where t."Closed" is NULL and t."Deadline" is NULL'
+                                    ' and t."ServiceId" in {}'
+                                    ' group by t."ServiceId" ').format(
+                sl(srv_ufl)
+            ))
+
+        def _get_srv_map():
+            return (
+                ('*', {
+                    'seq': _sm_header(_seq, srv_ufl),
+                    'name': _sm_header(_names, {'table': 'Services', 'index': srv_ufl}),
+                    'parent': _sm_header(_parent),
+                    'income': _sm_header(_income),
+                    'closed': _sm_header(_closed),
+                    'open': _sm_header(_open),
+                    'no_exec': _sm_header(_no_exec),
+                    'no_deadline': _sm_header(_no_deadline),
+                }),
+            )
+
+        head_map = _get_srv_map()
+        data['srv'] = _get_head_body(head_map, srv_ufl)
+
         return data
 
 
@@ -627,7 +728,7 @@ class TaskReport(Report):
     def get_template(self):
         return "task.html"
 
-    def get_data(self):
+    def _prepare_data(self):
         if self._data:
             return self._data
 
@@ -714,13 +815,22 @@ class TaskReport(Report):
 
 
 class ExpensesReport(Report):
+    def set_up(self):
+        pass
+
+    @classmethod
+    def _get_def_params(cls):
+        return {
+            "from": "datetime:2020-01-27 00:00:00.000000",
+            "to": "datetime:2020-01-27 23:59:59.999999",
+            "executors": [7162],
+            "type": "ExpensesReport"
+        }
+
     def get_template(self):
         return "exp.html"
 
-    def get_data(self):
-        if self._data:
-            return self._data
-
+    def _prepare_data(self):
         sp = self._params
         ss = sql.SQL
         sc = sql.Composed
@@ -779,21 +889,15 @@ class TestReports(TestCase):
 
     def test_util_report(self):
         rep = HelpdeskReport(self._conn)
-        rep.get_caption()
-        rep.get_navigate()
-        rep.get_data()
+        rep._D()
 
     def test_task_report(self):
         rep = TaskReport(self._conn)
-        rep.get_caption()
-        rep.get_navigate()
-        rep.get_data()
+        rep._D()
 
     def test_expenses_report(self):
         rep = ExpensesReport(self._conn)
-        rep.get_caption()
-        rep.get_navigate()
-        rep.get_data()
+        rep._D()
 
 
 if __name__ == '__main__':

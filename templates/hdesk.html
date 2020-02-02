@@ -5,14 +5,15 @@
 
     {% if frame == 'daily' %}
         {% set caption = "[daily] HelpDesk отчет за текущую неделю" %}
-        {% set util_table_class = 'col-md-8' %}
+        {% set util_table_class='col-md-8' %}
     {% elif frame == 'weekly' %}
         {% set caption = "[weekly] HelpDesk отчет за прошлую неделю" %}
-        {% set util_table_class = 'col-md-10' %}
+        {% set util_table_class='col-md-10' %}
     {% elif frame == 'monthly' %}
         {% set caption = "[monthly] HelpDesk отчет за прошлый месяц" %}
-        {% set util_table_class = 'col-md-8' %}
+        {% set util_table_class='col-md-8' %}
     {% endif %}
+{% set srv_table_class='col-md-8' %}
 
 {% block title %}
     {{caption}}
@@ -30,6 +31,36 @@
     {% endfor %}
   </ul>
 </nav>
+
+<div class="row">
+    <div class="{{ srv_table_class }}">
+        <table class="table table-condensed">
+            <caption>Движения по сервисам</caption>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Сервис</th>
+                    <th>Принято</th>
+                    <th>Закрыто</th>
+                    <th>В работе</th>
+                    <th>Без исполнителя</th>
+                    <th>Без плана</th>
+                </tr>
+            </thead>
+            {% for r in rpt._D().srv.body %}
+            <tr>
+                <td align="right">{{ r.seq }}</td>
+                <td> {% if r.parent %} -- {% endif %} {{ r.name }}</td>
+                <td align="right"> {{ r.income }}</td>
+                <td align="right"> {{ r.closed }}</td>
+                <td align="right"> {{ r.open }}</td>
+                <td align="right"> {{ r.no_exec }}</td>
+                <td align="right"> {{ r.no_deadline }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+</div>
 
 <div class="row">
     <div class="{{ util_table_class }}">

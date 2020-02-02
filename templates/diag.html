@@ -7,11 +7,11 @@
     </style>
 {% endblock %}
 {% block content %}
-    <h1>{{ rpt.get_caption() }}</h1>
+    <h1>Отчет диагностики {{  rpt._P().from }}</h1>
 
 <nav aria-label="Page navigation">
   <ul class="pagination">
-    {% for cap, params in rpt.get_navigate().items() %}
+    {% for cap, params in rpt._N().items() %}
     <li><a href="{{ url_for('report', **params) }}">{{ "%s"|format(cap) }}</a></li>
     {% endfor %}
   </ul>
@@ -20,7 +20,7 @@
 <table class="table">
     <thead>
         <tr>
-            {% for c in rpt.get_data()['header'] %}
+            {% for c in rpt._D().header %}
             <th>
             {{ c }}
             </th>
@@ -28,7 +28,7 @@
         </tr>
     </thead>
     <tbody>
-        {% for row in rpt.get_data()['body'] %}
+        {% for row in rpt._D().body %}
         <tr class=
         {% if row[2] == 'warning' %} "warning"
         {% elif row[2] == 'finish' %} "success"
