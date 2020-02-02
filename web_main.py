@@ -36,10 +36,13 @@ def report():
 
 @app.route('/default/')
 def params():
-    result = "<h1>Defaults map</h1>"
-    for name, params_dict in Report.default_map(_get_conn()).items():
-        url = url_for('report', **params_dict)
-        result += f'<a href="{url}">{name}</a><br>'
+    conn = _get_conn()
+    with conn:
+        result = "<h1>Defaults map</h1>"
+        for name, params_dict in Report.default_map(conn).items():
+            url = url_for('report', **params_dict)
+            result += f'<a href="{url}">{name}</a><br>'
+            conn.commit()
     return result
 
 
