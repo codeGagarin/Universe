@@ -446,7 +446,7 @@ class ISConnector(DataConnector):
 
         # Make API request
         url = f"{base_url}{resource}"
-        r = session.get(url=url, auth=self._auth, params=params)
+        r = session.get(url=url, auth=self._auth, params=params, verify=False)
         raw_data = dict(r.json())
         session.close()
         if r.status_code != 200:
@@ -460,7 +460,7 @@ class ISConnector(DataConnector):
             if page_count > 1:
                 for page in range(page_count, 0, -1):
                     params.update({'Page': page})
-                    r = session.get(url=url, auth=self._auth, params=params)
+                    r = session.get(url=url, auth=self._auth, params=params, verify=False)
                     raw_data = dict(r.json())
                     result_factory(result, raw_data)
 
