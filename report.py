@@ -137,7 +137,7 @@ class Report:
     def default_map(cls, conn):
         result = {}
         for name, report_class in cls._get_map().items():
-            result[name] = report_class._get_idx(conn, cls._get_def_params())
+            result[name] = report_class.get_idx(conn, cls._get_def_params())
         return result
 
     @classmethod
@@ -252,11 +252,12 @@ class Report:
         """ Override it in subclasses for default report link generation """
         return {}
 
-    def _get_idx(self, conn, params, report_cls=None):
-        if not report_cls:
-            report_cls = self.__class__
-        params['type'] = report_cls.get_type()
-        return self._params_to_idx(conn, params)
+    @classmethod
+    def get_idx(cls, conn, params=None):
+        if not params:
+            params = cls._get_def_params()
+        params['type'] = cls.get_type()
+        return cls._params_to_idx(conn, params)
 
     @classmethod
     def _sql_exec(cls, conn, query, result=None, result_factory=None, named_result=False):
@@ -285,7 +286,7 @@ class Report:
         return result
 
     def _add_navigate_point(self, caption: str, params: dict):
-        self._navigate[caption] = self._get_idx(self._db_conn, params)
+        self._navigate[caption] = self.get_idx(self._db_conn, params)
 
     def get_navigate(self):
         return self._navigate
@@ -430,14 +431,14 @@ class HelpdeskReport(Report):
             for idx in exs:
                 params['executors'] = [idx]
                 params['services'] = srv_ufl  # for service data isolation
-                res[idx] = self._get_idx(cn, params, report)
+                res[idx] = report.get_idx(cn, params)
             return res
 
         def _get_detail_srv(report: Report.__class__, params: dict):
             res = {}
             for idx in srv_ufl:
                 params['services'] = [idx]
-                res[idx] = self._get_idx(cn, params, report)
+                res[idx] = report.get_idx(cn, params)
             return res
 
         def _do_query(query, fact=_fact):

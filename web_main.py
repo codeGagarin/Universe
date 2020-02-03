@@ -43,6 +43,7 @@ def params():
             url = url_for('report', **params_dict)
             result += f'<a href="{url}">{name}</a><br>'
             conn.commit()
+    conn.close()
     return result
 
 
