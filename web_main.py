@@ -13,7 +13,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def index():
-    return '.'
+    return '<p title="You are here, Dude!">.</p>'
 
 
 def _get_conn():
@@ -54,7 +54,7 @@ def profile():
     from web_main import _get_conn
 
     cn = _get_conn()
-    rpt = Report.factory(cn, HelpdeskReport.get_idx(cn))
+    rpt = Report.factory(cn, HelpdeskReport._get_idx(cn))
     cProfile.run("rpt._D()")
 
 

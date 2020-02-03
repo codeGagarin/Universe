@@ -4,25 +4,26 @@
     {% endif %}
 
     {% if frame == 'daily' %}
-        {% set caption = "[daily] HelpDesk отчет за текущую неделю" %}
+        {% set caption = "Helpdesk ежедневный отчет" %}
         {% set util_table_class='col-md-8' %}
     {% elif frame == 'weekly' %}
-        {% set caption = "[weekly] HelpDesk отчет за прошлую неделю" %}
+        {% set caption = "Helpdesk отчет за неделю" %}
         {% set util_table_class='col-md-10' %}
     {% elif frame == 'monthly' %}
-        {% set caption = "[monthly] HelpDesk отчет за прошлый месяц" %}
+        {% set caption = "Helpdesk отчет за месяц" %}
         {% set util_table_class='col-md-8' %}
     {% endif %}
-{% set srv_table_class='col-md-8' %}
+{% set srv_table_class='col-md-7' %}
 
 {% block title %}
-    {{caption}}
+    [{{frame}}] {{caption}}
 {% endblock %}
 {% block head %}
     {{ super() }}
 {% endblock %}
 {% block content %}
-    <h1>{{ caption }}</h1>
+    <h1>[{{frame}}] <small>{{ caption }}</small></h1>
+    <small class="text-muted">{{ rpt._P().from.strftime('%d %h %Y') }} -- {{ rpt._P().to.strftime('%d %h %Y') }}</small>
 
 <nav aria-label="Page navigation">
   <ul class="pagination">
@@ -52,7 +53,10 @@
                 <td align="right">{{ r.seq }}</td>
                 <td> {% if r.parent %} -- {% endif %} {{ r.name }}</td>
                 <td align="right"> {{ r.income }}</td>
-                <td align="right"> {{ r.closed }}</td>
+                <td align="right">
+                    {{ r.closed }}
+                    (<a href="{{ url_for('report', **r.closed_exp_d) }}">{{ (r.closed_exp/60)|round(1, 'common') }}</a>)
+                </td>
                 <td align="right"> {{ r.open }}</td>
                 <td align="right"> {{ r.no_exec }}</td>
                 <td align="right"> {{ r.no_deadline }}</td>
@@ -111,7 +115,7 @@
                 {% for r in rpt._D().utl.body %}
                 <tr>
                     <td align="right">{{ r.seq }}</td>
-                    <td>{{ r.name }} (<a href="{{ url_for('report', **r.detail_own_tasks) }}">{{ r.own_tasks }}</a>)</td>
+                    <td>{{ r.name }} [<a href="{{ url_for('report', **r.detail_own_tasks) }}">{{ r.own_tasks }}</a>]</td>
                     {% if frame in ['daily', 'weekly'] %}
                     <td class="info">
                         <a href="{{ url_for('report', **r.d1t_d) }}">{{ r.d1t }}</a>

@@ -137,7 +137,7 @@ class Report:
     def default_map(cls, conn):
         result = {}
         for name, report_class in cls._get_map().items():
-            result[name] = report_class.get_idx(conn)
+            result[name] = report_class._get_idx(conn, cls._get_def_params())
         return result
 
     @classmethod
@@ -252,12 +252,11 @@ class Report:
         """ Override it in subclasses for default report link generation """
         return {}
 
-    @classmethod
-    def get_idx(cls, conn, params=None):
-        if not params:
-            params = cls._get_def_params()
-        params['type'] = cls.get_type()
-        return cls._params_to_idx(conn, params)
+    def _get_idx(self, conn, params, report_cls=None):
+        if not report_cls:
+            report_cls = self.__class__
+        params['type'] = report_cls.get_type()
+        return self._params_to_idx(conn, params)
 
     @classmethod
     def _sql_exec(cls, conn, query, result=None, result_factory=None, named_result=False):
@@ -286,7 +285,7 @@ class Report:
         return result
 
     def _add_navigate_point(self, caption: str, params: dict):
-        self._navigate[caption] = self.get_idx(self._db_conn, params)
+        self._navigate[caption] = self._get_idx(self._db_conn, params)
 
     def get_navigate(self):
         return self._navigate
@@ -338,12 +337,13 @@ class DiagReport(Report):
 
 
 class HelpdeskReport(Report):
-
     def set_up(self):
+        sp = self._params
+
         def _dflt(key, def_value):
-            r = self._params.get(key)
+            r = sp.get(key)
             if not r:
-                r = self._params[key] = def_value
+                r = sp[key] = def_value
             return r
 
         frame = _dflt('frame', 'daily')  # str: daily, weekly, monthly, qtrly
@@ -356,12 +356,19 @@ class HelpdeskReport(Report):
         else:
             p = _get_period(report_date, m[frame], delta - 1, with_time=True)
 
-        self._params['from'] = p['from']
-        self._params['to'] = p['to']
+        sp['from'] = p['from']
+        sp['to'] = p['to']
+        sp['period'] = p
 
-        self._add_navigate_point('Daily', {'frame': 'daily', 'executors': self._params['executors']})
-        self._add_navigate_point('Last week', {'frame': 'weekly', 'executors': self._params['executors']})
-        self._add_navigate_point('Last month', {'frame': 'monthly', 'executors': self._params['executors']})
+        def _nav_params(nav_frame: str):
+            return {
+                'frame': nav_frame,
+                'executors': sp['executors'],
+                'services': sp['services'],
+            }
+        self._add_navigate_point('Last month', _nav_params('monthly'))
+        self._add_navigate_point('Last week', _nav_params('weekly'))
+        self._add_navigate_point('Daily', _nav_params('daily'))
 
         # next_point = _get_period(self._params['from'], 'day', 1)
         # self._add_navigate_point('<< Prev day', {'from': prev_point['from'], 'to': prev_point['to']})
@@ -418,11 +425,19 @@ class HelpdeskReport(Report):
         def _seq(index):
             return {ex: seq for ex, seq in zip(index, range(1, len(index) + 1))}
 
-        def _get_detail(report: Report.__class__, params: dict):
+        def _get_detail_utl(report: Report.__class__, params: dict):
             res = {}
-            for ex_id in exs:
-                params['executors'] = [ex_id]
-                res[ex_id] = report.get_idx(cn, params)
+            for idx in exs:
+                params['executors'] = [idx]
+                params['services'] = srv_ufl  # for service data isolation
+                res[idx] = self._get_idx(cn, params, report)
+            return res
+
+        def _get_detail_srv(report: Report.__class__, params: dict):
+            res = {}
+            for idx in srv_ufl:
+                params['services'] = [idx]
+                res[idx] = self._get_idx(cn, params, report)
             return res
 
         def _do_query(query, fact=_fact):
@@ -437,7 +452,7 @@ class HelpdeskReport(Report):
             )
 
         def _own_tasks_d(params):
-            return _get_detail(TaskReport, {'frame': 'opened'})
+            return _get_detail_utl(TaskReport, {'frame': 'opened'})
 
         def _own_tasks(params):
             return _do_query(ss('SELECT e.{} as id, count(t.{}) as cc FROM {} t, {} e '
@@ -448,7 +463,7 @@ class HelpdeskReport(Report):
             )
 
         def _dnt_d(params):
-            return _get_detail(TaskReport, {'frame': 'closed', 'from': params['from'], 'to': params['to']})
+            return _get_detail_utl(TaskReport, {'frame': 'closed', 'from': params['from'], 'to': params['to']})
 
         def _dnt(params):
             q = ss('SELECT e.{} as id, count(t.{}) FROM {} t, {} e '
@@ -461,7 +476,7 @@ class HelpdeskReport(Report):
             return _do_query(q)
 
         def _dnu_d(params):
-            return _get_detail(ExpensesReport, {'from': params['from'], 'to': params['to']})
+            return _get_detail_utl(ExpensesReport, {'from': params['from'], 'to': params['to']})
 
         def _dnu(params):
             q = ss('SELECT e."UserId" as id, sum("Minutes") FROM "Expenses" e '
@@ -486,7 +501,7 @@ class HelpdeskReport(Report):
                 'to': self._params['to'],
                 'evaluate': evaluate
             }
-            return _get_detail(TaskReport, detail)
+            return _get_detail_utl(TaskReport, detail)
 
         def _eval(evaluate: int):
             q = sql.SQL('select e."UserId", count(e."TaskId") '
@@ -651,6 +666,14 @@ class HelpdeskReport(Report):
                 sl(sp['from']), sl(sp['to']), sl(srv_ufl)
             ))
 
+        def _closed_exp(params):
+            return _do_query_grp(ss('select t."ServiceId", sum(e."Minutes") from "Tasks" t'
+                                    ' right join "Expenses" e on t."Id" = e."TaskId"'
+                                    ' where t."Closed" between {} and {} and t."ServiceId" in {}'
+                                    ' group by t."ServiceId" ').format(
+                sl(sp['from']), sl(sp['to']), sl(srv_ufl)
+            ))
+
         def _open(params):
             return _do_query_grp(ss('select t."ServiceId", count(t."Id") from "Tasks" t'
                                     ' where t."Closed" is NULL and t."ServiceId" in {}'
@@ -674,6 +697,14 @@ class HelpdeskReport(Report):
                 sl(srv_ufl)
             ))
 
+        def _closed_exp_d(params):
+            detail = {
+                'frame': 'closed',
+                'from': sp['from'],
+                'to': sp['to'],
+            }
+            return _get_detail_srv(ExpensesReport, detail)
+
         def _get_srv_map():
             return (
                 ('*', {
@@ -682,6 +713,8 @@ class HelpdeskReport(Report):
                     'parent': _sm_header(_parent),
                     'income': _sm_header(_income),
                     'closed': _sm_header(_closed),
+                    'closed_exp': _sm_header(_closed_exp),
+                    'closed_exp_d': _sm_header(_closed_exp_d),
                     'open': _sm_header(_open),
                     'no_exec': _sm_header(_no_exec),
                     'no_deadline': _sm_header(_no_deadline),
@@ -815,6 +848,15 @@ class TaskReport(Report):
 
 
 class ExpensesReport(Report):
+    """
+        Expenses Report Class
+            frame: closed
+                params:
+                    executors: list
+                    services: list
+                    close_period: dict
+    """
+
     def set_up(self):
         pass
 
@@ -838,25 +880,42 @@ class ExpensesReport(Report):
         sl = sql.Literal
         se = self.__class__._sql_exec
 
-        def _filter():
+        def _exp_filter():
             executors = sp.get('executors')
             ffrom = sp.get('from')
             tto = sp.get('to')
             services = sp.get('services')
+            frame = sp.get('frame')
 
             fl = []  # filter list
-            fl.append(ss('ex."UserId" in {}').format(sl(tuple(executors))))
-            fl.append(ss('ex."DateExp" BETWEEN {} AND {}').format(sl(ffrom), sl(tto)))
-            return ss(' AND ').join(fl)
+            if executors:
+                fl.append(ss('ex."UserId" in {}').format(sl(tuple(executors))))
+                fl.append(ss('ex."DateExp" BETWEEN {} AND {}').format(sl(ffrom), sl(tto)))
 
-        query = sql.SQL('select t."Id", t."Name", t."Description", t."Created", t."Closed", '
-                        'uc."Name" as creator, q.ss, s."Name" from "Tasks" t '
-                        'right join (select ex."TaskId" as id, sum(ex."Minutes") as ss '
-                        'from "Expenses" ex where {} group by ex."TaskId" '
-                        ') q on q.id = t."Id" '
-                        'left join "Users" uc ON t."CreatorId"=uc."Id" '
-                        'left join "Services" s ON t."ServiceId"=s."Id" '
-                        'order by t."Created" desc').format(_filter())
+            return ss(' AND ').join(fl) if len(fl) else sl(True)
+
+        def _tsk_filter():
+            executors = sp.get('executors')
+            ffrom = sp.get('from')
+            tto = sp.get('to')
+            services = sp.get('services')
+            frame = sp.get('frame')
+
+            fl = []  # filter list
+            if frame == 'closed':
+                fl.append(ss('t."Closed" BETWEEN {} AND {}').format(sl(ffrom), sl(tto)))
+            fl.append(ss('t."ServiceId" in {}').format(sl(tuple(services))))
+
+            return ss(' AND ').join(fl) if len(fl) else si(True)
+
+        query = sql.SQL('select t."Id", t."Name", t."Description", t."Created", t."Closed",'
+                        ' uc."Name" as creator, q.ss, s."Name" from "Tasks" t'
+                        ' right join (select ex."TaskId" as id, sum(ex."Minutes") as ss'
+                        ' from "Expenses" ex where {} group by ex."TaskId"'
+                        ' ) q on q.id = t."Id"'
+                        ' left join "Users" uc ON t."CreatorId"=uc."Id"'
+                        ' left join "Services" s ON t."ServiceId"=s."Id" where {}'
+                        ' order by t."Created" desc').format(_exp_filter(), _tsk_filter())
 
         fields = "task_id task_name task_descr created closed creator expenses service"
         R = namedtuple("R", fields)
