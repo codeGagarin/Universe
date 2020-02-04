@@ -35,7 +35,7 @@
                     {{ val }} <br>
                 {% endfor %}
             </td>
-            <td align="right">{% if rec.minutes %}{{(rec.minutes/60)|round(1) }} {% endif %}</td>
+            <td align="right">{% if rec.minutes %}{{(rec.minutes/60)|round(2) }} {% endif %}</td>
             <td nowrap>
             {% if rec.deadline %}
                 {{ ("%s"|format(rec.deadline))[: 11] }}

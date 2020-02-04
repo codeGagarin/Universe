@@ -36,7 +36,7 @@
             {% endif %}
             </td>
             <td nowrap>{{ rec.executor }}</td>
-            <td align="right">{{ (rec.minutes/60)|round(1) }}</td>
+            <td align="right">{{ (rec.minutes/60)|round(2) }}</td>
         </tr>
         {% endfor %}
     </tbody>

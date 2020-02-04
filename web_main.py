@@ -20,7 +20,7 @@ def _get_conn():
     acc_key = KeyChain.PG_KEY
     cn = psycopg2.connect(dbname=acc_key["db_name"], user=acc_key["user"],
                           password=acc_key["pwd"], host=acc_key["host"])
-    cn.autocommit = True
+    cn.autocommit = False
     return cn
 
 
@@ -28,10 +28,12 @@ def _get_conn():
 def report():
     conn = _get_conn()
     with conn:
-        rpt = Report.factory(conn, dict(request.args))
-        html = render_template(rpt.get_template(), rpt=rpt)
+        rpt = Report.factory(conn, dict(request.args)['idx'])
+        rpt.request_data(conn)
         conn.commit()
-    return html
+    conn.close()
+    return render_template(rpt.get_template(), rpt=rpt)
+
 
 
 @app.route('/default/')
@@ -43,7 +45,7 @@ def params():
             url = url_for('report', **params_dict)
             result += f'<a href="{url}">{name}</a><br>'
         conn.commit()
-        conn.close()
+    conn.close()
     return result
 
 

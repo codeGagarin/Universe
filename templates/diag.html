@@ -1,5 +1,6 @@
 {% extends "base.html" %}
-{% block title %}{{ rpt.get_caption() }}{% endblock %}
+{% set caption = ("Diagnostic report on %s")|format(rpt._P().from) %}
+{% block title %}{{ caption }}{% endblock %}
 {% block head %}
     {{ super() }}
     <style type="text/css">
@@ -7,7 +8,7 @@
     </style>
 {% endblock %}
 {% block content %}
-    <h1>Отчет диагностики {{  rpt._P().from }}</h1>
+    <h1>{{caption}}</h1>
 
 <nav aria-label="Page navigation">
   <ul class="pagination">

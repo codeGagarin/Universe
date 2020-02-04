@@ -79,13 +79,6 @@ class Report:
 
     def _D(self):
         """ Jinja call for get_data() method """
-        if self._data:
-            return self._data
-        start = datetime.now()
-        self._data = self._prepare_data()
-        self._db_conn.commit()
-        self._EXT = datetime.now() - start
-
         return self._data
 
     def _N(self):
@@ -95,13 +88,27 @@ class Report:
         """ Jinja call for _params attribute """
         return self._params
 
-    def __init__(self, db_conn, params=None):
+    def __init__(self, params=None):
         self._data = None
-        self._db_conn = db_conn
         self._params = params if params else {}
         self._navigate = {}
         self._EXT = 0  # get_data execution time, jinja profiling
         self.set_up()
+
+    def _prepare_data(self, db_conn):
+        """
+        only this method takes "DB connection" object,
+        it should be overwritten in Report subclasses
+        """
+        pass
+
+    def request_data(self, db_conn):
+        if self._data:
+            return self._data
+        start = datetime.now()
+        self._data = self._prepare_data(db_conn)
+        self._EXT = datetime.now() - start
+        pass
 
     @classmethod
     def get_type(cls):
@@ -121,9 +128,9 @@ class Report:
         return cls._report_map
 
     @classmethod
-    def factory(cls, conn, params):
-        """ Create report object from params dictionary"""
-        params = cls._idx_to_params(conn, params['idx'])
+    def factory(cls, conn, idx):
+        """ Produce report object from IDX with DB params resolved """
+        params = cls._idx_to_params(conn, idx)
         if not params:
             return None
 
@@ -131,7 +138,7 @@ class Report:
         if not report_class:
             return None
 
-        return report_class(conn, params)
+        return report_class(params)
 
     @classmethod
     def default_map(cls, conn):
@@ -250,10 +257,12 @@ class Report:
     @classmethod
     def _get_def_params(cls):
         """ Override it in subclasses for default report link generation """
+        # todo: default reports need to be taken out this scope
         return {}
 
     @classmethod
     def get_idx(cls, conn, params=None):
+        """ convert report param data to uniq IDX whit DB touch action """
         if not params:
             params = cls._get_def_params()
         params['type'] = cls.get_type()
@@ -274,7 +283,7 @@ class Report:
         try:
             rows = cursor.fetchall()
         except Exception:
-            # empty query result
+            # here empty query result case
             return result
 
         if result_factory:
@@ -285,12 +294,11 @@ class Report:
         cursor.close()
         return result
 
-    def _add_navigate_point(self, caption: str, params: dict):
-        self._navigate[caption] = self.get_idx(self._db_conn, params)
+    def _add_navigate_point(self, _db_conn, caption: str, params: dict):
+        self._navigate[caption] = self.get_idx(_db_conn, params)
 
     def get_navigate(self):
         return self._navigate
-
 
 class DiagReport(Report):
 
@@ -300,12 +308,12 @@ class DiagReport(Report):
         if not self._params.get('to'):
             self._params['to'] = self._params['from']
 
+    def _prepare_data(self, conn):
         prev_point = _get_period(self._params['from'], 'day', -1)
         next_point = _get_period(self._params['from'], 'day', 1)
-        self._add_navigate_point('<< Prev day', {'from': prev_point['from'], 'to': prev_point['to']})
-        self._add_navigate_point('Next day >>', {'from': next_point['from'], 'to': next_point['to']})
+        self._add_navigate_point(conn, '<< Prev day', {'from': prev_point['from'], 'to': prev_point['to']})
+        self._add_navigate_point(conn, 'Next day >>', {'from': next_point['from'], 'to': next_point['to']})
 
-    def _prepare_data(self):
         start = datetime.combine(self._params['from'], datetime.min.time())
         fin = datetime.combine(self._params['to'], datetime.max.time())
 
@@ -325,17 +333,11 @@ class DiagReport(Report):
             res.append([val for val in row])
 
         result = []
-        result = self._sql_exec(self._db_conn, query, result, factory)
+        result = self._sql_exec(conn, query, result, factory)
         return {'header': fields, 'body': result}
 
     def get_template(self):
         return 'diag.html'
-
-    def get_caption(self):
-        return "Diagnostic report on {}".format(
-            self._params['from']
-        )
-
 
 class HelpdeskReport(Report):
     def set_up(self):
@@ -361,16 +363,6 @@ class HelpdeskReport(Report):
         sp['to'] = p['to']
         sp['period'] = p
 
-        def _nav_params(nav_frame: str):
-            return {
-                'frame': nav_frame,
-                'executors': sp['executors'],
-                'services': sp['services'],
-            }
-        self._add_navigate_point('Last month', _nav_params('monthly'))
-        self._add_navigate_point('Last week', _nav_params('weekly'))
-        self._add_navigate_point('Daily', _nav_params('daily'))
-
     def get_template(self):
         return 'hdesk.html'
 
@@ -384,17 +376,29 @@ class HelpdeskReport(Report):
             'services': (139, 168),
         }
 
-    def _prepare_data(self):
+    def _prepare_data(self, cn):
         data = {}
 
         ss = sql.SQL
         si = sql.Identifier
         sl = sql.Literal
         se = self.__class__._sql_exec
-        cn = self._db_conn
         sp = self._params
 
-        def _unfold(srv_list):
+        # navigate section begin
+        def _nav_params(nav_frame: str):
+            return {
+                'frame': nav_frame,
+                'executors': sp['executors'],
+                'services': sp['services'],
+            }
+
+        self._add_navigate_point(cn, 'Last month', _nav_params('monthly'))
+        self._add_navigate_point(cn, 'Last week', _nav_params('weekly'))
+        self._add_navigate_point(cn, 'Daily', _nav_params('daily'))
+        # navigate section end
+
+        def _unfold(srv_list):  # unfold services list (wrap parent to child services)
             result = {}
             q = ss('select s."Id" as id, s."Name" as name, s."ParentId" as parent from  "Services" s '
                    'where (s."Id" in {0} or s."ParentId" in {0}) '
@@ -615,7 +619,6 @@ class HelpdeskReport(Report):
                 if frame in r[0].split() or '*' in r[0].split():
                     head.update(r[1])
 
-            cn.autocommit = False
             fields = [key for key in head.keys()]
             RU = namedtuple('RU', fields)  # record utilization type
             body = _get_body(index)
@@ -623,8 +626,6 @@ class HelpdeskReport(Report):
                 column = val['selector'](val['params'])
                 for eid in index:
                     body[eid].append(column.get(eid, 0))
-            cn.commit()
-            cn.autocommit = True
 
             # namedtuplizer
             named_body = []
@@ -767,7 +768,7 @@ class TaskReport(Report):
     def get_template(self):
         return "task.html"
 
-    def _prepare_data(self):
+    def _prepare_data(self, conn):
         if self._data:
             return self._data
 
@@ -797,7 +798,7 @@ class TaskReport(Report):
                 fl.append(ss('t.{} BETWEEN {} AND {}').format(si('Closed'), sl(ffrom), sl(tto)))
             if evaluate:
                 fl.append(ss('t.{} = {}').format(si('EvaluationId'), sl(evaluate)))
-            fl.append(ss('t."ServiceId" = {}').format(sl(services)))
+            fl.append(ss('t."ServiceId" in {}').format(sl(services)))
 
             return ss(' AND ').join(fl)
 
@@ -826,7 +827,7 @@ class TaskReport(Report):
             res[rec.task_id] = rec
 
         body = {}
-        se(self._db_conn, query, body, _fact, named_result=True)
+        se(conn, query, body, _fact, named_result=True)
 
         # Executor column update
         if len(body):
@@ -843,7 +844,7 @@ class TaskReport(Report):
                     body[rec[0]] = body[rec[0]]._replace(executors=val)
                 val.append(rec[1])
 
-            se(self._db_conn, query, None, _fact)
+            se(conn, query, None, _fact)
         return {'body': body}
 
     @classmethod
@@ -880,7 +881,7 @@ class ExpensesReport(Report):
     def get_template(self):
         return "exp.html"
 
-    def _prepare_data(self):
+    def _prepare_data(self, conn):
         sp = self._params
         ss = sql.SQL
         sc = sql.Composed
@@ -919,7 +920,7 @@ class ExpensesReport(Report):
             res[rec.task_id] = rec
 
         body = {}
-        se(self._db_conn, query, body, _fact, named_result=True)
+        se(conn, query, body, _fact, named_result=True)
         return {'body': body}
 
 
@@ -936,22 +937,16 @@ class TestReports(TestCase):
                                       password=acc_key["pwd"], host=acc_key["host"])
 
     def test_diag_report(self):
-        rep = DiagReport(self._conn)
-        rep.get_caption()
-        rep.get_navigate()
-        rep.get_data()
+        rep = DiagReport().request_data(self._conn)
 
     def test_util_report(self):
-        rep = HelpdeskReport(self._conn)
-        rep._D()
+        rep = HelpdeskReport().request_data(self._conn)
 
     def test_task_report(self):
-        rep = TaskReport(self._conn)
-        rep._D()
+        rep = TaskReport().request_data(self._conn)
 
     def test_expenses_report(self):
-        rep = ExpensesReport(self._conn)
-        rep._D()
+        rep = ExpensesReport().request_data(self._conn)
 
 
 if __name__ == '__main__':
