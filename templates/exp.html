@@ -18,6 +18,7 @@
             <th>Сервис</th>
             <th>Создана</th>
             <th>Закрыта</th>
+            <th>Исполнитель</th>
             <th>Трудозатраты</th>
         </tr>
     </thead>
@@ -34,7 +35,8 @@
                 {{ ("%s"|format(rec.closed))[: 11] }}
             {% endif %}
             </td>
-            <td align="right">{{ (rec.expenses/60)|round(1) }}</td>
+            <td nowrap>{{ rec.executor }}</td>
+            <td align="right">{{ (rec.minutes/60)|round(1) }}</td>
         </tr>
         {% endfor %}
     </tbody>

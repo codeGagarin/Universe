@@ -900,19 +900,12 @@ class ExpensesReport(Report):
 
         query = sql.SQL('select t."Id" as task_id, t."Name" as task_name, t."Description" as task_descr, '
                         ' t."Created" as created, t."Closed" as closed,'
-                        ' uc."Name" as creator, q.ss as Minutes, s."Name" as service from "Tasks" t'
-                        ' right join (select ex."TaskId" as id, sum(ex."Minutes") as ss'
-                        ' from "Expenses" ex where {} group by ex."TaskId"'
-                        ' ) q on q.id = t."Id"'
-                        ' left join "Users" uc ON t."CreatorId"=uc."Id"'
-                        ' left join "Services" s ON t."ServiceId"=s."Id" where {}'
-                        ' order by t."Created" desc').format(_filter(), _filter())
-
-        query = sql.SQL('select t."Id" as task_id, t."Name" as task_name, t."Description" as task_descr, '
-                        ' t."Created" as created, t."Closed" as closed,'
-                        ' uc."Name" as creator, ex."Minutes" as Minutes, s."Name" as service from "Expenses" ex'
+                        ' uc."Name" as creator, ex."Minutes" as Minutes, s."Name" as service, '
+                        ' ue."Name" as executor'
+                        ' from "Expenses" ex'
                         ' left join "Tasks" as t ON ex."TaskId" = t."Id"'
                         ' left join "Users" uc ON t."CreatorId"=uc."Id"'
+                        ' left join "Users" ue ON ex."UserId"=ue."Id"'
                         ' left join "Services" s ON t."ServiceId"=s."Id" where {}'
                         ' order by t."Created" desc').format(_filter())
 
