@@ -881,7 +881,7 @@ class ExpensesReport(Report):
         sl = sql.Literal
         se = self.__class__._sql_exec
 
-        def _exp_filter():
+        def _filter():
             executors = sp.get('executors')
             ffrom = sp.get('from')
             tto = sp.get('to')
@@ -892,40 +892,37 @@ class ExpensesReport(Report):
             if executors:
                 fl.append(ss('ex."UserId" in {}').format(sl(tuple(executors))))
                 fl.append(ss('ex."DateExp" BETWEEN {} AND {}').format(sl(ffrom), sl(tto)))
-
-            return ss(' AND ').join(fl) if len(fl) else sl(True)
-
-        def _tsk_filter():
-            executors = sp.get('executors')
-            ffrom = sp.get('from')
-            tto = sp.get('to')
-            services = sp.get('services')
-            frame = sp.get('frame')
-
-            fl = []  # filter list
             if frame == 'closed':
                 fl.append(ss('t."Closed" BETWEEN {} AND {}').format(sl(ffrom), sl(tto)))
             fl.append(ss('t."ServiceId" in {}').format(sl(tuple(services))))
 
-            return ss(' AND ').join(fl) if len(fl) else si(True)
+            return ss(' AND ').join(fl) if len(fl) else sl(True)
 
-        query = sql.SQL('select t."Id", t."Name", t."Description", t."Created", t."Closed",'
-                        ' uc."Name" as creator, q.ss, s."Name" from "Tasks" t'
+        query = sql.SQL('select t."Id" as task_id, t."Name" as task_name, t."Description" as task_descr, '
+                        ' t."Created" as created, t."Closed" as closed,'
+                        ' uc."Name" as creator, q.ss as Minutes, s."Name" as service from "Tasks" t'
                         ' right join (select ex."TaskId" as id, sum(ex."Minutes") as ss'
                         ' from "Expenses" ex where {} group by ex."TaskId"'
                         ' ) q on q.id = t."Id"'
                         ' left join "Users" uc ON t."CreatorId"=uc."Id"'
                         ' left join "Services" s ON t."ServiceId"=s."Id" where {}'
-                        ' order by t."Created" desc').format(_exp_filter(), _tsk_filter())
+                        ' order by t."Created" desc').format(_filter(), _filter())
 
-        fields = "task_id task_name task_descr created closed creator expenses service"
-        R = namedtuple("R", fields)
+        query = sql.SQL('select t."Id" as task_id, t."Name" as task_name, t."Description" as task_descr, '
+                        ' t."Created" as created, t."Closed" as closed,'
+                        ' uc."Name" as creator, ex."Minutes" as Minutes, s."Name" as service from "Expenses" ex'
+                        ' left join "Tasks" as t ON ex."TaskId" = t."Id"'
+                        ' left join "Users" uc ON t."CreatorId"=uc."Id"'
+                        ' left join "Services" s ON t."ServiceId"=s."Id" where {}'
+                        ' order by t."Created" desc').format(_filter())
+
+
 
         def _fact(rec, res):
-            res[rec[0]] = R(*rec)
+            res[rec.task_id] = rec
 
         body = {}
-        se(self._db_conn, query, body, _fact)
+        se(self._db_conn, query, body, _fact, named_result=True)
         return {'body': body}
 
 

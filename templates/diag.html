@@ -43,8 +43,8 @@
         <td align="center">{{ ("%s"|format(row[3]))[11: 19] }}</td>
         <td align="center">{{ ("%s"|format(row[4]))[11: 19] }}</td>
         <td align="right">{{ row[5] }}</td>
-        <td>{{ (row[6] if row[6] else "")|escape()|truncate(40, True) }}</td>
-        <td>{{ (row[7] if row[7] else "")|escape()|truncate(50, True) }}</td></tr>
+        <td title="{{row[6]}}">{{ (row[6] if row[6] else "")|escape()|truncate(40, True) }}</td>
+        <td title="{{row[7]}}">{{ (row[7] if row[7] else "")|escape()|truncate(50, True) }}</td></tr>
         {% endfor %}
     </tbody>
 </table>
