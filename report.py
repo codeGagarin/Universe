@@ -371,10 +371,6 @@ class HelpdeskReport(Report):
         self._add_navigate_point('Last week', _nav_params('weekly'))
         self._add_navigate_point('Daily', _nav_params('daily'))
 
-        # next_point = _get_period(self._params['from'], 'day', 1)
-        # self._add_navigate_point('<< Prev day', {'from': prev_point['from'], 'to': prev_point['to']})
-        # self._add_navigate_point('Next day >>', {'from': next_point['from'], 'to': next_point['to']})
-
     def get_template(self):
         return 'hdesk.html'
 
@@ -706,6 +702,14 @@ class HelpdeskReport(Report):
             }
             return _get_detail_srv(ExpensesReport, detail)
 
+        def _closed_d(params):
+            detail = {
+                'frame': 'closed',
+                'from': sp['from'],
+                'to': sp['to'],
+            }
+            return _get_detail_srv(TaskReport, detail)
+
         def _get_srv_map():
             return (
                 ('*', {
@@ -714,6 +718,7 @@ class HelpdeskReport(Report):
                     'parent': _sm_header(_parent),
                     'income': _sm_header(_income),
                     'closed': _sm_header(_closed),
+                    'closed_d': _sm_header(_closed_d),
                     'closed_exp': _sm_header(_closed_exp),
                     'closed_exp_d': _sm_header(_closed_exp_d),
                     'open': _sm_header(_open),
@@ -778,7 +783,7 @@ class TaskReport(Report):
             executors = sp.get('executors')
             ffrom = sp.get('from')
             tto = sp.get('to')
-            services = sp.get('services')
+            services = tuple(sp.get('services'))
             close_period = sp.get('close_period')
             income_period = sp.get('income_period')
             evaluate = sp.get('evaluate')
@@ -792,34 +797,36 @@ class TaskReport(Report):
                 fl.append(ss('t.{} BETWEEN {} AND {}').format(si('Closed'), sl(ffrom), sl(tto)))
             if evaluate:
                 fl.append(ss('t.{} = {}').format(si('EvaluationId'), sl(evaluate)))
+            fl.append(ss('t."ServiceId" = {}').format(sl(services)))
+
             return ss(' AND ').join(fl)
 
-        query = sql.SQL('select e."TaskId" as task_id, '
-                        't."Name" as task_name, '
-                        't."Description" as task_descr, '
-                        't."Created" as created, '
-                        't."Closed" as closed, '
-                        'uc."Name" as creator, '
-                        't."Deadline" as deadline, '
-                        's."Name" as service,'
-                        't."StatusId" as status, '
-                        't."EvaluationId" as eval, '
-                        '\'\' as executors '  # fill it later
-                        'from "Executors" e '
-                        'left join "Tasks" t on e."TaskId" = t."Id" '
-                        'left join "Users" ue on e."UserId" = ue."Id" '
-                        'left join "Users" uc on t."CreatorId" = uc."Id" '
-                        'left join "Services" s on t."ServiceId" = s."Id" '
-                        'where {} order by t."Created" desc').format(_filter())
-        fields = "task_id task_name task_descr created closed creator " \
-                 "deadline service status eval executors"
-        R = namedtuple("R", fields)
+        query = sql.SQL('select t."Id" as task_id, '
+                        ' t."Name" as task_name, '
+                        ' t."Description" as task_descr, '
+                        ' t."Created" as created, '
+                        ' t."Closed" as closed, '
+                        ' uc."Name" as creator, '
+                        ' t."Deadline" as deadline, '
+                        ' s."Name" as service,'
+                        ' t."StatusId" as status, '
+                        ' t."EvaluationId" as eval, '
+                        ' exp.minutes as minutes,'
+                        ' \'\' as executors '  # fill it bellow
+                        ' from "Tasks" t '
+                        ' left join "Executors" e on t."Id" = e."TaskId" '
+                        ' left join "Users" ue on e."UserId" = ue."Id" '
+                        ' left join "Users" uc on t."CreatorId" = uc."Id" '
+                        ' left join "Services" s on t."ServiceId" = s."Id" '
+                        ' left join (select "TaskId" as task_id, sum("Minutes") as minutes '
+                        '    from "Expenses" group by "TaskId") exp ON e."TaskId"=exp.task_id'
+                        ' where {} order by created desc').format(_filter())
 
         def _fact(rec, res):
-            res[rec[0]] = R(*rec)
+            res[rec.task_id] = rec
 
         body = {}
-        se(self._db_conn, query, body, _fact)
+        se(self._db_conn, query, body, _fact, named_result=True)
 
         # Executor column update
         if len(body):
@@ -895,7 +902,6 @@ class ExpensesReport(Report):
             if frame == 'closed':
                 fl.append(ss('t."Closed" BETWEEN {} AND {}').format(sl(ffrom), sl(tto)))
             fl.append(ss('t."ServiceId" in {}').format(sl(tuple(services))))
-
             return ss(' AND ').join(fl) if len(fl) else sl(True)
 
         query = sql.SQL('select t."Id" as task_id, t."Name" as task_name, t."Description" as task_descr, '
@@ -908,8 +914,6 @@ class ExpensesReport(Report):
                         ' left join "Users" ue ON ex."UserId"=ue."Id"'
                         ' left join "Services" s ON t."ServiceId"=s."Id" where {}'
                         ' order by t."Created" desc').format(_filter())
-
-
 
         def _fact(rec, res):
             res[rec.task_id] = rec

@@ -42,8 +42,8 @@ def params():
         for name, params_dict in Report.default_map(conn).items():
             url = url_for('report', **params_dict)
             result += f'<a href="{url}">{name}</a><br>'
-            conn.commit()
-    conn.close()
+        conn.commit()
+        conn.close()
     return result
 
 

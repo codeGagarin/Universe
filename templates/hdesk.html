@@ -54,7 +54,7 @@
                 <td> {% if r.parent %} -- {% endif %} {{ r.name }}</td>
                 <td align="right"> {{ r.income }}</td>
                 <td align="right">
-                    {{ r.closed }}
+                    <a href="{{ url_for('report', **r.closed_d) }}">{{ r.closed }}</a>
                     (<a href="{{ url_for('report', **r.closed_exp_d) }}">{{ (r.closed_exp/60)|round(1, 'common') }}</a>)
                 </td>
                 <td align="right"> {{ r.open }}</td>
@@ -108,7 +108,6 @@
                     <th class="{{eval_class}}">3</th>
                     <th class="{{eval_class}}">2</th>
                     <th class="{{eval_class}}">1</th>
-
                 </tr>
             </thead>
             <tbody>

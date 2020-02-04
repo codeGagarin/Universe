@@ -9,7 +9,7 @@
 {% block content %}
     <h1>Отчет по задачам</h1>
 
-<table class="table">
+<table class="table table-condensed">
     <thead>
         <tr>
             <th>Задача</th>
@@ -18,7 +18,8 @@
             <th>Инициатор</th>
             <th>Сервис</th>
             <th>Исполнители</th>
-            <th>Срок план</th>
+            <th class="text-success" title="Все трудозатраты по задаче, человекочасы">ЧЧ</th>
+            <th nowrap>Срок план</th>
         </tr>
     </thead>
     <tbody>
@@ -34,6 +35,7 @@
                     {{ val }} <br>
                 {% endfor %}
             </td>
+            <td align="right">{% if rec.minutes %}{{(rec.minutes/60)|round(1) }} {% endif %}</td>
             <td nowrap>
             {% if rec.deadline %}
                 {{ ("%s"|format(rec.deadline))[: 11] }}
