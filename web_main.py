@@ -13,7 +13,7 @@ app = Flask(__name__)
 
 @app.route('/')
 def index():
-    return '<p title="You are here, Dude!">.</p>'
+    return render_template('index.html')
 
 
 def _get_conn():
@@ -27,12 +27,16 @@ def _get_conn():
 @app.route('/report/')
 def report():
     conn = _get_conn()
+    index_page = None
     with conn:
         rpt = Report.factory(conn, dict(request.args)['idx'])
-        rpt.request_data(conn)
+        if not rpt:
+              index_page = render_template('index.html')
+        else:
+            rpt.request_data(conn)
         conn.commit()
     conn.close()
-    return render_template(rpt.get_template(), rpt=rpt)
+    return index_page if index_page else render_template(rpt.get_template(), rpt=rpt)
 
 
 
