@@ -290,7 +290,7 @@ class Report:
             for row in rows:
                 result_factory(row, result)
         else:
-            result = rows
+            result.extend(rows)
         cursor.close()
         return result
 
@@ -812,7 +812,7 @@ class TaskReport(Report):
                         ' s."Name" as service,'
                         ' t."StatusId" as status, '
                         ' t."EvaluationId" as eval, '
-                        ' exp.minutes as minutes,'
+                        ' CASE WHEN exp.minutes IS NULL THEN 0 ELSE exp.minutes END as minutes,'
                         ' \'\' as executors '  # fill it bellow
                         ' from "Tasks" t '
                         ' left join "Executors" e on t."Id" = e."TaskId" '
@@ -919,8 +919,8 @@ class ExpensesReport(Report):
         def _fact(rec, res):
             res[rec.task_id] = rec
 
-        body = {}
-        se(conn, query, body, _fact, named_result=True)
+        body = []
+        se(conn, query, body, None, named_result=True)
         return {'body': body}
 
 

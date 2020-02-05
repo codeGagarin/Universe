@@ -169,8 +169,8 @@
                         (<a href="{{ url_for('report', **r.m2u_d) }}">{{ (r.m2u/60)|round(1) }}</a>)
                     </td>
                     <td class="info">
-                        <a href="{{ url_for('report', **r.m3t_d) }}">{{ r.m2t }}</a>
-                        (<a href="{{ url_for('report', **r.m3u_d) }}">{{ (r.m2u/60)|round(1) }}</a>)
+                        <a href="{{ url_for('report', **r.m3t_d) }}">{{ r.m3t }}</a>
+                        (<a href="{{ url_for('report', **r.m3u_d) }}">{{ (r.m3u/60)|round(1) }}</a>)
                     </td>
                     {% endif %}
                     <td class="{{ eval_class }}">

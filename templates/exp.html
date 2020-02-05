@@ -1,5 +1,6 @@
 {% extends "base.html" %}
-{% block title %}Отчет по задачам{% endblock %}
+{% set title = "Отчет по трудозатратам" %}
+{% block title %}{{ title }}{% endblock %}
 {% block head %}
     {{ super() }}
     <style type="text/css">
@@ -7,11 +8,12 @@
     </style>
 {% endblock %}
 {% block content %}
-    <h1>Отчет по трудозатратам</h1>
+    <h1>{{ title }}</h1>
 
 <table class="table">
     <thead>
         <tr>
+            <th>#</th>
             <th>Задача</th>
             <th>Содержание</th>
             <th>Инициатор</th>
@@ -19,12 +21,14 @@
             <th>Создана</th>
             <th>Закрыта</th>
             <th>Исполнитель</th>
-            <th>Трудозатраты</th>
+            <th align="right" class="text-success" title="Трудозатраты">ЧЧ</th>
         </tr>
     </thead>
     <tbody>
-        {% for rec in rpt._D().body.values() %}
+        {%  set body = rpt._D().body %}
+        {% for rec in body %}
         <tr>
+            <td align="right">{{ loop.index }}.</td>
             <td nowrap> <a href="https://prosto12.intraservice.ru/Task/View/{{ rec.task_id }}">{{ rec.task_id }}</a></td>
             <td>{{ rec.task_name|truncate(70) }}  <small class="text-muted">{% if rec.task_descr %}{{(rec.task_descr)|truncate(200)}}{% endif %}</small></td>
             <td nowrap>{{ rec.creator }}</td>
@@ -40,5 +44,9 @@
         </tr>
         {% endfor %}
     </tbody>
+    <tfoot>
+        <th colspan="8"></th>
+        <th align="right">{{ (body|sum(attribute='minutes')/60)|round(1) }}</th>
+    </tfoot>
 </table>
 {% endblock %}
