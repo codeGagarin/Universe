@@ -907,14 +907,17 @@ class ExpensesReport(Report):
 
         query = sql.SQL('select t."Id" as task_id, t."Name" as task_name, t."Description" as task_descr, '
                         ' t."Created" as created, t."Closed" as closed,'
-                        ' uc."Name" as creator, ex."Minutes" as Minutes, s."Name" as service, '
+                        ' uc."Name" as creator, sum(ex."Minutes") as Minutes, '
+                        ' s."Name" as service, '
                         ' ue."Name" as executor'
                         ' from "Expenses" ex'
                         ' left join "Tasks" as t ON ex."TaskId" = t."Id"'
                         ' left join "Users" uc ON t."CreatorId"=uc."Id"'
                         ' left join "Users" ue ON ex."UserId"=ue."Id"'
                         ' left join "Services" s ON t."ServiceId"=s."Id" where {}'
+                        ' group by t."Id", creator, service, ue."Name" '
                         ' order by t."Created" desc').format(_filter())
+
 
         def _fact(rec, res):
             res[rec.task_id] = rec
