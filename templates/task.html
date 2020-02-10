@@ -1,3 +1,4 @@
+{% import 'macro.html' as lib %}
 {% extends "base.html" %}
 {% set title = "Отчет по задачам" %}
 {% block title %}{{ title }}{% endblock %}
@@ -20,8 +21,8 @@
             <th>Инициатор</th>
             <th>Сервис</th>
             <th>Исполнители</th>
-            <th align="right" class="text-success" title="Трудозатраты">ЧЧ</th>
-            <th nowrap>Срок план</th>
+            <th nowrap>{{ lib.hdr_title('ЧЧ', 'Трудозатраты')}}</th>
+            <th nowrap>{{ lib.hdr_title('План', 'Срок выполнения, план')}}</th>
         </tr>
     </thead>
     <tbody>
@@ -29,7 +30,7 @@
         {% for rec in body%}
         <tr>
             <td align="right">{{loop.index}}.</td>
-            <td nowrap> <a href="https://prosto12.intraservice.ru/Task/View/{{ rec.task_id }}">{{ rec.task_id }}</a></td>
+            <td nowrap>{{ lib.ticket_link(rec.task_id) }}</td>
             <td>{{ rec.task_name|truncate(70) }}  <small class="text-muted">{% if rec.task_descr %}{{(rec.task_descr)|truncate(200)}}{% endif %}</small></td>
             <td nowrap>{{ ("%s"|format(rec.created))[: 11] }}</td>
             <td nowrap>{{ rec.creator }}</td>
@@ -54,4 +55,5 @@
         </tfoot>
     </tbody>
 </table>
+{{ lib.profile_stat(rpt, stat) }}
 {% endblock %}

@@ -1,0 +1,31 @@
+{% macro hdr_title(hdr, title) %}
+<span class="text-success" title="{{ title }}">{{hdr}}</span>
+{% endmacro %}
+
+{% macro ticket_link(ticket_id) %}
+<a href="https://prosto12.intraservice.ru/Task/View/{{ticket_id}}">{{ticket_id}}</a>
+{% endmacro %}
+
+{%- macro detail_link(value, detail) -%}
+{% if value %}<a href="{{url_for('report', **detail)}}">{{value}}</a>{% else %}{{value}}{% endif %}
+{%- endmacro -%}
+
+{%- macro profile_stat(rpt, stat) -%}
+{% if rpt._P().query_list %}
+<details> <summary><small class="text-muted"> _EXT: {{rpt._EXT.seconds}}.{{rpt._EXT.microseconds}} sec</small></summary>
+<details><summary><small class="text-muted"> Query list </small></summary>
+    <table class="table table-condensed">
+    {% for val in rpt._P().query_list%}
+        <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ val[0] }}</td>
+            <td>{{ val[1] }}</td>
+            <td>{{ val[2] }}</td>
+        </tr>
+    {% endfor%}
+    </table>
+</details>
+<pre>{{rpt._P().pstats|escape}}</pre>
+</details>
+{% endif %}
+{%- endmacro -%}

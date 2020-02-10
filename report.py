@@ -3,6 +3,8 @@ from unittest import TestCase
 import json
 import hashlib
 from collections import namedtuple
+import cProfile, pstats, io
+import inspect
 
 import psycopg2
 from psycopg2 import sql
@@ -102,13 +104,33 @@ class Report:
         """
         pass
 
-    def request_data(self, db_conn):
-        if self._data:
-            return self._data
-        start = datetime.now()
-        self._data = self._prepare_data(db_conn)
-        self._EXT = datetime.now() - start
-        pass
+    @classmethod
+    def get_connection(cls, acc_key):
+        cn = psycopg2.connect(dbname=acc_key["db_name"], user=acc_key["user"],
+                              password=acc_key["pwd"], host=acc_key["host"])
+        cn.autocommit = False
+        return {'cn': cn, 'ql': [], 'pp': [], 'need_stat': None}
+
+    def request_data(self, conn):
+        if conn['need_stat']:
+            pr = cProfile.Profile()
+            pr.enable()
+            start = datetime.now()
+
+        self._data = self._prepare_data(conn)
+
+        # todo: add postpone query call here
+        conn['cn'].commit()
+        conn['cn'].close()
+
+        if conn['need_stat']:
+            self._params["query_list"] = conn['ql']
+            self._EXT = datetime.now() - start
+            pr.disable()
+            s = io.StringIO()
+            ps = pstats.Stats(pr, stream=s).sort_stats('cumulative')
+            ps.print_stats()
+            self._params['pstats'] = s.getvalue()  # using into report profile_stat macro
 
     @classmethod
     def get_type(cls):
@@ -128,16 +150,16 @@ class Report:
         return cls._report_map
 
     @classmethod
-    def factory(cls, conn, idx):
+    def factory(cls, conn, url_params):
         """ Produce report object from IDX with DB params resolved """
+        idx = url_params['idx']
         params = cls._idx_to_params(conn, idx)
         if not params:
             return None
-
+        conn['need_stat'] = url_params.get('stat', None)
         report_class = cls._get_map().get(params.get('type'))
         if not report_class:
             return None
-
         return report_class(params)
 
     @classmethod
@@ -195,17 +217,25 @@ class Report:
 
     @classmethod
     def _params_to_idx(cls, conn, params):
-
         json_params = cls._dict_to_json(params)
         value_hash = _hash(json_params)
 
-        # try find params in storage
-        query = sql.SQL('SELECT {}, {} FROM {} WHERE {} = {}').format(
-            sql.Identifier('last_touch'), sql.Identifier('touch_count'),
-            sql.Identifier('Params'),
-            sql.Identifier('id'), sql.Literal(value_hash)
+        # try update params if exist in database
+        query = sql.SQL('UPDATE "Params" SET "last_touch" = {}, "touch_count" = "touch_count"+1'
+                        ' WHERE "id"={} RETURNING "id"').format(
+            sql.Literal(datetime.now()),
+            sql.Literal(value_hash)
+        )
+        query_v95 = sql.SQL('INSERT INTO "Params" ("id", "params", "last_touch", "touch_count") '
+                            ' VALUES({0}, {1}, {2}, {3})'
+                            ' ON CONFLICT ("id") DO UPDATE SET "last_touch"={2}, "touch_count"="touch_count+1"').format(
+            sql.Literal(value_hash),
+            sql.Literal(json_params),
+            sql.Literal(datetime.now()),
+            sql.Literal(0)
         )
         result = cls._sql_exec(conn, query)
+
         if not len(result):
             query = sql.SQL('INSERT INTO {} ({}, {}, {}, {}) VALUES ({}, {}, {}, {})').format(
                 sql.Identifier('Params'),
@@ -218,40 +248,19 @@ class Report:
                 sql.Literal(datetime.now()),
                 sql.Literal(0)
             )
-            cls._sql_exec(conn, query)
-        else:
-            query = sql.SQL('UPDATE {} SET {} = {} WHERE {}={}').format(
-                sql.Identifier('Params'),
-                sql.Identifier('last_touch'),
-                sql.Literal(datetime.now()),
-                sql.Identifier('id'),
-                sql.Literal(value_hash)
-            )
-            cls._sql_exec(conn, query)
+            cls._sql_exec(conn, query, postpone=True)
         return {'idx': value_hash}
 
     @classmethod
     def _idx_to_params(cls, conn, idx):
-        query = sql.SQL('SELECT {} FROM {} WHERE {}={}').format(
-            sql.Identifier('params'),
-            sql.Identifier('Params'),
-            sql.Identifier('id'),
+        query = sql.SQL('UPDATE "Params" SET "last_touch" = {}, "touch_count" = "touch_count"+1'
+                        ' WHERE "id"={} RETURNING "params"').format(
+            sql.Literal(datetime.now()),
             sql.Literal(idx)
         )
         result = cls._sql_exec(conn, query)
         if not len(result):
             return None
-
-        # increment touch count
-        query = sql.SQL('UPDATE {} SET {}={}+1 WHERE {}={}').format(
-            sql.Identifier('Params'),
-            sql.Identifier('touch_count'),
-            sql.Identifier('touch_count'),
-            sql.Identifier('id'),
-            sql.Literal(idx)
-        )
-        cls._sql_exec(conn, query)
-
         return cls._json_to_dict(result[0][0])
 
     @classmethod
@@ -269,14 +278,26 @@ class Report:
         return cls._params_to_idx(conn, params)
 
     @classmethod
-    def _sql_exec(cls, conn, query, result=None, result_factory=None, named_result=False):
+    def _sql_exec(cls, conn, query, result=None, result_factory=None, named_result=False, postpone=False):
+        ql = conn['ql']
+        cn = conn['cn']
+        ns = conn['need_stat']
+
+
+        # if postpone:
+        #     conn['pp'].append(query)
+        #     return None
+
         # todo: result need named tuple implementation
         if named_result:
-            cursor = conn.cursor(cursor_factory=psycopg2.extras.NamedTupleCursor)
+            cursor = cn.cursor(cursor_factory=psycopg2.extras.NamedTupleCursor)
         else:
-            cursor = conn.cursor()
+            cursor = cn.cursor()
 
-        sql_str = query.as_string(conn)
+        sql_str = query.as_string(cn)
+        if ns:
+            ql.append((inspect.stack()[2][3], inspect.stack()[1][3], sql_str))
+
         cursor.execute(sql_str)
         if result is None:
             result = []
@@ -299,6 +320,7 @@ class Report:
 
     def get_navigate(self):
         return self._navigate
+
 
 class DiagReport(Report):
 
@@ -338,6 +360,7 @@ class DiagReport(Report):
 
     def get_template(self):
         return 'diag.html'
+
 
 class HelpdeskReport(Report):
     def set_up(self):
@@ -396,6 +419,7 @@ class HelpdeskReport(Report):
         self._add_navigate_point(cn, 'Last month', _nav_params('monthly'))
         self._add_navigate_point(cn, 'Last week', _nav_params('weekly'))
         self._add_navigate_point(cn, 'Daily', _nav_params('daily'))
+
         # navigate section end
 
         def _unfold(srv_list):  # unfold services list (wrap parent to child services)
@@ -657,12 +681,28 @@ class HelpdeskReport(Report):
                 sl(sp['from']), sl(sp['to']), sl(srv_ufl)
             ))
 
+        def _income_d(params):
+            detail = {
+                'frame': 'created',
+                'from': sp['from'],
+                'to': sp['to'],
+            }
+            return _get_detail_srv(TaskReport, detail)
+
         def _closed(params):
             return _do_query_grp(ss('select t."ServiceId", count(t."Id") from "Tasks" t'
                                     ' where t."Closed" between {} and {} and t."ServiceId" in {}'
                                     ' group by t."ServiceId" ').format(
                 sl(sp['from']), sl(sp['to']), sl(srv_ufl)
             ))
+
+        def _closed_d(params):
+            detail = {
+                'frame': 'closed',
+                'from': sp['from'],
+                'to': sp['to'],
+            }
+            return _get_detail_srv(TaskReport, detail)
 
         def _closed_exp(params):
             return _do_query_grp(ss('select t."ServiceId", sum(e."Minutes") from "Tasks" t'
@@ -672,12 +712,26 @@ class HelpdeskReport(Report):
                 sl(sp['from']), sl(sp['to']), sl(srv_ufl)
             ))
 
+        def _closed_exp_d(params):
+            detail = {
+                'frame': 'closed',
+                'from': sp['from'],
+                'to': sp['to'],
+            }
+            return _get_detail_srv(ExpensesReport, detail)
+
         def _open(params):
             return _do_query_grp(ss('select t."ServiceId", count(t."Id") from "Tasks" t'
                                     ' where t."Closed" is NULL and t."ServiceId" in {}'
                                     ' group by t."ServiceId" ').format(
                 sl(srv_ufl)
             ))
+
+        def _open_d(frame_name):
+            detail = {
+                'frame': frame_name,
+            }
+            return _get_detail_srv(TaskReport, detail)
 
         def _no_exec(params):
             return _do_query_grp(ss('select t."ServiceId", count(t."Id") from "Tasks" t'
@@ -695,22 +749,6 @@ class HelpdeskReport(Report):
                 sl(srv_ufl)
             ))
 
-        def _closed_exp_d(params):
-            detail = {
-                'frame': 'closed',
-                'from': sp['from'],
-                'to': sp['to'],
-            }
-            return _get_detail_srv(ExpensesReport, detail)
-
-        def _closed_d(params):
-            detail = {
-                'frame': 'closed',
-                'from': sp['from'],
-                'to': sp['to'],
-            }
-            return _get_detail_srv(TaskReport, detail)
-
         def _get_srv_map():
             return (
                 ('*', {
@@ -718,13 +756,17 @@ class HelpdeskReport(Report):
                     'name': _sm_header(_names, {'table': 'Services', 'index': srv_ufl}),
                     'parent': _sm_header(_parent),
                     'income': _sm_header(_income),
+                    'income_d': _sm_header(_income_d),
                     'closed': _sm_header(_closed),
                     'closed_d': _sm_header(_closed_d),
                     'closed_exp': _sm_header(_closed_exp),
                     'closed_exp_d': _sm_header(_closed_exp_d),
                     'open': _sm_header(_open),
+                    'open_d': _sm_header(_open_d, 'open'),
                     'no_exec': _sm_header(_no_exec),
+                    'no_exec_d': _sm_header(_open_d, 'no_exec'),
                     'no_deadline': _sm_header(_no_deadline),
+                    'no_deadline_d': _sm_header(_open_d, 'no_deadline'),
                 }),
             )
 
@@ -735,32 +777,6 @@ class HelpdeskReport(Report):
 
 
 class TaskReport(Report):
-    """
-    Task Report Class
-        frame: opened
-            params:
-                executors: list
-                services: list
-        frame: closed
-            params:
-                executors: list
-                services: list
-                close_period: dict
-        frame: income
-            params:
-                services: list
-                income_period: dict
-        frame: no_executor
-            params:
-                services: list
-        frame: no_deadline
-            params:
-                services: list
-        frame: evaluate
-            params:
-                executor: list
-                evaluate: int
-    """
 
     def set_up(self):
         pass
@@ -791,14 +807,23 @@ class TaskReport(Report):
 
             fl = []  # filter list
             if executors:
-                fl.append(ss('ue.{} in {}').format(si('Id'), sl(tuple(executors))))
-            if frame == 'opened':
+                fl.append(ss('t."Id" IN (SELECT "TaskId" from'
+                             ' "Executors" where "UserId" in {})').format(sl(tuple(executors))))
+            if frame == 'open':  # not closed for now, period should be ignored
                 fl.append(ss('t.{} is NULL').format(si('Closed')))
-            if frame == 'closed':
+            elif frame == 'no_exec':  # not closed for now, no executors assigned yet, period should be ignored
+                fl.append(ss('t.{} is NULL').format(si('Closed')))
+                fl.append(ss('t."Id" not in (select "TaskId" from "Executors")'))
+            elif frame == 'no_deadline':  # not closed for now, no executors assigned yet, period should be ignored
+                fl.append(ss('t.{} is NULL').format(si('Closed')))
+                fl.append(ss('t."Deadline" is NULL'))
+            elif frame == 'created':  # for the period
+                fl.append(ss('t."Created" BETWEEN {} AND {}').format(sl(ffrom), sl(tto)))
+            elif frame == 'closed':
                 fl.append(ss('t.{} BETWEEN {} AND {}').format(si('Closed'), sl(ffrom), sl(tto)))
             if evaluate:
                 fl.append(ss('t.{} = {}').format(si('EvaluationId'), sl(evaluate)))
-            fl.append(ss('t."ServiceId" in {}').format(sl(services)))
+            fl.append(ss('(t."ServiceId" in {0} OR ps."ParentId" in {0})').format(sl(services)))
 
             return ss(' AND ').join(fl)
 
@@ -814,13 +839,12 @@ class TaskReport(Report):
                         ' t."EvaluationId" as eval, '
                         ' CASE WHEN exp.minutes IS NULL THEN 0 ELSE exp.minutes END as minutes,'
                         ' \'\' as executors '  # fill it bellow
-                        ' from "Tasks" t '
-                        ' left join "Executors" e on t."Id" = e."TaskId" '
-                        ' left join "Users" ue on e."UserId" = ue."Id" '
+                        ' from "Tasks" t '                        
+                        ' left join "Services" ps on t."ServiceId" = ps."Id" '
                         ' left join "Users" uc on t."CreatorId" = uc."Id" '
                         ' left join "Services" s on t."ServiceId" = s."Id" '
                         ' left join (select "TaskId" as task_id, sum("Minutes") as minutes '
-                        '    from "Expenses" group by "TaskId") exp ON e."TaskId"=exp.task_id'
+                        '    from "Expenses" group by "TaskId") exp ON t."Id"=exp.task_id'
                         ' where {} order by created desc').format(_filter())
 
         def _fact(rec, res):
@@ -902,22 +926,22 @@ class ExpensesReport(Report):
                 fl.append(ss('ex."DateExp" BETWEEN {} AND {}').format(sl(ffrom), sl(tto)))
             if frame == 'closed':
                 fl.append(ss('t."Closed" BETWEEN {} AND {}').format(sl(ffrom), sl(tto)))
-            fl.append(ss('t."ServiceId" in {}').format(sl(tuple(services))))
+            fl.append(ss('(t."ServiceId" in {0} OR ps."ParentId" in {0})').format(sl(tuple(services))))
             return ss(' AND ').join(fl) if len(fl) else sl(True)
 
-        query = sql.SQL('select t."Id" as task_id, t."Name" as task_name, t."Description" as task_descr, '
-                        ' t."Created" as created, t."Closed" as closed,'
-                        ' uc."Name" as creator, sum(ex."Minutes") as Minutes, '
-                        ' s."Name" as service, '
-                        ' ue."Name" as executor'
-                        ' from "Expenses" ex'
-                        ' left join "Tasks" as t ON ex."TaskId" = t."Id"'
-                        ' left join "Users" uc ON t."CreatorId"=uc."Id"'
-                        ' left join "Users" ue ON ex."UserId"=ue."Id"'
-                        ' left join "Services" s ON t."ServiceId"=s."Id" where {}'
-                        ' group by t."Id", creator, service, ue."Name" '
-                        ' order by t."Created" desc').format(_filter())
-
+        query = sql.SQL('SELECT t."Id" AS task_id, t."Name" AS task_name, t."Description" AS task_descr, '
+                        ' t."Created" AS created, t."Closed" AS closed,'
+                        ' uc."Name" AS creator, SUM(ex."Minutes") AS Minutes, '
+                        ' s."Name" AS service, '
+                        ' ue."Name" AS executor'
+                        ' FROM "Expenses" ex'
+                        ' LEFT JOIN "Tasks" as t ON ex."TaskId" = t."Id"'
+                        ' LEFT JOIN "Services" ps ON t."ServiceId" = ps."Id" '
+                        ' LEFT JOIN "Users" uc ON t."CreatorId"=uc."Id"'
+                        ' LEFT JOIN "Users" ue ON ex."UserId"=ue."Id"'
+                        ' LEFT JOIN "Services" s ON t."ServiceId"=s."Id" where {}'
+                        ' GROUP BY t."Id", creator, service, ue."Name" '
+                        ' ORDER BY t."Created" desc').format(_filter())
 
         def _fact(rec, res):
             res[rec.task_id] = rec
