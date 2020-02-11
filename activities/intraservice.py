@@ -1,5 +1,8 @@
-from datetime import datetime
-from activities.activity import Activity, Email
+from datetime import datetime, timedelta
+from psycopg2 import sql
+
+from activities.activity import Activity
+
 
 class ISSync(Activity):
     def _fields(self):
@@ -31,6 +34,7 @@ class ISSync(Activity):
               f"Ac:{len(update_pack['Actuals'])}, "
               f"Sr:{len(update_pack['Services'])}, "
               f"Ex:{len(update_pack['Executors'])}.")
+
 
 class ISActualizer(Activity):
 

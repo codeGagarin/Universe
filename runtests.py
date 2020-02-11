@@ -25,6 +25,11 @@ class TestActivities(TestCase):
         rep = LoaderStateReporter2(self.ldr)
         rep.run()
 
+    def test_ISActualizer(self):
+        rep = ISActualizer(self.ldr)
+        rep.run()
+
+
 
 class TestReports(TestCase):
     def setUp(self):
@@ -40,8 +45,18 @@ class TestReports(TestCase):
         template = template_env.get_template(template_name)
         return template.render(rpt=report, url_for=url_for)
 
-    def test_diag_report(self):
+    def test_DiagReport(self):
         self.render_report(DiagReport)
+
+    def test_HelpdeskReport(self):
+        self.render_report(HelpdeskReport)
+
+    def test_TaskReport(self):
+        self.render_report(TaskReport)
+
+    def test_ExpensesReport(self):
+        self.render_report(ExpensesReport)
+
 
 
 
@@ -90,7 +105,7 @@ TEST_DATA = {
 
 }
 
-class TestPGConnector(TestCase):
+class TestPGConnector():
     def setUp(self):
         pass
 
@@ -181,7 +196,7 @@ class TestPGConnector(TestCase):
         pg_con.delete_task_actuals(t)
         self.assertFalse(pg_con.is_exist(a))
 
-class TestISConnector(TestCase):
+class TestISConnector():
     def setUp(self):
         # test db_key
         self.connector = ISConnector(TestKeyChain.IS_KEY)

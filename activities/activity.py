@@ -50,6 +50,9 @@ class Email(Activity):
         msg['Subject'] = self['subject']
         msg['From'] = acc_key['user']
         test_address = acc_key.get('test_address')
+        if test_address == 'Nope':
+            print("Successfully sent [Nope] email")
+            return
         if test_address:
             msg['Subject'] += ' TO:{' + (", ".join(self['to']) if self['to'] else '') + '}'
             msg['To'] = test_address
