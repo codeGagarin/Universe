@@ -24,7 +24,7 @@ class Loader:
         reg.init_ldr(self)
         self.key_chain = key_chain
         self.get_PG_connector = lambda: PGConnector(key_chain.PG_KEY)
-        self.get_IS_connector = lambda: PGConnector(key_chain.IS_KEY)
+        self.get_IS_connector = lambda: ISConnector(key_chain.IS_KEY)
         key = key_chain.PG_KEY
         self._db_conn = psycopg2.connect(dbname=key["db_name"], user=key["user"],
                                          password=key["pwd"], host=key["host"])

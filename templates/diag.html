@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import 'macro.html' as lib %}
 {% set caption = ("Diagnostic report on %s")|format(rpt._P().from) %}
 {% block title %}{{ caption }}{% endblock %}
 {% block head %}
@@ -47,4 +48,5 @@
         {% endfor %}
     </tbody>
 </table>
+{{ lib.profile_stat(rpt, stat) }}
 {% endblock %}
