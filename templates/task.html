@@ -10,50 +10,53 @@
 {% endblock %}
 {% block content %}
     <h1>{{ title }}</h1>
-
-<table class="table table-condensed">
-    <thead>
-        <tr>
-            <th>#</th>
-            <th>Задача</th>
-            <th>Содержание</th>
-            <th>Создана</th>
-            <th>Инициатор</th>
-            <th>Сервис</th>
-            <th>Исполнители</th>
-            <th nowrap>{{ lib.hdr_title('ЧЧ', 'Трудозатраты')}}</th>
-            <th nowrap>{{ lib.hdr_title('План', 'Срок выполнения, план')}}</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% set body = rpt._D().body.values() %}
-        {% for rec in body%}
-        <tr>
-            <td align="right">{{loop.index}}.</td>
-            <td nowrap>{{ lib.ticket_link(rec.task_id) }}</td>
-            <td>{{ rec.task_name|truncate(70) }}  <small class="text-muted">{% if rec.task_descr %}{{(rec.task_descr)|truncate(200)}}{% endif %}</small></td>
-            <td nowrap>{{ ("%s"|format(rec.created))[: 11] }}</td>
-            <td nowrap>{{ rec.creator }}</td>
-            <td nowrap>{{ rec.service }}</td>
-            <td nowrap>
-                {% for val in rec.executors %}
-                    {{ val }} <br>
+<div class="row">
+    <div class="col-md-12">
+        <table class="table table-condensed">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Задача</th>
+                    <th>Содержание</th>
+                    <th>Создана</th>
+                    <th>Инициатор</th>
+                    <th>Сервис</th>
+                    <th>Исполнители</th>
+                    <th nowrap>{{ lib.hdr_title('ЧЧ', 'Трудозатраты')}}</th>
+                    <th nowrap>{{ lib.hdr_title('План', 'Срок выполнения, план')}}</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% set body = rpt._D().body.values() %}
+                {% for rec in body%}
+                <tr>
+                    <td align="right">{{loop.index}}.</td>
+                    <td nowrap>{{ lib.ticket_link(rec.task_id) }}</td>
+                    <td>{{ rec.task_name|truncate(70) }}  <small class="text-muted">{% if rec.task_descr %}{{(rec.task_descr)|truncate(200)}}{% endif %}</small></td>
+                    <td nowrap>{{ ("%s"|format(rec.created))[: 11] }}</td>
+                    <td nowrap>{{ rec.creator }}</td>
+                    <td nowrap>{{ rec.service }}</td>
+                    <td nowrap>
+                        {% for val in rec.executors %}
+                            {{ val }} <br>
+                        {% endfor %}
+                    </td>
+                    <td align="right">{% if rec.minutes %}{{(rec.minutes/60)|round(2) }} {% endif %}</td>
+                    <td nowrap>
+                    {% if rec.deadline %}
+                        {{ ("%s"|format(rec.deadline))[: 11] }}
+                    {% endif %}
+                    </td>
+                </tr>
                 {% endfor %}
-            </td>
-            <td align="right">{% if rec.minutes %}{{(rec.minutes/60)|round(2) }} {% endif %}</td>
-            <td nowrap>
-            {% if rec.deadline %}
-                {{ ("%s"|format(rec.deadline))[: 11] }}
-            {% endif %}
-            </td>
-        </tr>
-        {% endfor %}
-        <tfoot>
-            <th colspan="7"></th>
-            <th align="right">{{ (body|sum(attribute='minutes')/60)|round(1) }}</th>
-            <th></th>
-        </tfoot>
-    </tbody>
-</table>
+                <tfoot>
+                    <th colspan="7"></th>
+                    <th align="right">{{ (body|sum(attribute='minutes')/60)|round(1) }}</th>
+                    <th></th>
+                </tfoot>
+            </tbody>
+        </table>
+    </div>
+</div>
 {{ lib.profile_stat(rpt, stat) }}
 {% endblock %}

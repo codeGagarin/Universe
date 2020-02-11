@@ -489,7 +489,7 @@ class HelpdeskReport(Report):
             )
 
         def _own_tasks_d(params):
-            return _get_detail_utl(TaskReport, {'frame': 'opened'})
+            return _get_detail_utl(TaskReport, {'frame': 'open'})
 
         def _own_tasks(params):
             return _do_query(ss('SELECT e.{} as id, count(t.{}) as cc FROM {} t, {} e '
