@@ -13,7 +13,7 @@
 <nav aria-label="Page navigation">
   <ul class="pagination">
     {% for cap, params in rpt._N().items() %}
-    <li><a href="{{ url_for('report', **params) }}">{{ "%s"|format(cap) }}</a></li>
+      <li><a href="{{ rpt.url_for('report', params) }}">{{ cap }}</a></li>
     {% endfor %}
   </ul>
 </nav>
@@ -22,9 +22,7 @@
     <thead>
         <tr>
             {% for c in rpt._D().header %}
-            <th>
-            {{ c }}
-            </th>
+            <th>{{ c }}</th>
             {% endfor %}
         </tr>
     </thead>

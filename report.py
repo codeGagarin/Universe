@@ -5,6 +5,8 @@ import hashlib
 from collections import namedtuple
 import cProfile, pstats, io
 import inspect
+from html import escape
+
 
 import psycopg2
 from psycopg2 import sql
@@ -92,6 +94,7 @@ class Report:
 
     def __init__(self, params=None):
         self._data = None
+        self.web_server_name = ''  # using for absolute url generation for email report
         self._params = params if params else {}
         self._navigate = {}
         self._EXT = 0  # get_data execution time, jinja profiling
@@ -104,8 +107,17 @@ class Report:
         """
         pass
 
+    def url_for(self, target, params=None):
+        if not params:
+            params = {}
+        return '{}/{}/?{}'.format(
+            self.web_server_name,
+            target,
+            '&'.join('{}={}'.format(escape(str(k)), escape(str(v))) for k, v in params.items())
+        )
+
     @classmethod
-    def get_connection(cls, acc_key):
+    def get_connection(cls, acc_key=None):
         cn = psycopg2.connect(dbname=acc_key["db_name"], user=acc_key["user"],
                               password=acc_key["pwd"], host=acc_key["host"])
         cn.autocommit = False
@@ -949,32 +961,3 @@ class ExpensesReport(Report):
         body = []
         se(conn, query, body, None, named_result=True)
         return {'body': body}
-
-
-###########################
-# Unittest section
-###########################
-from keys import KeyChain
-
-
-class TestReports(TestCase):
-    def setUp(self):
-        acc_key = KeyChain.PG_KEY
-        self._conn = psycopg2.connect(dbname=acc_key["db_name"], user=acc_key["user"],
-                                      password=acc_key["pwd"], host=acc_key["host"])
-
-    def test_diag_report(self):
-        rep = DiagReport().request_data(self._conn)
-
-    def test_util_report(self):
-        rep = HelpdeskReport().request_data(self._conn)
-
-    def test_task_report(self):
-        rep = TaskReport().request_data(self._conn)
-
-    def test_expenses_report(self):
-        rep = ExpensesReport().request_data(self._conn)
-
-
-if __name__ == '__main__':
-    unittest.main()
