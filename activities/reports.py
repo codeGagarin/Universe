@@ -4,8 +4,8 @@ from activities.activity import Activity, Email
 from report import DiagReport
 
 class LoaderStateReporter2(Activity):
-    # def get_crontab(self):
-    #     return '0 3 * * *'
+    def get_crontab(self):
+        return '0 3 * * *'
 
     def get_report_html(self):
         kch = self._ldr.key_chain
