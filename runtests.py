@@ -29,8 +29,6 @@ class TestActivities(TestCase):
         rep = ISActualizer(self.ldr)
         rep.run()
 
-
-
 class TestReports(TestCase):
     def setUp(self):
         pass

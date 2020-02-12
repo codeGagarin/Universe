@@ -1,29 +1,34 @@
+from pathlib import Path
 import jinja2
 
 from activities.activity import Activity, Email
 from report import DiagReport
 
-class LoaderStateReporter2(Activity):
+class ReportActivity(Activity):
+
+    def get_report_html(self, report):
+        path = str(Path(__file__).parent.parent)+"/templates"
+        template_ldr = jinja2.FileSystemLoader(searchpath=path)
+        template_env = jinja2.Environment(loader=template_ldr)
+        template_name = report.get_template()
+        template = template_env.get_template(template_name)
+        report.web_server_name = self._ldr.key_chain.WEB_PATH
+        return template.render(rpt=report)
+
+class LoaderStateReporter2(ReportActivity):
     def get_crontab(self):
         return '0 3 * * *'
 
-    def get_report_html(self):
-        kch = self._ldr.key_chain
-        template_ldr = jinja2.FileSystemLoader(searchpath="./templates")
-        template_env = jinja2.Environment(loader=template_ldr)
-        template_name = "diag.html"
-        template = template_env.get_template(template_name)
-        report = DiagReport()
-        conn = report.get_connection(kch.PG_KEY)
-        report.request_data(conn)
-        report.web_server_name = kch.WEB_PATH
-        return template.render(rpt=report)
 
     def run(self):
+        report = DiagReport()
+        conn = report.get_connection(self._ldr.key_chain.PG_KEY)
+        report.request_data(conn)
+
         email = Email(self._ldr)
         email['to'] = ('belov78@gmail.com',)
         email['subject'] = 'Loader daily report'
-        email['body'] = self.get_report_html()
+        email['body'] = self.get_report_html(report)
         email.apply()
 
 class LoaderStateReporter(Activity):

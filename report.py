@@ -78,7 +78,7 @@ def _get_period(now: date, period_type: str, delta: int, with_time=False):
 class Report:
     _report_map = None
 
-    def set_up(self):  # safety plug, optional override in subclass
+    def set_up(self, url_params=None):  # safety plug, optional override in subclass
         pass
 
     def _D(self):
@@ -92,13 +92,13 @@ class Report:
         """ Jinja call for _params attribute """
         return self._params
 
-    def __init__(self, params=None):
+    def __init__(self, params=None, url_params=None):
         self._data = None
         self.web_server_name = ''  # using for absolute url generation for email report
         self._params = params if params else {}
         self._navigate = {}
         self._EXT = 0  # get_data execution time, jinja profiling
-        self.set_up()
+        self.set_up(url_params)
 
     def _prepare_data(self, db_conn):
         """
@@ -172,7 +172,7 @@ class Report:
         report_class = cls._get_map().get(params.get('type'))
         if not report_class:
             return None
-        return report_class(params)
+        return report_class(params, url_params)
 
     @classmethod
     def default_map(cls, conn):
@@ -295,7 +295,6 @@ class Report:
         cn = conn['cn']
         ns = conn['need_stat']
 
-
         # if postpone:
         #     conn['pp'].append(query)
         #     return None
@@ -336,24 +335,37 @@ class Report:
 
 class DiagReport(Report):
 
-    def set_up(self):
+    def set_up(self, url_params):
+        if url_params:
+            upd_flag = url_params.get('upd')
+            if upd_flag:
+                self._params['upd'] = upd_flag
+
         if not self._params.get('from'):
             self._params['from'] = (datetime.today() - timedelta(days=1)).date()
         if not self._params.get('to'):
             self._params['to'] = self._params['from']
 
     def _prepare_data(self, conn):
-        prev_point = _get_period(self._params['from'], 'day', -1)
-        next_point = _get_period(self._params['from'], 'day', 1)
+        sp = self._params
+        prev_point = _get_period(sp['from'], 'day', -1)
+        next_point = _get_period(sp['from'], 'day', 1)
         self._add_navigate_point(conn, '<< Prev day', {'from': prev_point['from'], 'to': prev_point['to']})
         self._add_navigate_point(conn, 'Next day >>', {'from': next_point['from'], 'to': next_point['to']})
 
-        start = datetime.combine(self._params['from'], datetime.min.time())
-        fin = datetime.combine(self._params['to'], datetime.max.time())
+        start = datetime.combine(sp['from'], datetime.min.time())
+        fin = datetime.combine(sp['to'], datetime.max.time())
 
-        fields = 'id type status start finish duration params result'.split()
-        query = sql.SQL('SELECT {} FROM {} WHERE {} ORDER BY {} DESC').format(
-            sql.SQL(', ').join(sql.Identifier(f) for f in fields),
+        # update fail status if request it
+        upd_id = sp.get('upd_id')
+        if upd_id:
+            query = sql.SQL('UPDATE "Loader" SET "status"={} WHERE "id"={} AND "status"={} ').format(
+                sql.Literal('todo'), sql.Literal(upd_id), sql.Literal('fail')
+            )
+            self._sql_exec(conn, query)
+
+        query = sql.SQL('SELECT "id", "type", "status", "start", "finish", "duration", "params",'
+                        ' "result", NULL as status_detail FROM {} WHERE {} ORDER BY {} DESC').format(
             sql.Identifier('Loader'),
             sql.SQL('{} BETWEEN {} AND {}').format(
                 sql.Identifier('start'),
@@ -363,12 +375,24 @@ class DiagReport(Report):
             sql.Identifier('start')
         )
 
-        def factory(row, res):
-            res.append([val for val in row])
+        def _status_detail(rec):
+            upd_flag = sp.get('upd')
+            res = None
+            if upd_flag and rec.status == 'fail':
+                detail_params = {
+                    'from': sp['from'],
+                    'to': sp['to'],
+                    'upd_id': rec.id,
+                }
+                res = self.get_idx(conn, detail_params)
+            return res
+
+        def factory(rec, res):
+            res.append(rec._replace(status_detail=_status_detail(rec)))
 
         result = []
-        result = self._sql_exec(conn, query, result, factory)
-        return {'header': fields, 'body': result}
+        result = self._sql_exec(conn, query, result, factory, named_result=True)
+        return {'body': result}
 
     def get_template(self):
         return 'diag.html'
