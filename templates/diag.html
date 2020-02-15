@@ -22,7 +22,6 @@
 <table class="table">
     <thead>
         <tr>
-            {% for c in rpt._D().header %}
             <th>Id</th>
             <th>Type</th>
             <th>Status</th>
@@ -31,7 +30,6 @@
             <th>Duration</th>
             <th>Params</th>
             <th>Result</th>
-            {% endfor %}
         </tr>
     </thead>
     <tbody>
@@ -54,8 +52,8 @@
         <td align="center">{{ ("%s"|format(row.start))[11: 19] }}</td>
         <td align="center">{{ ("%s"|format(row.finish))[11: 19] }}</td>
         <td align="right">{{ row.duration }}</td>
-        <td title="{{row.params}}">{{ (row.params if row.params else "")|escape()|truncate(40, True) }}</td>
-        <td title="{{row.result}}">{{ (row.result if row.result else "")|escape()|truncate(50, True) }}</td></tr>
+        <td title="{{row.params}}">{{ (row.params if row.params else "")|truncate(40, True)|escape() }}</td>
+        <td title="{{row.result}}">{{ (row.result if row.result else "")|truncate(40, True)|escape() }}</td></tr>
         {% endfor %}
     </tbody>
 </table>

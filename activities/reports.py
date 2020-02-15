@@ -4,6 +4,7 @@ import jinja2
 from activities.activity import Activity, Email
 from report import DiagReport
 
+
 class ReportActivity(Activity):
 
     def get_report_html(self, report):
@@ -15,10 +16,10 @@ class ReportActivity(Activity):
         report.web_server_name = self._ldr.key_chain.WEB_PATH
         return template.render(rpt=report)
 
+
 class LoaderStateReporter2(ReportActivity):
     def get_crontab(self):
         return '0 3 * * *'
-
 
     def run(self):
         report = DiagReport()
@@ -29,7 +30,7 @@ class LoaderStateReporter2(ReportActivity):
         email['to'] = ('belov78@gmail.com',)
         email['subject'] = 'Loader daily report'
         email['body'] = self.get_report_html(report)
-        email.apply()
+        email.run()
 
 class LoaderStateReporter(Activity):
     def get_crontab(self):

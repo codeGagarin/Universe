@@ -29,7 +29,7 @@
 <nav aria-label="Page navigation">
   <ul class="pagination">
     {% for cap, params in rpt.get_navigate().items() %}
-    <li><a href="{{ url_for('report', **params) }}">{{ "%s"|format(cap) }}</a></li>
+    <li><a href="{{ rpt.url_for('report', params) }}">{{ "%s"|format(cap) }}</a></li>
     {% endfor %}
   </ul>
 </nav>
@@ -53,11 +53,11 @@
             <tr>
                 <td align="right">{{ r.seq }}</td>
                 <td>{% if r.parent %} -- {% endif %} {{ r.name }}</td>
-                <td align="right">{{ lib.detail_link(r.income, r.income_d) }}</td>
-                <td align="right">{{ lib.detail_link(r.closed, r.closed_d)}}({{lib.detail_link((r.closed_exp/60)|round(1, 'common'), r.closed_exp_d)}})</td>
-                <td align="right">{{ lib.detail_link(r.open, r.open_d) }}</td>
-                <td align="right">{{ lib.detail_link(r.no_exec, r.no_exec_d) }}</td>
-                <td align="right">{{ lib.detail_link(r.no_deadline, r.no_deadline_d) }}</td>
+                <td align="right">{{ lib.detail_link(rpt, r.income, r.income_d) }}</td>
+                <td align="right">{{ lib.detail_link(rpt, r.closed, r.closed_d)}}({{lib.detail_link(rpt, (r.closed_exp/60)|round(1, 'common'), r.closed_exp_d)}})</td>
+                <td align="right">{{ lib.detail_link(rpt, r.open, r.open_d) }}</td>
+                <td align="right">{{ lib.detail_link(rpt, r.no_exec, r.no_exec_d) }}</td>
+                <td align="right">{{ lib.detail_link(rpt, r.no_deadline, r.no_deadline_d) }}</td>
             </tr>
             {% endfor %}
         </table>
@@ -112,79 +112,79 @@
                 {% for r in rpt._D().utl.body %}
                 <tr>
                     <td align="right">{{ r.seq }}</td>
-                    <td>{{ r.name }} [<a href="{{ url_for('report', **r.detail_own_tasks) }}">{{ r.own_tasks }}</a>]</td>
+                    <td>{{ r.name }} [<a href="{{ rpt.url_for('report', r.detail_own_tasks) }}">{{ r.own_tasks }}</a>]</td>
                     {% if frame in ['daily', 'weekly'] %}
                     <td class="info">
-                        <a href="{{ url_for('report', **r.d1t_d) }}">{{ r.d1t }}</a>
-                        (<a href="{{ url_for('report', **r.d1u_d) }}">{{ (r.d1u/60)|round(1) }}</a>)
+                        <a href="{{ rpt.url_for('report', r.d1t_d) }}">{{ r.d1t }}</a>
+                        (<a href="{{ rpt.url_for('report', r.d1u_d) }}">{{ (r.d1u/60)|round(1) }}</a>)
                     </td>
                     <td class="info">
-                        <a href="{{ url_for('report', **r.d2t_d) }}">{{ r.d2t }}</a>
-                        (<a href="{{ url_for('report', **r.d2u_d) }}">{{ (r.d2u/60)|round(1) }}</a>)
+                        <a href="{{ rpt.url_for('report', r.d2t_d) }}">{{ r.d2t }}</a>
+                        (<a href="{{ rpt.url_for('report', r.d2u_d) }}">{{ (r.d2u/60)|round(1) }}</a>)
                     </td>
                     <td class="info">
-                        <a href="{{ url_for('report', **r.d3t_d) }}">{{ r.d3t }}</a>
-                        (<a href="{{ url_for('report', **r.d3u_d) }}">{{ (r.d3u/60)|round(1) }}</a>)
+                        <a href="{{ rpt.url_for('report', r.d3t_d) }}">{{ r.d3t }}</a>
+                        (<a href="{{ rpt.url_for('report', r.d3u_d) }}">{{ (r.d3u/60)|round(1) }}</a>)
                     </td>
                     <td class="info">
-                        <a href="{{ url_for('report', **r.d4t_d) }}">{{ r.d4t }}</a>
-                        (<a href="{{ url_for('report', **r.d4u_d) }}">{{ (r.d4u/60)|round(1) }}</a>)
+                        <a href="{{ rpt.url_for('report', r.d4t_d) }}">{{ r.d4t }}</a>
+                        (<a href="{{ rpt.url_for('report', r.d4u_d) }}">{{ (r.d4u/60)|round(1) }}</a>)
                     </td>
                     <td class="info">
-                        <a href="{{ url_for('report', **r.d5t_d) }}">{{ r.d5t }}</a>
-                        (<a href="{{ url_for('report', **r.d5u_d) }}">{{ (r.d5u/60)|round(1) }}</a>)
+                        <a href="{{ rpt.url_for('report', r.d5t_d) }}">{{ r.d5t }}</a>
+                        (<a href="{{ rpt.url_for('report', r.d5u_d) }}">{{ (r.d5u/60)|round(1) }}</a>)
                     </td>
                     <td class="info">
-                        <a href="{{ url_for('report', **r.d6t_d) }}">{{ r.d6t }}</a>
-                        (<a href="{{ url_for('report', **r.d6u_d) }}">{{ (r.d6u/60)|round(1) }}</a>)
+                        <a href="{{ rpt.url_for('report', r.d6t_d) }}">{{ r.d6t }}</a>
+                        (<a href="{{ rpt.url_for('report', r.d6u_d) }}">{{ (r.d6u/60)|round(1) }}</a>)
                     </td>
                     <td class="info">
-                        <a href="{{ url_for('report', **r.d7t_d) }}">{{ r.d7t }}</a>
-                        (<a href="{{ url_for('report', **r.d7u_d) }}">{{ (r.d7u/60)|round(1) }}</a>)
+                        <a href="{{ rpt.url_for('report', r.d7t_d) }}">{{ r.d7t }}</a>
+                        (<a href="{{ rpt.url_for('report', r.d7u_d) }}">{{ (r.d7u/60)|round(1) }}</a>)
                     </td>
                     {% endif %}
                     {% if frame in ['weekly'] %}
                     <td>
-                        <a href="{{ url_for('report', **r.w1t_d) }}">{{ r.w1t }}</a>
-                        (<a href="{{ url_for('report', **r.w1u_d) }}">{{ (r.w1u/60)|round(1) }}</a>)
+                        <a href="{{ rpt.url_for('report', r.w1t_d) }}">{{ r.w1t }}</a>
+                        (<a href="{{ rpt.url_for('report', r.w1u_d) }}">{{ (r.w1u/60)|round(1) }}</a>)
                     </td>
                     <td>
-                        <a href="{{ url_for('report', **r.w2t_d) }}">{{ r.w2t }}</a>
-                        (<a href="{{ url_for('report', **r.w2u_d) }}">{{ (r.w2u/60)|round(1) }}</a>)
+                        <a href="{{ rpt.url_for('report', r.w2t_d) }}">{{ r.w2t }}</a>
+                        (<a href="{{ rpt.url_for('report', r.w2u_d) }}">{{ (r.w2u/60)|round(1) }}</a>)
                     </td>
                     <td>
-                        <a href="{{ url_for('report', **r.w3t_d) }}">{{ r.w3t }}</a>
-                        (<a href="{{ url_for('report', **r.w3u_d) }}">{{ (r.w3u/60)|round(1) }}</a>)
+                        <a href="{{ rpt.url_for('report', r.w3t_d) }}">{{ r.w3t }}</a>
+                        (<a href="{{ rpt.url_for('report', r.w3u_d) }}">{{ (r.w3u/60)|round(1) }}</a>)
                     </td>
                     {% endif %}
                     {% if frame in ['monthly'] %}
                     <td class="info">
-                        <a href="{{ url_for('report', **r.m1t_d) }}">{{ r.m1t }}</a>
-                        (<a href="{{ url_for('report', **r.m1u_d) }}">{{ (r.m1u/60)|round(1) }}</a>)
+                        <a href="{{ rpt.url_for('report', r.m1t_d) }}">{{ r.m1t }}</a>
+                        (<a href="{{ rpt.url_for('report', r.m1u_d) }}">{{ (r.m1u/60)|round(1) }}</a>)
                     </td>
                     <td class="info">
-                        <a href="{{ url_for('report', **r.m2t_d) }}">{{ r.m2t }}</a>
-                        (<a href="{{ url_for('report', **r.m2u_d) }}">{{ (r.m2u/60)|round(1) }}</a>)
+                        <a href="{{ rpt.url_for('report', r.m2t_d) }}">{{ r.m2t }}</a>
+                        (<a href="{{ rpt.url_for('report', r.m2u_d) }}">{{ (r.m2u/60)|round(1) }}</a>)
                     </td>
                     <td class="info">
-                        <a href="{{ url_for('report', **r.m3t_d) }}">{{ r.m3t }}</a>
-                        (<a href="{{ url_for('report', **r.m3u_d) }}">{{ (r.m3u/60)|round(1) }}</a>)
+                        <a href="{{ rpt.url_for('report', r.m3t_d) }}">{{ r.m3t }}</a>
+                        (<a href="{{ rpt.url_for('report', r.m3u_d) }}">{{ (r.m3u/60)|round(1) }}</a>)
                     </td>
                     {% endif %}
                     <td class="{{ eval_class }}">
-                        <a href="{{ url_for('report', **r.e5_d) }}">{{ r.e5 }}</a>
+                        <a href="{{ rpt.url_for('report', r.e5_d) }}">{{ r.e5 }}</a>
                     </td>
                     <td class="{{ eval_class }}">
-                        <a href="{{ url_for('report', **r.e4_d) }}">{{ r.e4 }}</a>
+                        <a href="{{ rpt.url_for('report', r.e4_d) }}">{{ r.e4 }}</a>
                     </td>
                     <td class="{{ eval_class }}">
-                        <a href="{{ url_for('report', **r.e3_d) }}">{{ r.e3 }}</a>
+                        <a href="{{ rpt.url_for('report', r.e3_d) }}">{{ r.e3 }}</a>
                     </td>
                     <td class="{{ eval_class }}">
-                        <a href="{{ url_for('report', **r.e2_d) }}">{{ r.e2 }}</a>
+                        <a href="{{ rpt.url_for('report', r.e2_d) }}">{{ r.e2 }}</a>
                     </td>
                     <td class="{{ eval_class }}">
-                        <a href="{{ url_for('report', **r.e1_d) }}">{{ r.e1 }}</a>
+                        <a href="{{ rpt.url_for('report', r.e1_d) }}">{{ r.e1 }}</a>
                     </td>
                 </tr>
                 {% endfor %}

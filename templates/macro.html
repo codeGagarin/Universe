@@ -6,8 +6,8 @@
 <a href="https://prosto12.intraservice.ru/Task/View/{{ticket_id}}">{{ticket_id}}</a>
 {% endmacro %}
 
-{%- macro detail_link(value, detail) -%}
-{% if value %}<a href="{{url_for('report', **detail)}}">{{value}}</a>{% else %}{{value}}{% endif %}
+{%- macro detail_link(report, value, detail) -%}
+{% if value %}<a href="{{report.url_for('report', detail)}}">{{value}}</a>{% else %}{{value}}{% endif %}
 {%- endmacro -%}
 
 {%- macro profile_stat(rpt, stat) -%}

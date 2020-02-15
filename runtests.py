@@ -41,21 +41,19 @@ class TestReports(TestCase):
         template_env = jinja2.Environment(loader=template_ldr)
         template_name = report.get_template()
         template = template_env.get_template(template_name)
-        return template.render(rpt=report, url_for=url_for)
+        return template.render(rpt=report)
 
     def test_DiagReport(self):
         self.render_report(DiagReport)
 
     def test_HelpdeskReport(self):
-        self.render_report(HelpdeskReport)
+        self.render_report(HelpdeskReport, HelpdeskReport._get_def_params())
 
     def test_TaskReport(self):
-        self.render_report(TaskReport)
+        self.render_report(TaskReport, TaskReport._get_def_params())
 
     def test_ExpensesReport(self):
-        self.render_report(ExpensesReport)
-
-
+        self.render_report(ExpensesReport, ExpensesReport._get_def_params())
 
 
 TEST_DATA = {

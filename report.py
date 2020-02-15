@@ -78,7 +78,7 @@ def _get_period(now: date, period_type: str, delta: int, with_time=False):
 class Report:
     _report_map = None
 
-    def set_up(self, url_params=None):  # safety plug, optional override in subclass
+    def set_up(self, url_params):  # safety plug, optional override in subclass
         pass
 
     def _D(self):
@@ -399,7 +399,7 @@ class DiagReport(Report):
 
 
 class HelpdeskReport(Report):
-    def set_up(self):
+    def set_up(self, params_url):
         sp = self._params
 
         def _dflt(key, def_value):
@@ -814,7 +814,7 @@ class HelpdeskReport(Report):
 
 class TaskReport(Report):
 
-    def set_up(self):
+    def set_up(self, params_url):
         pass
 
     def get_template(self):
@@ -911,8 +911,9 @@ class TaskReport(Report):
     def _get_def_params(cls):
         # todo: delete after default test
         return {
-            'frame': 'opened',
-            'executors': [7162]
+            'frame': 'open',
+            'executors': [7162],
+            'services': (139, 168),
         }
 
 
@@ -926,16 +927,18 @@ class ExpensesReport(Report):
                     close_period: dict
     """
 
-    def set_up(self):
+    def set_up(self, params_url):
         pass
 
     @classmethod
     def _get_def_params(cls):
         return {
-            "from": "datetime:2020-01-27 00:00:00.000000",
-            "to": "datetime:2020-01-27 23:59:59.999999",
+            "from": date(2020, 1, 27),
+            "to": date(2020, 1, 27),
             "executors": [7162],
-            "type": "ExpensesReport"
+            "type": "ExpensesReport",
+            'services': (139, 168),
+
         }
 
     def get_template(self):
