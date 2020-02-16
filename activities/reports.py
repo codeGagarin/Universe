@@ -2,7 +2,7 @@ from pathlib import Path
 import jinja2
 
 from activities.activity import Activity, Email
-from report import DiagReport
+from report import DiagReport, HelpdeskReport
 
 
 class ReportActivity(Activity):
@@ -32,81 +32,46 @@ class LoaderStateReporter2(ReportActivity):
         email['body'] = self.get_report_html(report)
         email.run()
 
-class LoaderStateReporter(Activity):
+
+class HelpdeskWeekly(ReportActivity):
     def get_crontab(self):
-        return '0 3 * * *'
+        return '0 7 * * 1'
 
-    def run(self):
-        report = self._ldr.get_state()
-        actual = report['actual_date']
-        thead = report['header']
-        tbody = report['data']
-        small_size = 50
-
-        def long_cut(s):
-            if s and len(s) > small_size:
-                return f'{s[:small_size]}...'
-
-        def date_cut(s):
-            if s and s is not '':
-                return str(s)[11:19]
-
-        adapter_map = {
-            'start': (date_cut,),
-            'finish': (date_cut,),
-            'params': (long_cut,),
-            'result': (long_cut,),
+    @classmethod
+    def get_report_params(cls):
+        return {
+            "StationITWeekly": {
+                'to': (7162, 9131, 8724, 9070),
+                'cc': ('alexey.makarov@station-hotels.ru', 'igor.belov@station-hotels.ru'),
+                'subj': '[Weekly] Недельный отчет Helpdesk',
+                'params': {
+                    'services': (139,),
+                    'executors': (7162, 9131, 8724, 9070),
+                    'frame': 'weekly'
+                }
+            },
+            'Prosto12': {
+                'to': ('v.ulianov@prosto12.ru', 'i.belov@prosto12.ru'),
+                'cc': (),
+                'subj': '[Weekly] Недельный отчет Helpdesk',
+                'params': {
+                    'services': (),
+                    'executors': (396, 5994, 405, 402, 5995, 390, 43),
+                    'frame': 'weekly',
+                },
+            },
         }
 
-        for row in tbody:
-            for field, adapters in adapter_map.items():
-                for adapter in adapters:
-                    row[thead.index(field)] = adapter(row[thead.index(field)])
+    def run(self):
+        params = self.get_report_params()
+        for prm in params.values():
+            report = HelpdeskReport(prm['params'])
+            conn = report.get_connection(self._ldr.key_chain.PG_KEY)
+            report.request_data(conn)
 
-        email = Email(self._ldr)
-        email['to'] = ('belov78@gmail.com',)
-        email['subject'] = 'Loader daily report'
-
-        tab_caption = f"Loader Report on {actual.strftime('%Y-%m-%d')}"
-
-        tab_head = '{}{}{}'.format(
-            '<tr class="table-dark">',
-            ''.join(f'<th>{i}</th>' for i in thead),
-            '</tr>\n'
-        )
-        status_idx = thead.index('status')
-
-        def get_row_class(_row):
-            style = {
-                'todo': '',
-                'working': 'table-warning',
-                'finish': 'table-success',
-                'fail': 'table-danger',
-            }
-            return style[_row[status_idx]]
-
-        tab_rows = ''.join(
-            f'<tr class="{get_row_class(row)}">{"".join(f"<td>{escape(str(col))}</td>" for col in row)}</tr>\n'
-            for row in report['data'])
-
-        html_table = f'<table class="table">' \
-                     f'<thead>{tab_head}</thead><tbody>{tab_rows}</tbody></table>'
-
-        html_head = '<head>' \
-                    '   <meta name="viewport" content="width=device-width, initial-scale=1">' \
-                    '   <meta charset="utf-8">' \
-                    '   <link rel="stylesheet" ' \
-                    '       href="https://bootswatch.com/4/spacelab/bootstrap.css">' \
-                    '</head>'
-
-        html_report = f'<html>\n{html_head}\n<body>' \
-                      f'<div class="container">\n' \
-                      f'<h3>{tab_caption}<h3>' \
-                      f'{html_table}\n</div>' \
-                      f'</body>\n</html>\n'
-
-        email['body'] = html_report
-        # f = open("mail.html", "w")
-        # f.write(html_report)
-        # f.close()
-        email.apply()
+            email = Email(self._ldr)
+            email['to'] = report.users_to_email(conn, prm['to'])
+            email['cc'] = report.users_to_email(conn, prm['cc'])
+            email['subject'] = prm['subj']
+            email['body'] = self.get_report_html(report)
+            email.apply()

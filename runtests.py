@@ -25,6 +25,10 @@ class TestActivities(TestCase):
         rep = LoaderStateReporter2(self.ldr)
         rep.run()
 
+    def test_HelpdeskWeekly(self):
+        rep = HelpdeskWeekly(self.ldr)
+        rep.run()
+
     def test_ISActualizer(self):
         rep = ISActualizer(self.ldr)
         rep.run()
@@ -54,6 +58,8 @@ class TestReports(TestCase):
 
     def test_ExpensesReport(self):
         self.render_report(ExpensesReport, ExpensesReport._get_def_params())
+
+
 
 
 TEST_DATA = {

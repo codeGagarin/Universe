@@ -54,7 +54,8 @@ class Email(Activity):
             print("Successfully sent [Nope] email")
             return
         if test_address:
-            msg['Subject'] += ' TO:{' + (", ".join(self['to']) if self['to'] else '') + '}'
+            msg['Subject'] += ' TO:{' + (", ".join(self['to']) if self['to'] else '') + '}' + \
+                              ' CC:{' + (", ".join(self['cc']) if self['cc'] else '') + '}'
             msg['To'] = test_address
             msg['Cc'] = ''
         else:

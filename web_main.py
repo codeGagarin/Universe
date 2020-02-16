@@ -26,6 +26,7 @@ def report():
         index_page = render_template('index.html')
     else:
         rpt.request_data(conn)
+    conn['cn'].close()
 
     return index_page if index_page else render_template(rpt.get_template(), rpt=rpt)
 

@@ -7,7 +7,6 @@ import cProfile, pstats, io
 import inspect
 from html import escape
 
-
 import psycopg2
 from psycopg2 import sql
 from psycopg2 import extras
@@ -133,7 +132,7 @@ class Report:
 
         # todo: add postpone query call here
         conn['cn'].commit()
-        conn['cn'].close()
+        # conn['cn'].close()
 
         if conn['need_stat']:
             self._params["query_list"] = conn['ql']
@@ -262,6 +261,22 @@ class Report:
             )
             cls._sql_exec(conn, query, postpone=True)
         return {'idx': value_hash}
+
+    @classmethod
+    def users_to_email(cls, conn, idlist):
+        result = []
+        ids_for_request = []
+        for idl in idlist:
+            (ids_for_request if type(idl) is int else result).append(idl)
+        if len(ids_for_request):
+            query = sql.SQL('SELECT "Email" as eml FROM "Users" WHERE "Id" IN {}').format(
+                sql.Literal(tuple(ids_for_request)))
+
+            def fact(row, res):
+                res.append(row.eml)
+
+            cls._sql_exec(conn, query, result, fact, named_result=True)
+        return result
 
     @classmethod
     def _idx_to_params(cls, conn, idx):
@@ -428,11 +443,11 @@ class HelpdeskReport(Report):
     @classmethod
     def _get_def_params(cls):
         # todo: delete after default test
+        a = {'services': (100, 116, 91, 92, 77)}
         return {
-            'frame': 'daily',
-            'executors': (7162, 9131, 8724, 9070),
-            'from': date.today(),
-            'services': (139, 168),
+            'services': (),
+            'executors': (396, 5994, 405, 402, 5995, 390, 43),
+            'frame': 'weekly'
         }
 
     def _prepare_data(self, cn):
@@ -460,20 +475,24 @@ class HelpdeskReport(Report):
 
         def _unfold(srv_list):  # unfold services list (wrap parent to child services)
             result = {}
-            q = ss('select s."Id" as id, s."Name" as name, s."ParentId" as parent from  "Services" s '
-                   'where (s."Id" in {0} or s."ParentId" in {0}) '
-                   'and s."IsArchive" = False order by s."Path"').format(
-                sl(srv_list)
-            )
+            if len(srv_list):
+                q = ss('select s."Id" as id, s."Name" as name, s."ParentId" as parent from  "Services" s '
+                       'where (s."Id" in {0} or s."ParentId" in {0}) '
+                       'and s."IsArchive" = False order by s."Path"').format(
+                    sl(tuple(srv_list))
+                )
 
-            def _fact(rec, res):
-                res[rec.id] = rec
+                def _fct(rec, res):
+                    res[rec.id] = rec
 
-            return se(cn, q, result, _fact, named_result=True)
+                se(cn, q, result, _fct, named_result=True)
+            return result
 
-        srv = tuple(sp['services'])  # service filter
+        srv = sp['services']  # service filter
         srv_ufd = _unfold(srv)  # services unfold dict { id : namedtuple(id, name, parent) }
         srv_ufl = tuple(srv_ufd.keys())  # services unfold list
+        srv_where = ss('AND t."ServiceId" IN {}').format(sl(srv_ufl)) if len(srv_ufl) else ss('')
+
         exs = tuple(sp['executors'])  # tuple() for correct sql.Literal list converting
         frame = sp['frame']  # daily, weekly, monthly
 
@@ -507,21 +526,23 @@ class HelpdeskReport(Report):
             return res
 
         def _names(params):
-            return _do_query(ss('SELECT {}, {} FROM {} WHERE {} IN {}').format(
-                si('Id'), si('Name'), si(params['table']),
-                si('Id'), sl(params['index']))
-            )
+            res = {}
+            if len(params['index']):
+                res = _do_query(ss('SELECT {}, {} FROM {} WHERE {} IN {}').format(
+                    si('Id'), si('Name'), si(params['table']),
+                    si('Id'), sl(params['index']))
+                )
+            return res
 
         def _own_tasks_d(params):
             return _get_detail_utl(TaskReport, {'frame': 'open'})
 
         def _own_tasks(params):
-            return _do_query(ss('SELECT e.{} as id, count(t.{}) as cc FROM {} t, {} e '
-                                'WHERE e.{}=t.{} AND t.{} is NULL AND e.{} IN {} '
-                                'AND t."ServiceId" in {} GROUP BY id').format(
-                si('UserId'), si('Id'), si('Tasks'), si('Executors'),
-                si('TaskId'), si('Id'), si('Closed'), si('UserId'), sl(exs), sl(srv_ufl))
-            )
+            return _do_query(ss('SELECT e."UserId" as id, count(t."Id") as cc FROM "Tasks" t, "Executors" e '
+                                ' WHERE e."TaskId"=t."Id" AND t."Closed" is NULL AND e."UserId" IN {} '
+                                ' {} GROUP BY id').format(
+                sl(exs), srv_where
+            ))
 
         def _dnt_d(params):
             return _get_detail_utl(TaskReport, {'frame': 'closed', 'from': params['from'], 'to': params['to']})
@@ -529,10 +550,10 @@ class HelpdeskReport(Report):
         def _dnt(params):
             q = ss('SELECT e.{} as id, count(t.{}) FROM {} t, {} e '
                    'WHERE e.{}=t.{} AND t.{} BETWEEN {} AND {} '
-                   'AND e.{} IN {} AND t."ServiceId" in {} GROUP BY id').format(
+                   'AND e.{} IN {} {} GROUP BY id').format(
                 si('UserId'), si('Id'), si('Tasks'), si('Executors'),
                 si('TaskId'), si('Id'), si('Closed'), sl(params['from']), sl(params['to']),
-                si('UserId'), sl(exs), sl(srv_ufl)
+                si('UserId'), sl(exs), srv_where
             )
             return _do_query(q)
 
@@ -543,9 +564,9 @@ class HelpdeskReport(Report):
             q = ss('SELECT e."UserId" as id, sum("Minutes") FROM "Expenses" e '
                    'LEFT JOIN "Tasks" t ON e."TaskId"=t."Id" '
                    'WHERE e."DateExp" BETWEEN {} AND {} '
-                   'AND e."UserId" IN {} AND t."ServiceId" in {} GROUP BY id').format(
+                   'AND e."UserId" IN {} {} GROUP BY id').format(
                 sl(params['from']), sl(params['to']),
-                sl(exs), sl(srv_ufl)
+                sl(exs), srv_where
             )
             return _do_query(q)
 
@@ -566,11 +587,11 @@ class HelpdeskReport(Report):
 
         def _eval(evaluate: int):
             q = sql.SQL('select e."UserId", count(e."TaskId") '
-                        'from "Executors" e '
-                        'left join "Tasks" t on e."TaskId" = t."Id" '
-                        'where t."EvaluationId"={} and e."UserId" in {} and t."Closed" between {} and {} '
-                        'AND t."ServiceId" in {} group by e."UserId"').format(
-                sl(evaluate), sl(exs), sl(self._params['from']), sl(self._params['to']), sl(srv_ufl)
+                        ' from "Executors" e '
+                        ' left join "Tasks" t on e."TaskId" = t."Id" '
+                        ' where t."EvaluationId"={} and e."UserId" in {} and t."Closed" between {} and {} '
+                        ' {} group by e."UserId"').format(
+                sl(evaluate), sl(exs), sl(self._params['from']), sl(self._params['to']), srv_where
             )
             return _do_query(q)
 
@@ -698,23 +719,29 @@ class HelpdeskReport(Report):
         data['utl'] = _get_head_body(head_map, exs)
 
         def _parent(params):
-            return _do_query(ss('select s."Id", s."ParentId" from "Services" s where s."Id" in {}').format(sl(srv_ufl)))
+            res = {}
+            if len(srv_ufl):
+                res = _do_query(ss('select s."Id", s."ParentId" from "Services" s where s."Id" in {}').format(sl(srv_ufl)))
+            return res
 
         def _do_query_grp(q):
             result = _do_query(q)
             result_new = {}
-            for k, v in result.items():
-                result_new[k] = v
-                parent = srv_ufd[k].parent
-                if parent:
-                    result_new[parent] = result_new.get(parent, 0) + v
+            if len(srv_ufl):
+                for k, v in result.items():
+                    result_new[k] = v
+                    parent = srv_ufd[k].parent
+                    if parent:
+                        result_new[parent] = result_new.get(parent, 0) + v
+            else:
+                result_new = result
             return result_new
 
         def _income(params):
             return _do_query_grp(ss('select t."ServiceId", count(t."Id") from "Tasks" t'
-                                    ' where t."Created" between {} and {} and t."ServiceId" in {}'
+                                    ' where t."Created" between {} and {} {}'
                                     ' group by t."ServiceId" ').format(
-                sl(sp['from']), sl(sp['to']), sl(srv_ufl)
+                sl(sp['from']), sl(sp['to']), srv_where
             ))
 
         def _income_d(params):
@@ -727,9 +754,9 @@ class HelpdeskReport(Report):
 
         def _closed(params):
             return _do_query_grp(ss('select t."ServiceId", count(t."Id") from "Tasks" t'
-                                    ' where t."Closed" between {} and {} and t."ServiceId" in {}'
+                                    ' where t."Closed" between {} and {} {}'
                                     ' group by t."ServiceId" ').format(
-                sl(sp['from']), sl(sp['to']), sl(srv_ufl)
+                sl(sp['from']), sl(sp['to']), srv_where
             ))
 
         def _closed_d(params):
@@ -743,9 +770,9 @@ class HelpdeskReport(Report):
         def _closed_exp(params):
             return _do_query_grp(ss('select t."ServiceId", sum(e."Minutes") from "Tasks" t'
                                     ' right join "Expenses" e on t."Id" = e."TaskId"'
-                                    ' where t."Closed" between {} and {} and t."ServiceId" in {}'
+                                    ' where t."Closed" between {} and {} {}'
                                     ' group by t."ServiceId" ').format(
-                sl(sp['from']), sl(sp['to']), sl(srv_ufl)
+                sl(sp['from']), sl(sp['to']), srv_where
             ))
 
         def _closed_exp_d(params):
@@ -758,9 +785,9 @@ class HelpdeskReport(Report):
 
         def _open(params):
             return _do_query_grp(ss('select t."ServiceId", count(t."Id") from "Tasks" t'
-                                    ' where t."Closed" is NULL and t."ServiceId" in {}'
+                                    ' where t."Closed" is NULL {}'
                                     ' group by t."ServiceId" ').format(
-                sl(srv_ufl)
+                srv_where
             ))
 
         def _open_d(frame_name):
@@ -771,18 +798,18 @@ class HelpdeskReport(Report):
 
         def _no_exec(params):
             return _do_query_grp(ss('select t."ServiceId", count(t."Id") from "Tasks" t'
-                                    ' where t."Closed" is NULL and t."ServiceId" in {}'
+                                    ' where t."Closed" is NULL {}'
                                     ' and t."Id" not in (select "TaskId" from "Executors")'
                                     ' group by t."ServiceId" ').format(
-                sl(srv_ufl)
+                srv_where
             ))
 
         def _no_deadline(params):
             return _do_query_grp(ss('select t."ServiceId", count(t."Id") from "Tasks" t'
                                     ' where t."Closed" is NULL and t."Deadline" is NULL'
-                                    ' and t."ServiceId" in {}'
+                                    ' {}'
                                     ' group by t."ServiceId" ').format(
-                sl(srv_ufl)
+                srv_where
             ))
 
         def _get_srv_map():
@@ -859,7 +886,8 @@ class TaskReport(Report):
                 fl.append(ss('t.{} BETWEEN {} AND {}').format(si('Closed'), sl(ffrom), sl(tto)))
             if evaluate:
                 fl.append(ss('t.{} = {}').format(si('EvaluationId'), sl(evaluate)))
-            fl.append(ss('(t."ServiceId" in {0} OR ps."ParentId" in {0})').format(sl(services)))
+            if len(services):
+                fl.append(ss('(t."ServiceId" in {0} OR ps."ParentId" in {0})').format(sl(services)))
 
             return ss(' AND ').join(fl)
 
@@ -875,7 +903,7 @@ class TaskReport(Report):
                         ' t."EvaluationId" as eval, '
                         ' CASE WHEN exp.minutes IS NULL THEN 0 ELSE exp.minutes END as minutes,'
                         ' \'\' as executors '  # fill it bellow
-                        ' from "Tasks" t '                        
+                        ' from "Tasks" t '
                         ' left join "Services" ps on t."ServiceId" = ps."Id" '
                         ' left join "Users" uc on t."CreatorId" = uc."Id" '
                         ' left join "Services" s on t."ServiceId" = s."Id" '
@@ -965,7 +993,8 @@ class ExpensesReport(Report):
                 fl.append(ss('ex."DateExp" BETWEEN {} AND {}').format(sl(ffrom), sl(tto)))
             if frame == 'closed':
                 fl.append(ss('t."Closed" BETWEEN {} AND {}').format(sl(ffrom), sl(tto)))
-            fl.append(ss('(t."ServiceId" in {0} OR ps."ParentId" in {0})').format(sl(tuple(services))))
+            if len(services):
+                fl.append(ss('(t."ServiceId" in {0} OR ps."ParentId" in {0})').format(sl(tuple(services))))
             return ss(' AND ').join(fl) if len(fl) else sl(True)
 
         query = sql.SQL('SELECT t."Id" AS task_id, t."Name" AS task_name, t."Description" AS task_descr, '

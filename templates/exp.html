@@ -31,7 +31,7 @@
             <td align="right">{{ loop.index }}.</td>
             <td nowrap> <a href="https://prosto12.intraservice.ru/Task/View/{{ rec.task_id }}">{{ rec.task_id }}</a></td>
             <td>{{ rec.task_name|truncate(70) }}  <small class="text-muted">{% if rec.task_descr %}{{(rec.task_descr)|truncate(200)}}{% endif %}</small></td>
-            <td nowrap>{{ rec.creator }}</td>
+            <td>{{ rec.creator }}</td>
             <td nowrap>{{ rec.service }}</td>
             <td nowrap>{{ ("%s"|format(rec.created))[: 11] }}</td>
             <td nowrap>
