@@ -467,9 +467,9 @@ class HelpdeskReport(Report):
                 'services': sp['services'],
             }
 
-        self._add_navigate_point(cn, 'Last month', _nav_params('monthly'))
-        self._add_navigate_point(cn, 'Last week', _nav_params('weekly'))
-        self._add_navigate_point(cn, 'Daily', _nav_params('daily'))
+        self._add_navigate_point(cn, 'monthly', _nav_params('monthly'))
+        self._add_navigate_point(cn, 'weekly', _nav_params('weekly'))
+        self._add_navigate_point(cn, 'daily', _nav_params('daily'))
 
         # navigate section end
 
