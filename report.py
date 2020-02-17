@@ -899,12 +899,14 @@ class TaskReport(Report):
                         ' uc."Name" as creator, '
                         ' t."Deadline" as deadline, '
                         ' s."Name" as service,'
+                        ' pps."Name" as parent_service,'
                         ' t."StatusId" as status, '
                         ' t."EvaluationId" as eval, '
                         ' CASE WHEN exp.minutes IS NULL THEN 0 ELSE exp.minutes END as minutes,'
                         ' \'\' as executors '  # fill it bellow
                         ' from "Tasks" t '
                         ' left join "Services" ps on t."ServiceId" = ps."Id" '
+                        ' left join "Services" pps on ps."ParentId" = pps."Id" '
                         ' left join "Users" uc on t."CreatorId" = uc."Id" '
                         ' left join "Services" s on t."ServiceId" = s."Id" '
                         ' left join (select "TaskId" as task_id, sum("Minutes") as minutes '
@@ -1001,14 +1003,16 @@ class ExpensesReport(Report):
                         ' t."Created" AS created, t."Closed" AS closed,'
                         ' uc."Name" AS creator, SUM(ex."Minutes") AS Minutes, '
                         ' s."Name" AS service, '
+                        ' pps."Name" AS parent_service, '
                         ' ue."Name" AS executor'
                         ' FROM "Expenses" ex'
                         ' LEFT JOIN "Tasks" as t ON ex."TaskId" = t."Id"'
                         ' LEFT JOIN "Services" ps ON t."ServiceId" = ps."Id" '
+                        ' LEFT JOIN "Services" pps ON ps."ParentId" = pps."Id" '
                         ' LEFT JOIN "Users" uc ON t."CreatorId"=uc."Id"'
                         ' LEFT JOIN "Users" ue ON ex."UserId"=ue."Id"'
                         ' LEFT JOIN "Services" s ON t."ServiceId"=s."Id" where {}'
-                        ' GROUP BY t."Id", creator, service, ue."Name" '
+                        ' GROUP BY t."Id", creator, parent_service, service, ue."Name" '
                         ' ORDER BY t."Created" desc').format(_filter())
 
         def _fact(rec, res):

@@ -29,3 +29,12 @@
 </details>
 {% endif %}
 {%- endmacro -%}
+
+{%- macro mark_service(parent, service) -%}
+    {% if parent %}
+        {{ parent }}<br> <p class="text-muted small">{{ service }}</p>
+    {% else %}
+        {{ service }}
+    {% endif %}
+{%- endmacro -%}
+
