@@ -17,7 +17,12 @@
 {% set srv_table_class='col-md-6' %}
 
 {%- macro task_util(report, task_v, task_d, util_v, util_d) -%}
-    {{ lib.detail_link(report, task_v, task_d) }} ({{ lib.detail_link(report, (util_v/60)|round(1), util_d)}})
+    {{ lib.detail_link(report, task_v, task_d) }}
+    {% if util_v %}
+        ({{ lib.detail_link(report, (util_v/60)|round(1), util_d) }})
+    {% else %}
+        ({{ lib.detail_link(report, 0, util_d) }})
+    {% endif %}
 {%- endmacro -%}
 
 {% block title %}
@@ -75,17 +80,22 @@
         <table class="table">
             <caption>Задачи и оценки</caption>
             <thead>
-                <!--
                 <tr>
-                    <th colspan="2"></th>
-                    <th class="info" colspan="7">Текущая неделя</th>
-                    <th colspan="3"> Предыдущие недели </th>
-                    <th class="info" colspan="3"> Предыдущие месяцы </th>
+                    <td colspan="2"></td>
+                    {% if frame in ['daily', 'weekly'] %}
+                    <td colspan="7"><b>{{lib.mark_title("Текущая неделя", "ТТ (ЧЧ), где ТТ -- закрытые заявки, ЧЧ -- трудозатраты за период")}}</b></td>
+                    {% endif %}
+                    {% if frame in ['weekly'] %}
+                    <td colspan="3"><b>{{lib.mark_title("Предыдущие недели", "ТТ (ЧЧ), где ТТ -- закрытые заявки, ЧЧ -- трудозатраты за период")}}</b></td>
+                    {% endif %}
+                    {% if frame in ['monthly'] %}
+                    <td colspan="3"><b>{{lib.mark_title("Предыдущие месяцы", "ТТ (ЧЧ), где ТТ -- закрытые заявки, ЧЧ -- трудозатраты за период")}}</b></td>
+                    {% endif %}
+                    <td colspan="5"><b>{{ lib.mark_title("Оценки", "5 -- очень хорошо, 1 -- совсем плохо") }}</b></td>
                 </tr>
-                -->
                 <tr>
                     <th>#</th>
-                    <th>ФИО</th>
+                    <th>{{ lib.mark_title('ФИО', 'Исполнитель [T], где T - заявки, открытые на исполнителя') }}</th>
                     {% set eval_class = "" %}
                     {% if frame in ['daily', 'weekly'] %}
                     <th class="info">ПН</th>
@@ -117,7 +127,7 @@
             <tbody>
                 {% for r in rpt._D().utl.body %}
                 <tr>
-                    <td align="right">{{ r.seq }}</td>
+                    <td align="right">{{ r.seq }}.</td>
                     <td>{{ r.name }} [{{ lib.detail_link(rpt, r.own_tasks, r.detail_own_tasks) }}]</td>
                     {% if frame in ['daily', 'weekly'] %}
                     <td class="info">

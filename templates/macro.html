@@ -1,6 +1,13 @@
+
 {% macro hdr_title(hdr, title) %}
+## deprecated
 <span class="text-success" title="{{ title }}">{{hdr}}</span>
 {% endmacro %}
+
+{% macro mark_title(title, hint) %}
+    <span class="text-success" title="{{ hint }}">{{ title }}</span>
+{% endmacro %}
+
 
 {% macro ticket_link(ticket_id) %}
 <a href="https://prosto12.intraservice.ru/Task/View/{{ticket_id}}">{{ticket_id}}</a>
