@@ -51,7 +51,11 @@
         {% endif %}
         <td align="center">{{ ("%s"|format(row.start))[11: 19] }}</td>
         <td align="center">{{ ("%s"|format(row.finish))[11: 19] }}</td>
-        <td align="right">{{ row.duration }}</td>
+        <td align="right">
+            {% if row.duration != None %}
+                {{ row.duration }}
+            {% endif %}
+        </td>
         <td title="{{row.params}}">{{ (row.params if row.params else "")|truncate(40, True)|escape() }}</td>
         <td title="{{row.result}}">{{ (row.result if row.result else "")|truncate(40, True)|escape() }}</td></tr>
         {% endfor %}
