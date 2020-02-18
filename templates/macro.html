@@ -8,6 +8,17 @@
     <span class="text-success" title="{{ hint }}">{{ title }}</span>
 {% endmacro %}
 
+{% macro mark_date(date) %}
+    {% if date %}
+        {% set my = {'Jan':'янв', 'Feb':'фев', 'Mar':'мар', 'Apr':'апр', 'May':'май', 'Jun':'июн',
+                    'Jul':'июл', 'Avg':'авг', 'Sep':'сен', 'Oct':'окт', 'Nov':'ноя', 'Dec':'дек'} %}
+        {% set mm = date.strftime('%h') %}
+
+        {{ date.strftime('%d.{}.%Y').format((my[mm])|default(mm)) }}
+    {% endif %}
+{% endmacro %}
+
+
 
 {% macro ticket_link(ticket_id) %}
 <a href="https://prosto12.intraservice.ru/Task/View/{{ticket_id}}">{{ticket_id}}</a>

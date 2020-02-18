@@ -34,12 +34,8 @@
             <td>{{ rec.task_name|truncate(70) }}  <small class="text-muted">{% if rec.task_descr %}{{(rec.task_descr)|truncate(200)}}{% endif %}</small></td>
             <td>{{ rec.creator }}</td>
             <td>{{ lib.mark_service(rec.parent_service, rec.service) }}</td>
-            <td nowrap>{{ ("%s"|format(rec.created))[: 11] }}</td>
-            <td nowrap>
-            {% if rec.closed %}
-                {{ ("%s"|format(rec.closed))[: 11] }}
-            {% endif %}
-            </td>
+            <td nowrap>{{ lib.mark_date(rec.created) }}</td>
+            <td nowrap>{{ lib.mark_date(rec.closed) }}</td>
             <td nowrap>{{ rec.executor }}</td>
             <td align="right">{{ (rec.minutes/60)|round(2) }}</td>
         </tr>

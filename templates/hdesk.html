@@ -33,7 +33,7 @@
 {% endblock %}
 {% block content %}
     <h1>[{{frame}}] <small>{{ caption }}</small></h1>
-    <small class="text-muted">{{ rpt._P().from.strftime('%d %h %Y') }} -- {{ rpt._P().to.strftime('%d %h %Y') }}</small>
+    <small class="text-muted">{{ lib.mark_date(rpt._P().from) }} -- {{ lib.mark_date(rpt._P().to)  }}</small>
 
 {% set navigation = {'monthly': 'Прошлый месяц', 'weekly': 'Прошлая неделя', 'daily': 'Сегодня'} %}
 <nav aria-label="Page navigation">
