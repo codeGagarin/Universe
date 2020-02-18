@@ -310,11 +310,6 @@ class Report:
         cn = conn['cn']
         ns = conn['need_stat']
 
-        # if postpone:
-        #     conn['pp'].append(query)
-        #     return None
-
-        # todo: result need named tuple implementation
         if named_result:
             cursor = cn.cursor(cursor_factory=psycopg2.extras.NamedTupleCursor)
         else:

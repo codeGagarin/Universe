@@ -80,5 +80,44 @@ class ISActualizer(Activity):
 
         job_id = self._add_job(from_date, to_date, activity_id)
         print(f'Job id:{job_id} added.')
-
         self._ldr.sql_commit()
+
+
+class IS404TaskCloser(Activity):
+    """Closed all union 404 url tasks"""
+    def get_crontab(self):
+        return '30 */1 * * *'
+
+    def run(self):
+        # mark new open task
+        query = sql.SQL('UPDATE "Tasks" SET "m_lastClosedTouch"="Created" '
+                        ' WHERE "Closed" IS NULL AND "m_lastClosedTouch" IS NULL')
+        self._ldr.sql_exec(query)
+
+        # get 1/24 opened task count
+        query = sql.SQL('SELECT COUNT(*) AS cc FROM "Tasks" WHERE "Closed" IS NULL')
+        rows = self._ldr.sql_exec(query, named_result=True)
+        open_tasks_count = rows[0].cc
+        limit = open_tasks_count/12
+
+        # select older closed touch tasks
+        query = sql.SQL('SELECT "Id" AS idx FROM "Tasks" WHERE "Closed" IS NULL ORDER BY "m_lastClosedTouch" LIMIT 10')
+        rows = self._ldr.sql_exec(query, named_result=True)
+
+        # check 404 url task error
+        is_conn = self._ldr.get_IS_connector()
+        for rec in rows:
+            if is_conn.is_404(rec.idx):
+                # closed 404 tasks
+                print(f"#{rec.idx} ")
+                query = sql.SQL('UPDATE "Tasks" SET "Closed"={}, "m_lastClosedTouch"={} '
+                                ' WHERE "Id"={}').format(
+                    sql.Literal(datetime.now()),
+                    sql.Literal(datetime(1111, 11, 11)),  # manual closed marker
+                    sql.Literal(rec.idx)
+                )
+            else:
+                # update last_touch param
+                query = sql.SQL('UPDATE "Tasks" SET "m_lastClosedTouch"={} '
+                                ' WHERE "Id"={}').format(sql.Literal(datetime.now()), sql.Literal(rec.idx))
+            self._ldr.sql_exec(query)

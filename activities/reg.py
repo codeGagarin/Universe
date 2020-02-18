@@ -1,5 +1,5 @@
 from activities.activity import Email
-from activities.intraservice import ISActualizer, ISSync
+from activities.intraservice import ISActualizer, ISSync, IS404TaskCloser
 from activities.reports import LoaderStateReporter2, HelpdeskWeekly
 
 
@@ -9,5 +9,7 @@ def init_ldr(ldr):
     ldr.register(ISSync)
     ldr.register(LoaderStateReporter2)
     ldr.register(HelpdeskWeekly)
+    ldr.register(IS404TaskCloser)
+
 
 

@@ -433,6 +433,22 @@ class _INW:
 
 
 class ISConnector(DataConnector):
+    def is_404(self, task_id):
+
+        base_url = self._acc_key['url']
+        session = requests.Session()
+        retries = Retry(total=25,
+                        backoff_factor=0.0001,
+                        status_forcelist=[500, 502, 503, 504])
+        session.mount('https://', HTTPAdapter(max_retries=retries))
+
+        # Make API request
+        url = f"{base_url}task/{task_id}"
+        r = session.get(url=url, auth=self._auth, verify=False)
+
+        session.close()
+        return True if r.status_code == 404 else False
+
     def _api_request_get(self, resource: str, params: dict, result_factory, result=None):
         if not result:
             result = {}

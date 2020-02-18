@@ -33,6 +33,11 @@ class TestActivities(TestCase):
         rep = ISActualizer(self.ldr)
         rep.run()
 
+    def test_IS404TaskCloser(self):
+        rep = IS404TaskCloser(self.ldr)
+        rep.run()
+
+
 class TestReports(TestCase):
     def setUp(self):
         pass
@@ -107,7 +112,7 @@ TEST_DATA = {
 
 }
 
-class TestPGConnector():
+class TestPGConnector(TestCase):
     def setUp(self):
         pass
 
@@ -198,7 +203,7 @@ class TestPGConnector():
         pg_con.delete_task_actuals(t)
         self.assertFalse(pg_con.is_exist(a))
 
-class TestISConnector():
+class TestISConnector(TestCase):
     def setUp(self):
         # test db_key
         self.connector = ISConnector(TestKeyChain.IS_KEY)

@@ -41,9 +41,13 @@ class Loader:
     def sql_commit(self):
         self._db_conn.commit()
 
-    def sql_exec(self, query, result=None, result_factory=None, auto_commit=True):
+    def sql_exec(self, query, result=None, result_factory=None, auto_commit=True, named_result=False):
         # todo: result need named tuple implementation
-        cursor = self._db_conn.cursor()
+        if named_result:
+            cursor = self._db_conn.cursor(cursor_factory=psycopg2.extras.NamedTupleCursor)
+        else:
+            cursor = self._db_conn.cursor()
+
         sql_str = query.as_string(self._db_conn)
         cursor.execute(sql_str)
         if result is None:
@@ -51,7 +55,7 @@ class Loader:
         try:
             rows = cursor.fetchall()
         except Exception:
-            # empty query result
+            # empty query result case
             if auto_commit:
                 self.sql_commit()
             return result
@@ -274,8 +278,8 @@ class Loader:
         result = self.sql_exec(query, result, factory)
         return {'actual_date': date, 'header': fields, 'data': result}
 
-    def get_PG_connector(self):
-        return PGConnector(KeyChain.TEST_PG_KEY)
+    def get_PG_connector(self):  # __init__ defined
+        pass
 
-    def get_IS_connector(self):
-        return ISConnector(KeyChain.TEST_IS_KEY)
+    def get_IS_connector(self):  # __init__ defined
+        pass
