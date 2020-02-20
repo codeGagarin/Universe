@@ -433,6 +433,7 @@ class _INW:
 
 
 class ISConnector(DataConnector):
+    _certVerify = True  # connection SSL cert verify
     def is_404(self, task_id):
 
         base_url = self._acc_key['url']
@@ -444,7 +445,7 @@ class ISConnector(DataConnector):
 
         # Make API request
         url = f"{base_url}task/{task_id}"
-        r = session.get(url=url, auth=self._auth, verify=False)
+        r = session.get(url=url, auth=self._auth, verify=self._certVerify)
 
         session.close()
         return True if r.status_code == 404 else False
@@ -462,7 +463,7 @@ class ISConnector(DataConnector):
 
         # Make API request
         url = f"{base_url}{resource}"
-        r = session.get(url=url, auth=self._auth, params=params, verify=False)
+        r = session.get(url=url, auth=self._auth, params=params, verify=self._certVerify)
         raw_data = dict(r.json())
         session.close()
         if r.status_code != 200:
