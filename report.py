@@ -497,9 +497,6 @@ class HelpdeskReport(Report):
         def _get_body(index):
             return {i: [] for i in index}
 
-        def _seq(index):
-            return {ex: seq for ex, seq in zip(index, range(1, len(index) + 1))}
-
         def _get_detail_utl(report: Report.__class__, params: dict):
             res = {}
             for idx in exs:
@@ -602,7 +599,6 @@ class HelpdeskReport(Report):
         def _get_util_map():
             return (
                 ('*', {
-                    'seq': _sm_header(_seq, exs),
                     'name': _sm_header(_names, {'table': 'Users', 'index': exs}),
                     'detail_own_tasks': _sm_header(_own_tasks_d),
                     'own_tasks': _sm_header(_own_tasks),
@@ -810,7 +806,6 @@ class HelpdeskReport(Report):
         def _get_srv_map():
             return (
                 ('*', {
-                    'seq': _sm_header(_seq, srv_ufl),
                     'name': _sm_header(_names, {'table': 'Services', 'index': srv_ufl}),
                     'parent': _sm_header(_parent),
                     'income': _sm_header(_income),
