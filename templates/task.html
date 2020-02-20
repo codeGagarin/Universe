@@ -15,7 +15,7 @@
         <table class="table table-condensed">
             <thead>
                 <tr>
-                    <th>#</th>
+                    <th class="text-muted">#</th>
                     <th>Задача</th>
                     <th>Содержание</th>
                     <th>Создана</th>
@@ -30,7 +30,7 @@
                 {% set body = rpt._D().body.values() %}
                 {% for rec in body%}
                 <tr>
-                    <td align="right">{{loop.index}}.</td>
+                    <td align="right" class="text-muted">{{loop.index}}.</td>
                     <td nowrap>{{ lib.ticket_link(rec.task_id) }}</td>
                     <td>{{ rec.task_name|truncate(70) }}  <small class="text-muted">{% if rec.task_descr %}{{(rec.task_descr)|truncate(200)}}{% endif %}</small></td>
                     <td nowrap>{{ lib.mark_date(rec.created) }}</td>

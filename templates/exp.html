@@ -14,7 +14,7 @@
 <table class="table">
     <thead>
         <tr>
-            <th>#</th>
+            <th class="text-muted">#</th>
             <th>Задача</th>
             <th>Содержание</th>
             <th>Инициатор</th>
@@ -29,7 +29,7 @@
         {%  set body = rpt._D().body %}
         {% for rec in body %}
         <tr>
-            <td align="right">{{ loop.index }}.</td>
+            <td align="right" class="text-muted">{{ loop.index }}.</td>
             <td nowrap> <a href="https://prosto12.intraservice.ru/Task/View/{{ rec.task_id }}">{{ rec.task_id }}</a></td>
             <td>{{ rec.task_name|truncate(70) }}  <small class="text-muted">{% if rec.task_descr %}{{(rec.task_descr)|truncate(200)}}{% endif %}</small></td>
             <td>{{ rec.creator }}</td>
