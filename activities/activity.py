@@ -2,6 +2,8 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import smtplib
 
+from premailer import transform
+
 
 class Activity:
     def __init__(self, ldr, params=None):
@@ -45,6 +47,8 @@ class Email(Activity):
         return 'subject from to cc body'
 
     def run(self):
+        html_body = transform(self['body'])
+
         acc_key = self._ldr.key_chain.SMTP_KEY
         msg = MIMEMultipart('alternative')
         msg['Subject'] = self['subject']
@@ -63,7 +67,7 @@ class Email(Activity):
             msg['Cc'] = ", ".join(self['cc']) if self['cc'] else ''
 
         # Record the MIME type of html - text/html.
-        body = MIMEText(self['body'], 'html')
+        body = MIMEText(html_body, 'html')
 
         # Attach HTML part into message container.
         msg.attach(body)

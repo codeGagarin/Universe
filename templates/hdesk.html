@@ -65,17 +65,19 @@
                     <th>Без плана</th>
                 </tr>
             </thead>
-            {% for r in rpt._D().srv.body %}
-            <tr>
-                <td align="right" class="text-muted">{{ loop.index }}.</td>
-                <td>{% if r.parent %} -- {% endif %} {{ r.name }}</td>
-                <td align="right">{{ lib.detail_link(rpt, r.income, r.income_d) }}</td>
-                <td align="right">{{ lib.detail_link(rpt, r.closed, r.closed_d)}}({{lib.detail_link(rpt, (r.closed_exp/60)|round(1, 'common'), r.closed_exp_d)}})</td>
-                <td align="right">{{ lib.detail_link(rpt, r.open, r.open_d) }}</td>
-                <td align="right">{{ lib.detail_link(rpt, r.no_exec, r.no_exec_d) }}</td>
-                <td align="right">{{ lib.detail_link(rpt, r.no_deadline, r.no_deadline_d) }}</td>
-            </tr>
-            {% endfor %}
+            <tbody>
+                {% for r in rpt._D().srv.body %}
+                <tr>
+                    <td align="right" class="text-muted">{{ loop.index }}.</td>
+                    <td>{% if r.parent %} -- {% endif %} {{ r.name }}</td>
+                    <td align="right">{{ lib.detail_link(rpt, r.income, r.income_d) }}</td>
+                    <td align="right">{{ lib.detail_link(rpt, r.closed, r.closed_d)}}({{lib.detail_link(rpt, (r.closed_exp/60)|round(1, 'common'), r.closed_exp_d)}})</td>
+                    <td align="right">{{ lib.detail_link(rpt, r.open, r.open_d) }}</td>
+                    <td align="right">{{ lib.detail_link(rpt, r.no_exec, r.no_exec_d) }}</td>
+                    <td align="right">{{ lib.detail_link(rpt, r.no_deadline, r.no_deadline_d) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
         </table>
     </div>
 </div>
@@ -205,3 +207,4 @@
 </div>
 {{ lib.profile_stat(rpt, stat) }}
 {% endblock %}
+

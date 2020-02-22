@@ -106,6 +106,13 @@ class Report:
         """
         pass
 
+    def url_for_static(self, res_path):
+        return '{}/static/{}'.format(
+            self.web_server_name,
+            res_path
+        )
+
+
     def url_for(self, target, params=None):
         if not params:
             params = {}
