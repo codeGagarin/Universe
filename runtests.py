@@ -5,7 +5,7 @@ import jinja2
 from flask import url_for
 
 
-from keys import TestKeyChain
+from keys import KeyChain
 from loader import Loader
 from activities.reg import *
 from report import *
@@ -16,7 +16,7 @@ class TestActivities(TestCase):
     ldr: Loader
     @classmethod
     def setUpClass(cls):
-        cls.ldr = Loader(TestKeyChain)
+        cls.ldr = Loader(KeyChain)
 
     def tearDown(self):
         self.ldr.track_schedule()
@@ -43,7 +43,7 @@ class TestReports(TestCase):
         pass
 
     def render_report(self, report_cls, params=None):
-        cn = report_cls.get_connection(TestKeyChain.PG_KEY)
+        cn = report_cls.get_connection(KeyChain.PG_KEY)
         report = report_cls(params)
         report.request_data(cn)
         template_ldr = jinja2.FileSystemLoader(searchpath="./templates")
@@ -194,7 +194,7 @@ class TestPGConnector(TestCase):
                 self.assertEqual(entity[key], test_data[key])
 
     def test_delete_task_actuals(self):
-        pg_con = PGConnector(TestKeyChain.PG_KEY)
+        pg_con = PGConnector(KeyChain.PG_KEY)
         a = Actual(TEST_DATA['actual'])
         task_id = a['TaskId']
         pg_con.update(a)
@@ -206,7 +206,7 @@ class TestPGConnector(TestCase):
 class TestISConnector(TestCase):
     def setUp(self):
         # test db_key
-        self.connector = ISConnector(TestKeyChain.IS_KEY)
+        self.connector = ISConnector(KeyChain.IS_KEY)
 
     def test_select_task(self):
         factory = Task

@@ -1,1 +1,1 @@
-delete from "Loader"
+delete from "Loader" WHERE "status"='todo'
