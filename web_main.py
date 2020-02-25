@@ -41,8 +41,8 @@ def reportm():
     else:
         rpt.request_data(conn)
     conn['cn'].close()
-    rpt.web_server_name = "http://127.0.0.1:5000"  # delete this now! for transform testing
-    return index_page if index_page else transform(render_template(rpt.get_template(), rpt=rpt))
+    #  rpt.web_server_name = "http://127.0.0.1:5000"  # delete this now! for transform testing
+    return index_page if index_page else transform(render_template(rpt.get_template(), rpt=rpt), allow_insecure_ssl=True)
 
 
 @app.route('/default/')
