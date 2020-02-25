@@ -4,11 +4,10 @@ from flask import render_template
 from flask import url_for
 import psycopg2
 from psycopg2 import sql
-from premailer import transform
 
 from keys import KeyChain
 from report import Report
-
+from activities.reports import ReportActivity
 app = Flask(__name__)
 
 
@@ -42,7 +41,7 @@ def reportm():
         rpt.request_data(conn)
     conn['cn'].close()
     #  rpt.web_server_name = "http://127.0.0.1:5000"  # delete this now! for transform testing
-    return index_page if index_page else transform(render_template(rpt.get_template(), rpt=rpt), allow_insecure_ssl=True)
+    return index_page if index_page else ReportActivity.get_report_html(rpt, KeyChain)
 
 
 @app.route('/default/')

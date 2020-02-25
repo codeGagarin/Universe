@@ -2,8 +2,6 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import smtplib
 
-from premailer import transform
-
 
 class Activity:
     def __init__(self, ldr, params=None):
@@ -47,7 +45,7 @@ class Email(Activity):
         return 'subject from to cc body'
 
     def run(self):
-        html_body = transform(self['body'])
+        html_body = self['body']
 
         acc_key = self._ldr.key_chain.SMTP_KEY
         msg = MIMEMultipart('alternative')

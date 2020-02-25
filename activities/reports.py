@@ -1,5 +1,7 @@
 from pathlib import Path
+
 import jinja2
+from premailer import transform
 
 from activities.activity import Activity, Email
 from report import DiagReport, HelpdeskReport
@@ -7,14 +9,21 @@ from report import DiagReport, HelpdeskReport
 
 class ReportActivity(Activity):
 
-    def get_report_html(self, report):
-        path = str(Path(__file__).parent.parent)+"/templates"
-        template_ldr = jinja2.FileSystemLoader(searchpath=path)
+    @classmethod
+    def get_report_html(cls, report, key_chain):
+        proj_root = str(Path(__file__).parent.parent)
+        templates_root = proj_root+"/templates"
+        template_ldr = jinja2.FileSystemLoader(searchpath=templates_root)
         template_env = jinja2.Environment(loader=template_ldr)
         template_name = report.get_template()
         template = template_env.get_template(template_name)
-        report.web_server_name = self._ldr.key_chain.WEB_PATH
-        return template.render(rpt=report)
+        report.web_server_name = key_chain.WEB_PATH
+        html_text = template.render(rpt=report, eml=True)
+        css_path = f'{proj_root}/static/css/bootstrap.css'
+        f = open(css_path)
+        css_text = f.read()
+        f.close()
+        return transform(html_text, css_text=css_text)
 
 
 class LoaderStateReporter2(ReportActivity):
@@ -29,7 +38,7 @@ class LoaderStateReporter2(ReportActivity):
         email = Email(self._ldr)
         email['to'] = ('belov78@gmail.com',)
         email['subject'] = 'Loader daily report'
-        email['body'] = self.get_report_html(report)
+        email['body'] = self.get_report_html(report, self._ldr.key_chain)
         email.run()
 
 
@@ -73,5 +82,5 @@ class HelpdeskWeekly(ReportActivity):
             email['to'] = report.users_to_email(conn, prm['to'])
             email['cc'] = report.users_to_email(conn, prm['cc'])
             email['subject'] = prm['subj']
-            email['body'] = self.get_report_html(report)
+            email['body'] = self.get_report_html(report, self._ldr.key_chain)
             email.apply()
