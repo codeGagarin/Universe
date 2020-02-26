@@ -68,7 +68,7 @@ class ISActualizer(Activity):
             last_update_tic = result[0][0]
 
         from_date = last_update_tic
-        d = timedelta(hours=3)
+        d = timedelta(hours=6)
         to_date = from_date + d
         if to_date > datetime.now():
             to_date = datetime.now()
