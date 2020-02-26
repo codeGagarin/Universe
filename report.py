@@ -367,8 +367,8 @@ class DiagReport(Report):
         sp = self._params
         prev_point = _get_period(sp['from'], 'day', -1)
         next_point = _get_period(sp['from'], 'day', 1)
-        self._add_navigate_point(conn, '<< Prev day', {'from': prev_point['from'], 'to': prev_point['to']})
-        self._add_navigate_point(conn, 'Next day >>', {'from': next_point['from'], 'to': next_point['to']})
+        self._add_navigate_point(conn, 'Prev day', {'from': prev_point['from'], 'to': prev_point['to']})
+        self._add_navigate_point(conn, 'Next day', {'from': next_point['from'], 'to': next_point['to']})
 
         start = datetime.combine(sp['from'], datetime.min.time())
         fin = datetime.combine(sp['to'], datetime.max.time())
@@ -376,8 +376,8 @@ class DiagReport(Report):
         # update fail status if request it
         upd_id = sp.get('upd_id')
         if upd_id:
-            query = sql.SQL('UPDATE "Loader" SET "status"={} WHERE "id"={} AND "status"={} ').format(
-                sql.Literal('todo'), sql.Literal(upd_id), sql.Literal('fail')
+            query = sql.SQL('UPDATE "Loader" SET "status"={} WHERE "id"={}').format(
+                sql.Literal('todo'), sql.Literal(upd_id)
             )
             self._sql_exec(conn, query)
 
@@ -395,7 +395,7 @@ class DiagReport(Report):
         def _status_detail(rec):
             upd_flag = sp.get('upd')
             res = None
-            if upd_flag and rec.status == 'fail':
+            if upd_flag and rec.status in ('fail', 'working', 'finish'):
                 detail_params = {
                     'from': sp['from'],
                     'to': sp['to'],
