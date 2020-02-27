@@ -48,28 +48,7 @@ class HelpdeskWeekly(ReportActivity):
 
     @classmethod
     def get_report_params(cls):
-        return {
-            "StationITWeekly": {
-                'to': (7162, 9131, 8724, 9070),
-                'cc': ('alexey.makarov@station-hotels.ru', 'igor.belov@station-hotels.ru'),
-                'subj': '[Weekly] Недельный отчет Helpdesk',
-                'params': {
-                    'services': (139,),
-                    'executors': (7162, 9131, 8724, 9070),
-                    'frame': 'weekly'
-                }
-            },
-            'Prosto12': {
-                'to': ('v.ulianov@prosto12.ru', 'i.belov@prosto12.ru'),
-                'cc': (),
-                'subj': '[Weekly] Недельный отчет Helpdesk',
-                'params': {
-                    'services': (),
-                    'executors': (396, 5994, 405, 402, 5995, 390, 43),
-                    'frame': 'weekly',
-                },
-            },
-        }
+        return HelpdeskReport.get_report_map()
 
     def run(self):
         params = self.get_report_params()

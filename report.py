@@ -183,8 +183,9 @@ class Report:
     @classmethod
     def default_map(cls, conn):
         result = {}
-        for name, report_class in cls._get_map().items():
-            result[name] = report_class.get_idx(conn, cls._get_def_params())
+        for report_name, report_class in cls._get_map().items():
+            for param_name, param in report_class.get_report_map().items():
+                result[f"{report_name} -- {param_name}"] = report_class.get_idx(conn, param['params'])
         return result
 
     @classmethod
@@ -298,9 +299,12 @@ class Report:
         return cls._json_to_dict(result[0][0])
 
     @classmethod
-    def _get_def_params(cls):
+    def _get_def_params(cls):  # todo: deprecated need to delete, should using [get_report_map]
         """ Override it in subclasses for default report link generation """
-        # todo: default reports need to be taken out this scope
+        return {}
+
+    @classmethod
+    def get_report_map(cls):
         return {}
 
     @classmethod
@@ -351,6 +355,14 @@ class Report:
 
 
 class DiagReport(Report):
+    @classmethod
+    def get_report_map(cls):
+        return {
+            'Default':
+                {
+                    'params':{}
+                }
+        }
 
     def set_up(self, url_params):
         if url_params:
@@ -416,6 +428,55 @@ class DiagReport(Report):
 
 
 class HelpdeskReport(Report):
+    @classmethod
+    def get_report_map(cls):
+        return {
+            "StationITWeekly": {
+                'to': (7162, 9131, 8724, 9070),
+                'cc': ('alexey.makarov@station-hotels.ru', 'igor.belov@station-hotels.ru'),
+                'subj': '[Weekly] Недельный отчет Helpdesk',
+                'params': {
+                    'services': (139,),
+                    'executors': (7162, 9131, 8724, 9070),
+                    'frame': 'weekly'
+                }
+            },
+            'Prosto12': {
+                'to': (396, 5994, 405, 402, 5995, 390, 43),
+                'cc': ('v.ulianov@prosto12.ru', 'i.belov@prosto12.ru'),
+                'subj': '[Weekly] Недельный отчет Helpdesk',
+                'params': {
+                    'services': (),
+                    'executors': (396, 5994, 405, 402, 5995, 390, 43),
+                    'frame': 'weekly',
+                },
+            },
+            'Intratool': {
+                'to': ('v.ulianov@prosto12.ru, i.belov@prosto12.ru'),
+                'cc': (),
+                'subj': '[Weekly] Недельный отчет Helpdesk',
+                'params': {
+                    'services': (66, 118, 134, 136, 137, 169),
+                    'executors': (
+                        7379,  # DrA
+                        5329,  # VaL
+                        5599,  # LaA
+                        7988,  # PlE
+                        396,  # KrS
+                        5731,  # PoI
+                        8882,  # MaA
+                        7154,  # StM
+                        5372,  # GoV
+                        5994,  # LaA
+                        5912,  # FeM
+                        8958,  # DeA
+                        8949,  # KaI
+                    ),
+                    'frame': 'weekly',
+                },
+            },
+        }
+
     def set_up(self, params_url):
         sp = self._params
 
@@ -441,16 +502,6 @@ class HelpdeskReport(Report):
 
     def get_template(self):
         return 'hdesk.html'
-
-    @classmethod
-    def _get_def_params(cls):
-        # todo: delete after default test
-        a = {'services': (100, 116, 91, 92, 77)}
-        return {
-            'services': (),
-            'executors': (396, 5994, 405, 402, 5995, 390, 43),
-            'frame': 'weekly'
-        }
 
     def _prepare_data(self, cn):
         data = {}
@@ -934,15 +985,6 @@ class TaskReport(Report):
             se(conn, query, None, _fact)
         return {'body': body}
 
-    @classmethod
-    def _get_def_params(cls):
-        # todo: delete after default test
-        return {
-            'frame': 'open',
-            'executors': [7162],
-            'services': (139, 168),
-        }
-
 
 class ExpensesReport(Report):
     """
@@ -956,17 +998,6 @@ class ExpensesReport(Report):
 
     def set_up(self, params_url):
         pass
-
-    @classmethod
-    def _get_def_params(cls):
-        return {
-            "from": date(2020, 1, 27),
-            "to": date(2020, 1, 27),
-            "executors": [7162],
-            "type": "ExpensesReport",
-            'services': (139, 168),
-
-        }
 
     def get_template(self):
         return "exp.html"

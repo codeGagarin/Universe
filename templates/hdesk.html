@@ -14,7 +14,7 @@
         {% set caption = "Helpdesk отчет за месяц" %}
         {% set util_table_class='col-md-8' %}
     {% endif %}
-{% set srv_table_class='col-md-6' %}
+{% set srv_table_class='col-md-8' %}
 
 {%- macro task_util(report, task_v, task_d, util_v, util_d) -%}
     {{ lib.detail_link(report, task_v, task_d) }}
