@@ -42,9 +42,9 @@ class TestReports(TestCase):
     def setUp(self):
         pass
 
-    def render_report(self, report_cls, params=None):
+    def render_report(self, report_cls, param_idx):
         cn = report_cls.get_connection(KeyChain.PG_KEY)
-        report = report_cls(params)
+        report = Report.factory(cn, {'idx': param_idx})
         report.request_data(cn)
         template_ldr = jinja2.FileSystemLoader(searchpath="./templates")
         template_env = jinja2.Environment(loader=template_ldr)
@@ -53,16 +53,16 @@ class TestReports(TestCase):
         return template.render(rpt=report)
 
     def test_DiagReport(self):
-        self.render_report(DiagReport)
+        self.render_report(DiagReport, 15706847338409224)
 
     def test_HelpdeskReport(self):
-        self.render_report(HelpdeskReport, HelpdeskReport._get_def_params())
+        self.render_report(HelpdeskReport, 316531349939618110)
 
     def test_TaskReport(self):
-        self.render_report(TaskReport, TaskReport._get_def_params())
+        self.render_report(TaskReport, 317652057430246819)
 
     def test_ExpensesReport(self):
-        self.render_report(ExpensesReport, ExpensesReport._get_def_params())
+        self.render_report(ExpensesReport, 116988493087963479)
 
 
 
