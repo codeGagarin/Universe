@@ -309,7 +309,7 @@ class Report:
 
     @classmethod
     def get_idx(cls, conn, params=None):
-        """ convert report param data to uniq IDX whit DB touch action """
+        """ convert report param data to uninq IDX whit DB touch action """
         if not params:
             params = cls._get_def_params()
         params['type'] = cls.get_type()
@@ -360,7 +360,7 @@ class DiagReport(Report):
         return {
             'Default':
                 {
-                    'params':{}
+                    'params': {}
                 }
         }
 
@@ -442,12 +442,12 @@ class HelpdeskReport(Report):
                 }
             },
             'Prosto12': {
-                'to': (396, 5994, 405, 402, 5995, 390, 43),
+                'to': (396, 5994, 405, 7154, 5995, 390, 43),
                 'cc': ('v.ulianov@prosto12.ru', 'i.belov@prosto12.ru'),
                 'subj': '[Weekly] Недельный отчет Helpdesk',
                 'params': {
                     'services': (),
-                    'executors': (396, 5994, 405, 402, 5995, 390, 43),
+                    'executors': (396, 5994, 405, 7154, 5995, 390, 43),
                     'frame': 'weekly',
                 },
             },
