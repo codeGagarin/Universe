@@ -452,7 +452,7 @@ class HelpdeskReport(Report):
                 },
             },
             'Intratool': {
-                'to': ('v.ulianov@prosto12.ru, i.belov@prosto12.ru'),
+                'to': ('v.ulianov@prosto12.ru', 'i.belov@prosto12.ru'),
                 'cc': (),
                 'subj': '[Weekly] Недельный отчет Helpdesk',
                 'params': {
