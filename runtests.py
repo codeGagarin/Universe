@@ -59,12 +59,10 @@ class TestReports(TestCase):
         self.render_report(HelpdeskReport, 316531349939618110)
 
     def test_TaskReport(self):
-        self.render_report(TaskReport, 317652057430246819)
+        self.render_report(TaskReport, 256482489741668139)
 
     def test_ExpensesReport(self):
-        self.render_report(ExpensesReport, 116988493087963479)
-
-
+        self.render_report(ExpensesReport, 322920820642275206)
 
 
 TEST_DATA = {
@@ -274,7 +272,6 @@ class TestISConnector(TestCase):
             pg_con.update(executor)
 
         pass
-
 
 
 if __name__ == '__main__':
