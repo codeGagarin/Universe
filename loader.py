@@ -116,6 +116,46 @@ class Loader:
 
         return self.sql_exec(query)[0]
 
+    def json_to_params(self, json_str):
+
+        def dict_converter(source):
+            # scan json-source tree and replace datetime strings to datetime objects
+            def date_converter(s):
+                try:
+                    return datetime.strptime(s, 'Datetime:%Y-%m-%d %H:%M:%S.%f')
+                except:
+                    return s
+
+            def list_converter(lst):
+                for i in range(len(lst)):
+                    r = lst[i]
+                    if isinstance(r, str):
+                        lst[i] = date_converter(r)
+                    elif isinstance(r, dict):
+                        dict_converter(r)
+                    elif isinstance(r, list):
+                        list_converter(r)
+
+            for k, v in source.items():
+                if isinstance(v, list):
+                    list_converter(v)
+                elif isinstance(v, dict):
+                    dict_converter(v)
+                elif isinstance(v, str):
+                    source[k] = date_converter(v)
+            return source
+
+            # res[0][2] if not res[0][2] else json.loads(res[0][2], object_hook=dict_converter)
+        return json_str if not json_str else json.loads(json_str, object_hook=dict_converter)
+
+    def id_to_params(self, activity_id: int):
+        result = {}
+        query = sql.SQL('SELECT "params" FROM "Loader" WHERE "id"={}').format(sql.Literal(activity_id))
+        res = self.sql_exec(query, auto_commit=False, named_result=True)
+        if len(res):
+            result = self.json_to_params(res[0].params)
+        return result
+
     def track_schedule(self):
         # check crontab activities
         query = sql.SQL('SELECT {} FROM {} WHERE {}').format(
@@ -172,55 +212,59 @@ class Loader:
 
         # main execution loop
         while True:
-            params = {
-                'id': None,
-                'type': None,
-                'params': None,
-            }
-            conditions = {
-                'status': ('=', 'todo'),
-                'start': ('<=', datetime.now())
-            }
-
-            query = self._sql_compose('select', params, conditions)
-            res = self.sql_exec(query, auto_commit=False)
+            # params = {
+            #     'id': None,
+            #     'type': None,
+            #     'params': None,
+            # }
+            # conditions = {
+            #     'status': ('=', 'todo'),
+            #     'start': ('<=', datetime.now())
+            # }
+            #
+            # query = self._sql_compose('select', params, conditions)
+            query = sql.SQL('SELECT "id", "type", "params" FROM "Loader" WHERE "status"={} AND "start"<={}').\
+                format(sql.Literal('todo'), sql.Literal(datetime.now()))
+            res = self.sql_exec(query, auto_commit=False, named_result=True)
 
             if len(res) is 0:
                 break
-            act_id = res[0][0]
-            act_type = res[0][1]
+
+            rec = res[0]
+            act_id = rec.id
+            act_type = rec.type
+            json_params = rec.type
 
             # set in progress status
             self.sql_exec(self._sql_compose('update', {'status': 'working'}, {'id': ('=', act_id)}))
 
-            def dict_converter(source):
-                # scan json-source tree and replace datetime strings to datetime objects
-                def date_converter(s):
-                    try:
-                        return datetime.strptime(s, 'Datetime:%Y-%m-%d %H:%M:%S.%f')
-                    except:
-                        return s
-
-                def list_converter(lst):
-                    for i in range(len(lst)):
-                        r = lst[i]
-                        if isinstance(r, str):
-                            lst[i] = date_converter(r)
-                        elif isinstance(r, dict):
-                            dict_converter(r)
-                        elif isinstance(r, list):
-                            list_converter(r)
-
-                for k, v in source.items():
-                    if isinstance(v, list):
-                        list_converter(v)
-                    elif isinstance(v, dict):
-                        dict_converter(v)
-                    elif isinstance(v, str):
-                        source[k] = date_converter(v)
-                return source
-
-            act_params = res[0][2] if not res[0][2] else json.loads(res[0][2], object_hook=dict_converter)
+            # def dict_converter(source):
+            #     # scan json-source tree and replace datetime strings to datetime objects
+            #     def date_converter(s):
+            #         try:
+            #             return datetime.strptime(s, 'Datetime:%Y-%m-%d %H:%M:%S.%f')
+            #         except:
+            #             return s
+            #
+            #     def list_converter(lst):
+            #         for i in range(len(lst)):
+            #             r = lst[i]
+            #             if isinstance(r, str):
+            #                 lst[i] = date_converter(r)
+            #             elif isinstance(r, dict):
+            #                 dict_converter(r)
+            #             elif isinstance(r, list):
+            #                 list_converter(r)
+            #
+            #     for k, v in source.items():
+            #         if isinstance(v, list):
+            #             list_converter(v)
+            #         elif isinstance(v, dict):
+            #             dict_converter(v)
+            #         elif isinstance(v, str):
+            #             source[k] = date_converter(v)
+            #     return source
+            #
 
             # stdout dispatch
             prn_stream = io.StringIO()
@@ -229,6 +273,7 @@ class Loader:
             with redirect_stdout(prn_stream):
                 start = datetime.now()
                 try:
+                    act_params = self.json_to_params(json_params)
                     factory = self._registry[act_type]['factory']
                     activity = factory(self, act_params)
                     activity.run()

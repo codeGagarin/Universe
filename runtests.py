@@ -37,6 +37,11 @@ class TestActivities(TestCase):
         rep = IS404TaskCloser(self.ldr)
         rep.run()
 
+    def teest_EMail(self):
+        activity_id = 5489
+        params = self.ldr.id_to_params(activity_id)
+        activity = Email(self.ldr, params)
+        activity.run()
 
 class TestReports(TestCase):
     def setUp(self):
