@@ -56,10 +56,18 @@
             <caption>Движения по сервисам</caption>
             <thead>
                 <tr>
+                    <th colspan="2"></th>
+                    <th colspan="2">Запериод отчета</th>
+                    <th colspan="3">На текущий момент</th>
+                </tr>
+            </thead>
+
+            <thead>
+                <tr>
                     <th>#</th>
                     <th>Сервис</th>
-                    <th>Принято</th>
-                    <th>Закрыто</th>
+                    <th class="info">Принято</th>
+                    <th class="info">Закрыто</th>
                     <th>В работе</th>
                     <th>Без движения</th>
                     <th>Без плана</th>
@@ -70,8 +78,8 @@
                 <tr>
                     <td align="right" class="text-muted">{{ loop.index }}.</td>
                     <td>{% if r.parent %} -- {% endif %} {{ r.name }}</td>
-                    <td align="right">{{ lib.detail_link(rpt, r.income, r.income_d) }}</td>
-                    <td align="right">{{ lib.detail_link(rpt, r.closed, r.closed_d)}}({{lib.detail_link(rpt, (r.closed_exp/60)|round(1, 'common'), r.closed_exp_d)}})</td>
+                    <td class="info" align="right">{{ lib.detail_link(rpt, r.income, r.income_d) }}</td>
+                    <td class="info" align="right">{{ lib.detail_link(rpt, r.closed, r.closed_d)}}({{lib.detail_link(rpt, (r.closed_exp/60)|round(1, 'common'), r.closed_exp_d)}})</td>
                     <td align="right">{{ lib.detail_link(rpt, r.open, r.open_d) }}</td>
                     <td align="right">{{ lib.detail_link(rpt, r.no_exec, r.no_exec_d) }}</td>
                     <td align="right">{{ lib.detail_link(rpt, r.no_deadline, r.no_deadline_d) }}</td>
@@ -91,14 +99,15 @@
                 <tr>
                     <td colspan="2"></td>
                     {% if frame in ['daily'] %}
-                    <td colspan="7"><b>{{lib.mark_title("Текущая неделя", "ТТ (ЧЧ), где ТТ -- закрытые заявки, ЧЧ -- трудозатраты за период")}}</b></td>
+                    <td colspan="8"><b>{{lib.mark_title("Текущая неделя", "ТТ (ЧЧ), где ТТ -- закрытые заявки, ЧЧ -- трудозатраты за период")}}</b></td>
                     {% elif frame in ['weekly'] %}
-                    <td colspan="7"><b>{{lib.mark_title("Прошлая неделя", "ТТ (ЧЧ), где ТТ -- закрытые заявки, ЧЧ -- трудозатраты за период")}}</b></td>
+                    <td colspan="8"><b>{{lib.mark_title("Прошлая неделя", "ТТ (ЧЧ), где ТТ -- закрытые заявки, ЧЧ -- трудозатраты за период")}}</b></td>
                     {% endif %}
                     {% if frame in ['weekly'] %}
                     <td colspan="3"><b>{{lib.mark_title("Предыдущие недели", "ТТ (ЧЧ), где ТТ -- закрытые заявки, ЧЧ -- трудозатраты за период")}}</b></td>
                     {% endif %}
                     {% if frame in ['monthly'] %}
+                    <td></td>
                     <td colspan="3"><b>{{lib.mark_title("Предыдущие месяцы", "ТТ (ЧЧ), где ТТ -- закрытые заявки, ЧЧ -- трудозатраты за период")}}</b></td>
                     {% endif %}
                     <td colspan="5"><b>{{ lib.mark_title("Оценки", "5 -- очень хорошо, 1 -- совсем плохо") }}</b></td>
@@ -115,17 +124,19 @@
                     <th class="info">ПТ</th>
                     <th class="info">СБ</th>
                     <th class="info">ВС</th>
+                    <th class="info">Итого</th>
                     {% endif %}
                     {% if frame in ['weekly'] %}
-                    <th>{{ rpt._D().utl.head.w1t.params.id }}</th>
                     <th>{{ rpt._D().utl.head.w2t.params.id }}</th>
                     <th>{{ rpt._D().utl.head.w3t.params.id }}</th>
+                    <th>{{ rpt._D().utl.head.w4t.params.id }}</th>
                     {% set eval_class = "info"%}
                     {% endif %}
                     {% if frame in ['monthly'] %}
-                    <th class="info">{{ rpt._D().utl.head.m1t.params.id }}</th>
+                    <th>Итого</th>
                     <th class="info">{{ rpt._D().utl.head.m2t.params.id }}</th>
                     <th class="info">{{ rpt._D().utl.head.m3t.params.id }}</th>
+                    <th class="info">{{ rpt._D().utl.head.m4t.params.id }}</th>
                     {% endif %}
                     <th class="{{eval_class}}">5</th>
                     <th class="{{eval_class}}">4</th>
@@ -161,20 +172,23 @@
                     <td class="info">
                         {{ task_util(rpt, r.d7t, r.d7t_d, r.d7u, r.d7u_d) }}
                     </td>
-                    {% endif %}
-                    {% if frame in ['weekly'] %}
-                    <td>
+                    <td class="info">
                         {{ task_util(rpt, r.w1t, r.w1t_d, r.w1u, r.w1u_d) }}
                     </td>
+                    {% endif %}
+                    {% if frame in ['weekly'] %}
                     <td>
                         {{ task_util(rpt, r.w2t, r.w2t_d, r.w2u, r.w2u_d) }}
                     </td>
                     <td>
                         {{ task_util(rpt, r.w3t, r.w3t_d, r.w3u, r.w3u_d) }}
                     </td>
+                    <td>
+                        {{ task_util(rpt, r.w4t, r.w4t_d, r.w4u, r.w4u_d) }}
+                    </td>
                     {% endif %}
                     {% if frame in ['monthly'] %}
-                    <td class="info">
+                    <td>
                         {{ task_util(rpt, r.m1t, r.m1t_d, r.m1u, r.m1u_d) }}
                     </td>
                     <td class="info">
@@ -182,6 +196,9 @@
                     </td>
                     <td class="info">
                         {{ task_util(rpt, r.m3t, r.m3t_d, r.m3u, r.m3u_d) }}
+                    </td>
+                    <td class="info">
+                        {{ task_util(rpt, r.m4t, r.m4t_d, r.m4u, r.m4u_d) }}
                     </td>
                     {% endif %}
                     <td class="{{ eval_class }}">

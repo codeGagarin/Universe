@@ -712,6 +712,12 @@ class HelpdeskReport(Report):
                     'w3t_d': _dn_header(-2, 'week', _dnt_d),
                     'w3u': _dn_header(-2, 'week', _dnu),
                     'w3u_d': _dn_header(-2, 'week', _dnu_d),
+
+                    'w4t': _dn_header(-3, 'week', _dnt),
+                    'w4t_d': _dn_header(-3, 'week', _dnt_d),
+                    'w4u': _dn_header(-3, 'week', _dnu),
+                    'w4u_d': _dn_header(-3, 'week', _dnu_d),
+
                 }),
                 ('monthly', {
                     'm1t': _dn_header(-0, 'month', _dnt),
@@ -728,6 +734,11 @@ class HelpdeskReport(Report):
                     'm3t_d': _dn_header(-2, 'month', _dnt_d),
                     'm3u': _dn_header(-2, 'month', _dnu),
                     'm3u_d': _dn_header(-2, 'month', _dnu_d),
+
+                    'm4t': _dn_header(-3, 'month', _dnt),
+                    'm4t_d': _dn_header(-3, 'month', _dnt_d),
+                    'm4u': _dn_header(-3, 'month', _dnu),
+                    'm4u_d': _dn_header(-3, 'month', _dnu_d),
                 }),
                 ('*', {
                     'e5': _ev_header(5, _eval),
