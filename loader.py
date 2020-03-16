@@ -1,5 +1,5 @@
 import io
-import json
+import simplejson as json
 import sys
 import traceback
 from contextlib import redirect_stdout
