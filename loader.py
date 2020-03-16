@@ -233,7 +233,7 @@ class Loader:
             rec = res[0]
             act_id = rec.id
             act_type = rec.type
-            json_params = rec.type
+            json_params = rec.params
 
             # set in progress status
             self.sql_exec(self._sql_compose('update', {'status': 'working'}, {'id': ('=', act_id)}))

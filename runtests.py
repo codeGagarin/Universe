@@ -4,7 +4,6 @@ from unittest import TestCase
 import jinja2
 from flask import url_for
 
-
 from keys import KeyChain
 from loader import Loader
 from activities.reg import *
