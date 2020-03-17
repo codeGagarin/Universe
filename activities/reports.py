@@ -1,7 +1,11 @@
 from pathlib import Path
+import logging
+from io import StringIO
 
 import jinja2
-from premailer import transform
+import premailer
+
+
 
 from activities.activity import Activity, Email
 from report import DiagReport, HelpdeskReport
@@ -23,7 +27,14 @@ class ReportActivity(Activity):
         f = open(css_path)
         css_text = f.read()
         f.close()
-        return transform(html_text, css_text=css_text)
+        premailer_log = StringIO()
+        premailer_log_hander = logging.StreamHandler(premailer_log)
+        return premailer.Premailer(
+            cssutils_logging_handler=premailer_log_hander,
+            cssutils_logging_level=logging.CRITICAL,
+            remove_classes=True,
+            css_text=css_text
+        ).transform(html_text)
 
 
 class LoaderStateReporter2(ReportActivity):

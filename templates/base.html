@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
     {% block head %}
-<!--    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css" integrity="sha384-HSMxcRTRxnN+Bdg0JdbxYKrThecOKuH5zCYotlSAcp1+c8xmyTe9GYg1l9a69psu" crossorigin="anonymous">-->
     {% if not eml %}
         <link rel="stylesheet" href= {{ rpt.url_for_static("css/bootstrap.css") }} crossorigin="anonymous">
     {% endif %}
