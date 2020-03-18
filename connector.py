@@ -477,7 +477,7 @@ class ISConnector(DataConnector):
             if page_count > 1:
                 for page in range(page_count, 0, -1):
                     params.update({'Page': page})
-                    r = session.get(url=url, auth=self._auth, params=params, verify=False)
+                    r = session.get(url=url, auth=self._auth, params=params, verify=self._certVerify)
                     raw_data = dict(r.json())
                     result_factory(result, raw_data)
 
