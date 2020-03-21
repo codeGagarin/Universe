@@ -696,12 +696,13 @@ class HelpdeskReport(Report):
                     'd7t_d': _dn_header(6, 'day', _dnt_d),
                     'd7u': _dn_header(6, 'day', _dnu),
                     'd7u_d': _dn_header(6, 'day', _dnu_d),
-                }),
-                ('weekly', {
+
                     'w1t': _dn_header(-0, 'week', _dnt),
                     'w1t_d': _dn_header(-0, 'week', _dnt_d),
                     'w1u': _dn_header(-0, 'week', _dnu),
                     'w1u_d': _dn_header(-0, 'week', _dnu_d),
+                }),
+                ('weekly', {
 
                     'w2t': _dn_header(-1, 'week', _dnt),
                     'w2t_d': _dn_header(-1, 'week', _dnt_d),
