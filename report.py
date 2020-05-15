@@ -112,7 +112,6 @@ class Report:
             res_path
         )
 
-
     def url_for(self, target, params=None):
         if not params:
             params = {}
@@ -783,7 +782,8 @@ class HelpdeskReport(Report):
         def _parent(params):
             res = {}
             if len(srv_ufl):
-                res = _do_query(ss('select s."Id", s."ParentId" from "Services" s where s."Id" in {}').format(sl(srv_ufl)))
+                res = _do_query(
+                    ss('select s."Id", s."ParentId" from "Services" s where s."Id" in {}').format(sl(srv_ufl)))
             return res
 
         def _do_query_grp(q):
