@@ -441,12 +441,12 @@ class HelpdeskReport(Report):
                 }
             },
             'Prosto12': {
-                'to': (396, 5994, 405, 7154, 5995, 390, 43),
+                'to': (396, 5994, 405, 7154, 5995, 390, 43, 9423),
                 'cc': ('v.ulianov@prosto12.ru', 'i.belov@prosto12.ru'),
                 'subj': '[Weekly] Недельный отчет Helpdesk',
                 'params': {
                     'services': (),
-                    'executors': (396, 5994, 405, 7154, 5995, 390, 43),
+                    'executors': (396, 5994, 405, 7154, 5995, 390, 43, 9423),
                     'frame': 'weekly',
                 },
             },
