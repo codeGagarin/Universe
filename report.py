@@ -430,13 +430,23 @@ class HelpdeskReport(Report):
     @classmethod
     def get_report_map(cls):
         return {
+            "RRTWeekly": {
+                'to': (9377, 9380, 9379),
+                'cc': ('igor.belov@rrt.ru',),
+                'subj': '[Weekly] Утилизация за неделю',
+                'params': {
+                    'services': (188,),
+                    'executors': (9377, 9380, 9379),
+                    'frame': 'weekly'
+                }
+            },
             "StationITWeekly": {
                 'to': (7162, 9131, 8724, 9070),
                 'cc': ('alexey.makarov@station-hotels.ru', 'igor.belov@station-hotels.ru'),
                 'subj': '[Weekly] Недельный отчет Helpdesk',
                 'params': {
                     'services': (139,),
-                    'executors': (7162, 9131, 8724, 9070),
+                    'executors': (7162, 9131, 9070),
                     'frame': 'weekly'
                 }
             },

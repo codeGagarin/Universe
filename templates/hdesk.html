@@ -5,13 +5,13 @@
     {% endif %}
 
     {% if frame == 'daily' %}
-        {% set caption = "Helpdesk ежедневный отчет" %}
+        {% set caption = "Сводный отчет" %}
         {% set util_table_class='col-md-9' %}
     {% elif frame == 'weekly' %}
-        {% set caption = "Helpdesk отчет за неделю" %}
+        {% set caption = "Сводный отчет за неделю" %}
         {% set util_table_class='col-md-12' %}
     {% elif frame == 'monthly' %}
-        {% set caption = "Helpdesk отчет за месяц" %}
+        {% set caption = "Сводный отчет за месяц" %}
         {% set util_table_class='col-md-8' %}
     {% endif %}
 {% set srv_table_class='col-md-8' %}
