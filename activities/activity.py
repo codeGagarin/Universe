@@ -49,7 +49,7 @@ class Email(Activity):
 
         key = self['smtp'] if self['smtp'] else 'DEF'
 
-        acc_key = self._ldr.key_chain.SMTP_KEY.get(key if key else 'DEF')
+        acc_key = self._ldr.key_chain.SMTP_KEY.get(key if key else self._ldr.key_chain.SMTP_KEY['DEF'])
         msg = MIMEMultipart('alternative')
         msg['Subject'] = self['subject']
         msg['From'] = acc_key['from'] if acc_key.get('from', None) else acc_key['user']
