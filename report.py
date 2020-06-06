@@ -431,12 +431,12 @@ class HelpdeskReport(Report):
     def get_report_map(cls):
         return {
             "RRTWeekly": {
-                'to': (9377, 9380, 9379),
+                'to': (9377, 9380, 9379, 9423),
                 'cc': ('igor.belov@rrt.ru',),
                 'subj': '[Weekly] Утилизация за неделю',
                 'params': {
                     'services': (188,),
-                    'executors': (9377, 9380, 9379),
+                    'executors': (9377, 9380, 9379, 9423),
                     'frame': 'weekly'
                 }
             },
@@ -451,12 +451,12 @@ class HelpdeskReport(Report):
                 }
             },
             'Prosto12': {
-                'to': (396, 5994, 405, 7154, 5995, 390, 43, 9423),
+                'to': (396, 5994, 405, 7154, 5995, 390, 43),
                 'cc': ('v.ulianov@prosto12.ru', 'i.belov@prosto12.ru'),
                 'subj': '[Weekly] Недельный отчет Helpdesk',
                 'params': {
                     'services': (),
-                    'executors': (396, 5994, 405, 7154, 5995, 390, 43, 9423),
+                    'executors': (396, 5994, 405, 7154, 5995, 390, 43),
                     'frame': 'weekly',
                 },
             },
