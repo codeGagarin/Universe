@@ -42,6 +42,19 @@ class TestActivities(TestCase):
         activity = Email(self.ldr, params)
         activity.run()
 
+    def test_SMTP(self):
+        params = {
+            'smtp': 'RRT',
+            'to': ('belov78@gmail.com',),
+            # 'cc': ('i.belov@prosto12.ru',),
+            'subject': 'smpt test',
+            'body': 'Body'
+        }
+        activity = Email(self.ldr, params)
+        activity.run()
+
+
+
 class TestReports(TestCase):
     def setUp(self):
         pass

@@ -69,6 +69,7 @@ class HelpdeskWeekly(ReportActivity):
             report.request_data(conn)
 
             email = Email(self._ldr)
+            email['smtp'] = prm['smtp']
             email['to'] = report.users_to_email(conn, prm['to'])
             email['cc'] = report.users_to_email(conn, prm['cc'])
             email['subject'] = prm['subj']

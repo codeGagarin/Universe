@@ -431,6 +431,7 @@ class HelpdeskReport(Report):
     def get_report_map(cls):
         return {
             "RRTWeekly": {
+                'smtp': 'RRT',
                 'to': (9377, 9380, 9379, 9423),
                 'cc': ('igor.belov@rrt.ru',),
                 'subj': '[Weekly] Утилизация за неделю',
@@ -441,6 +442,7 @@ class HelpdeskReport(Report):
                 }
             },
             "StationITWeekly": {
+                'smtp': 'STH',
                 'to': (7162, 9131, 8724, 9070),
                 'cc': ('alexey.makarov@station-hotels.ru', 'igor.belov@station-hotels.ru'),
                 'subj': '[Weekly] Недельный отчет Helpdesk',
@@ -451,6 +453,7 @@ class HelpdeskReport(Report):
                 }
             },
             'Prosto12': {
+                'smtp': 'DEF',
                 'to': (396, 5994, 405, 7154, 5995, 390, 43),
                 'cc': ('v.ulianov@prosto12.ru', 'i.belov@prosto12.ru'),
                 'subj': '[Weekly] Недельный отчет Helpdesk',
@@ -461,6 +464,7 @@ class HelpdeskReport(Report):
                 },
             },
             'Intratool': {
+                'smtp': 'DEF',
                 'to': (8827,  # MaG
                        ),
                 'cc': ('v.ulianov@prosto12.ru', 'i.belov@prosto12.ru',),
