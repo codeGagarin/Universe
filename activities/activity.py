@@ -47,7 +47,9 @@ class Email(Activity):
     def run(self):
         html_body = self['body']
 
-        acc_key = self._ldr.key_chain.SMTP_KEY[self['smtp'] if self['smtp'] else 'DEF']
+        key = self['smtp'] if self['smtp'] else 'DEF'
+
+        acc_key = self._ldr.key_chain.SMTP_KEY.get(key if key else 'DEF')
         msg = MIMEMultipart('alternative')
         msg['Subject'] = self['subject']
         msg['From'] = acc_key['from'] if acc_key.get('from', None) else acc_key['user']
