@@ -433,7 +433,7 @@ class HelpdeskReport(Report):
             "RRTWeekly": {
                 'smtp': 'RRT',
                 'to': (9377, 9380, 9379, 9423),
-                'cc': ('igor.belov@rrt.ru',),
+                'cc': ('sn@rrt.ru', 'igor.belov@rrt.ru',),
                 'subj': '[Weekly] Утилизация за неделю',
                 'params': {
                     'services': (188,),
@@ -443,7 +443,7 @@ class HelpdeskReport(Report):
             },
             "StationITWeekly": {
                 'smtp': 'STH',
-                'to': (7162, 9131, 8724, 9070),
+                'to': (7162, 9131, 9070),
                 'cc': ('alexey.makarov@station-hotels.ru', 'igor.belov@station-hotels.ru'),
                 'subj': '[Weekly] Недельный отчет Helpdesk',
                 'params': {
@@ -459,7 +459,7 @@ class HelpdeskReport(Report):
                 'subj': '[Weekly] Недельный отчет Helpdesk',
                 'params': {
                     'services': (),
-                    'executors': (396, 5994, 405, 7154, 5995, 390, 43),
+                    'executors': (396, 5994, 405, 7154, 5995, 390, 43, 9423),
                     'frame': 'weekly',
                 },
             },
