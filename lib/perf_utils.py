@@ -15,6 +15,10 @@ dir_logs = '/logs'
 dir_done = f'{dir_logs}/done'
 dir_fail = f'{dir_logs}/fail'
 
+dir_apd1 = '/logs'
+dir_apd1 = f'{dir_apd1}/done'
+dir_apd1 = f'{dir_apd1}/fail'
+
 
 
 class ABaseAdapter:
@@ -38,7 +42,20 @@ def connect_server(key):
     return ftp_con
 
 
-def get_files_for_sync(con, max_count=1000):
+def get_tj_files_for_sync(con, max_count=1000):
+    result = []
+    files = con.mlsd(dir_logs)
+    count = 0
+    for f in files:
+        if f[0].find('.log') != -1:
+            result.append(f[0])
+            count += 1
+            if count == max_count:
+                break
+    return result
+
+
+def get_apd1_files_for_sync(con, max_count=1000):
     result = []
     files = con.mlsd(dir_logs)
     count = 0
@@ -54,7 +71,6 @@ def get_files_for_sync(con, max_count=1000):
 def _parse_line(line: str, db_adapter: ABaseAdapter, file_meta):
     re_header = r'^(\d\d):(\d\d)\.(\d+)-(\d+),(\w+),(\d+),'
     header = re.findall(re_header, line)
-    print(f'{line}\n')
     re_params = r'([\w:]+)=([^,\r]+)'
     params = {g[0]: g[1] for g in re.findall(re_params, line)}
 
@@ -301,7 +317,7 @@ class FtptjparserTestCase(TestCase):
 
     def test_get_files_for_sync(self):
         ftp_con = connect_server(self.ftp_key)
-        log_files = get_files_for_sync(ftp_con)
+        log_files = get_tj_files_for_sync(ftp_con)
         print('-Follow files found:')
         for f in log_files:
             print(f)
@@ -310,7 +326,7 @@ class FtptjparserTestCase(TestCase):
 
     def test_parse_log_file(self):
         ftp_con = connect_server(self.ftp_key)
-        log_files = get_files_for_sync(ftp_con, 150)
+        log_files = get_tj_files_for_sync(ftp_con, 150)
         adapter = PGAdapter(KeyChain.PG_PERF_KEY, self.ftp_key['user'])
         for file in log_files:
             parse_log_file(ftp_con, file, adapter)
