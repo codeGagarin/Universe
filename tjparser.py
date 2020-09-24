@@ -14,7 +14,6 @@ fkp = fk['pwd']
 
 parse_file = 'rphost_6716_20040413.log'
 
-
 def download_log(log_name):
     tmp_dir = tempfile.gettempdir()
     out_name = f"{tmp_dir}/{log_name}"
@@ -24,7 +23,6 @@ def download_log(log_name):
     ftp.retrbinary("RETR " + parse_file, open(out_name, 'wb').write)
     ftp.quit()
     return out_name
-
 
 class LogLine:
     def __init__(self, log_line: str):
