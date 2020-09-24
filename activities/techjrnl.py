@@ -25,6 +25,6 @@ class TJSync(Activity):
 
 
     def get_crontab(self):
-        return '*/5 * * * *'
+        return '*/30 * * * *'
 
 
