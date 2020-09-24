@@ -9,7 +9,7 @@ class TJSync(Activity):
         ftp_key = KeyChain.FTP_TJ_KEYS['vgunf']
 
         ftp_con = utils.connect_server(ftp_key)
-        log_files = utils.get_tj_files_for_sync(ftp_con, 50)
+        log_files = utils.get_tj_files_for_sync(ftp_con, 500)
         adapter = utils.PGAdapter(KeyChain.PG_PERF_KEY, ftp_key['user'])
         files_ok = 0
         files_fail = 0
