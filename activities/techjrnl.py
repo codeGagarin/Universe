@@ -3,6 +3,7 @@ from activities.activity import Activity
 from keys import KeyChain
 import lib.perf_utils as utils
 
+
 class TJSync(Activity):
     def run(self):
         ftp_key = KeyChain.FTP_TJ_KEYS['vgunf']
@@ -12,7 +13,7 @@ class TJSync(Activity):
         adapter = utils.PGAdapter(KeyChain.PG_PERF_KEY, ftp_key['user'])
         for file in log_files:
             is_ok = utils.parse_log_file(ftp_con, file, adapter)
-            print(f"{ftp_key['user']}: {'Ok' if is_ok else 'Fail'}")
+        print(f"{ftp_key['user']}: {'Ok' if is_ok else 'Fail'}")
         ftp_con.close()
 
 
