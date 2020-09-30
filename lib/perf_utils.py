@@ -3,6 +3,8 @@ import re
 import ftplib
 import tempfile
 from datetime import datetime
+from datetime import timedelta
+
 import traceback
 import xml.etree.ElementTree as ET
 
@@ -92,21 +94,28 @@ def _parse_tj_line(line: str, db_adapter: ABaseAdapter, file_meta):
     re_params = r'([\w:]+)=([^,\r]+)'
     params = {g[0]: g[1] for g in re.findall(re_params, line)}
 
-    record = file_meta.copy()
-    record['min'] = header[0][0]
-    record['ss'] = header[0][1]
-    record['ms'] = header[0][2]
-    record['dur'] = header[0][3]
-    record['event'] = header[0][4]
-    record['lvl'] = header[0][5]
+    yy = 2000+int(file_meta['yy'])
+    mm = int(file_meta['mm'])
+    dd = int(file_meta['dd'])
+    hh = int(file_meta['hh'])
+    mnt = int(header[0][0])
+    ss = int(header[0][1])
+    ms = int(header[0][2])
 
-    record['osthread'] = params.get('OSThread')
-    record['exception'] = params.get('Exception')
-    record['descr'] = params.get('Descr')
-    r = record
-    record['stamp'] = datetime(2000+int(r['yy']), int(r['mm']), int(r['dd']),
-                               int(r['hh']), int(r['min']), int(r['ss']), int(r['ms']))
-    record['source'] = line
+    local_stamp = datetime(yy, mm, dd, hh, mnt, ss, ms)
+    utc_stamp = local_stamp - timedelta(minutes=180)  # GMT+3 compensation
+    record = {
+        'file_id': file_meta['file_id'],
+        'rphost': file_meta['rphost'],
+        'dur': header[0][3],
+        'event': header[0][4], 'lvl': header[0][5],
+        'osthread': params.get('OSThread'),
+        'exception': params.get('Exception'),
+        'descr': params.get('Descr'),
+        'stamp': utc_stamp,
+        'source': line
+    }
+
     db_adapter.submit_line(record, type_logs)
 
 
