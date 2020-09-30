@@ -107,6 +107,7 @@ def _parse_tj_line(line: str, db_adapter: ABaseAdapter, file_meta):
     record = {
         'file_id': file_meta['file_id'],
         'rphost': file_meta['rphost'],
+        'ms': ms,
         'dur': header[0][3],
         'event': header[0][4], 'lvl': header[0][5],
         'osthread': params.get('OSThread'),
