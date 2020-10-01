@@ -24,6 +24,7 @@ dir_apdx = f'/{type_apdx}'
 dir_apdx_done = f'{dir_apdx}/done'
 dir_apdx_fail = f'{dir_apdx}/fail'
 
+
 class ABaseAdapter:
     def __init__(self, key, base1s_id):
         self.base1s_id = base1s_id
@@ -60,6 +61,7 @@ def process_apdx(ftp_key, adapter, max_files=500, move_done=True):
 
 def process_logs(ftp_key, adapter, max_files=500, move_done=True):
     _process_unify(ftp_key, adapter, get_tj_files_for_sync, parse_log_file, type_logs, max_files=500, move_done=move_done)
+
 
 def connect_server(key):
     ftp_con = ftplib.FTP(key['host'])
@@ -203,10 +205,9 @@ def parse_apdx_file(ftp_con, apdx_name, db_adapter: ABaseAdapter, move_done=True
     apdx_file.close()
 
     # Parse local copy
-    # apdx_file = open(out_name, encoding='cp1251')
     apdx_file = open(out_name)
-
     file_id = db_adapter.submit_file(apdx_name, type_apdx)
+
 
     try:
         root = ET.parse(apdx_file).getroot()
@@ -223,7 +224,11 @@ def parse_apdx_file(ftp_con, apdx_name, db_adapter: ABaseAdapter, move_done=True
                     'start': datetime.strptime(measure_attribute['tSaveUTC'], '%Y-%m-%dT%H:%M:%S'),
                     'session': int(measure_attribute['sessionNumber']),
                     'fail': not bool(measure_attribute['runningError']),
+                    'target': float(ops_attribute['targetValue']),
+                    'priority': ops_attribute['priority'],
                 }
+                line['status'] = 'NS' if line['target'] >= line['duration'] else 'TS'
+
                 db_adapter.submit_line(line, type_apdx)
 
     except Exception:
