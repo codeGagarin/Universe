@@ -1,0 +1,21 @@
+#!/bin/bash 
+echo 'Submit keys...'
+scp ~/PycharmProjects/Universe/keys_ts.py belovgm19@91.224.22.111:~/proj/uni_test/keys.py
+echo 'Ok'
+echo 'Git Pull...'
+ssh -tt belovgm19@91.224.22.111 << EOF
+echo 'Git Pull...'
+source ~/py37/bin/activate
+cd ~/proj/uni_test/
+git pull
+echo 'Git Pull -- Ok'
+echo 'Update test data...'
+pg_dump -h 91.224.23.227 -p 5432 -U fargo -Fc mirror > /tmp/dump.sql  
+pg_restore -h 91.224.23.227 -p 5432 -U fargo -c -d mirror_test /tmp/dump.sql
+psql -h 91.224.23.227 -p 5432 -U fargo -f ~/proj/uni_test/pretest.sql mirror_test
+rm /tmp/dump.sql
+echo 'Ok'
+echo 'Test section'
+~/py37/bin/python -m unittest ~/proj/uni_test/runtests.py
+logout
+EOF

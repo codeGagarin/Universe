@@ -1,0 +1,24 @@
+#!/bin/bash 
+echo ''
+echo ''
+echo 'pppp    pppp    RRRR'
+echo 'p   p   p   p   R   R'
+echo 'p   p   p   p   R   R'
+echo 'pppp    pppp    RRRR'
+echo 'p       p       R   R'
+echo 'p       p       R   R'
+echo 'p       p       R   R'
+echo ''
+echo ''
+
+echo  'Submit keys'
+scp ~/PycharmProjects/Universe/keys_pr.py belovgm19@91.224.22.111:~/proj/uni/keys.py
+ssh -tt belovgm19@91.224.22.111 << EOF
+cd ~/proj/uni/
+git pull
+echo 'Git Pull -- Ok'
+sh ~/proj/uni/www/run stop
+sh ~/proj/uni/www/run start
+logout
+EOF
+

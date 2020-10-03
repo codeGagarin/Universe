@@ -1,0 +1,9 @@
+#!/bin/bash 
+echo 'Update test data...'
+ssh -tt belovgm19@91.224.22.111 << EOF
+pg_dump -h 91.224.23.227 -p 5432 -U fargo -Fc mirror > /tmp/dump.sql  
+pg_restore -h 91.224.23.227 -p 5432 -U fargo -c -d mirror_test /tmp/dump.sql
+psql -h 91.224.23.227 -p 5432 -U fargo -f ~/proj/uni_test/pretest.sql mirror_test
+rm /tmp/dump.sql
+logout
+EOF
