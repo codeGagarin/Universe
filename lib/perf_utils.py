@@ -93,7 +93,7 @@ def process_apdx(ftp_key, adapter, max_files=500, move_done=True):
 def _calculate_apdex(adapter: ABaseAdapter):
     max_hours = 24
     i = 0
-    for i in range(0, max_hours-1):
+    for i in range(1, max_hours+1):
         period = adapter.apdx_get_next_period()
         if period.is_empty():
             break
