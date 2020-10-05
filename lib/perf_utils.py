@@ -49,7 +49,7 @@ class ABaseAdapter:
         self.key = key
 
     def submit_file(self, file, file_type):  # return file_id
-        return 0
+        pass
 
     def submit_line(self, line, line_type):
         pass
@@ -93,10 +93,11 @@ def process_apdx(ftp_key, adapter, max_files=500, move_done=True):
 def _calculate_apdex(adapter: ABaseAdapter):
     max_hours = 24
     i = 0
-    for i in range(1, max_hours+1):
+    while True:
         period = adapter.apdx_get_next_period()
-        if period.is_empty():
+        if period.is_empty() or i >= max_hours:
             break
+        i += 1
         ops_list = adapter.apdx_get_ops_for(period)
         for ops in ops_list:
             v = adapter.apdx_get_n_ns_nt_for(ops, period)
