@@ -56,7 +56,7 @@
                 {{ row.duration }}
             {% endif %}
         </td>
-        <td {% if not eml %} title="{{row.params}}"{% endif %}><small>{{ (row.params if row.params else "")|truncate(120, True)|escape() }}</small></td>
+        <td {% if not eml %} title="{{row.params}}"{% endif %}><small>{{ (row.params if row.params else "")|truncate(60, True)|escape() }}</small></td>
         <td {% if not eml %} title="{{row.result}}" {% endif %}><small>{{ (row.result if row.result else "")|truncate(120, True)|escape() }}</small></td></tr>
         {% endfor %}
     </tbody>

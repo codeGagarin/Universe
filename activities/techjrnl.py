@@ -12,6 +12,7 @@ class TJSync(Activity):
         adapter = utils.PGAdapter(KeyChain.PG_PERF_KEY, ftp_key['user'])
         utils.process_logs(ftp_key, adapter, max_files=500)
         utils.process_apdx(ftp_key, adapter, max_files=500)
+        print(adapter.get_log_str())
 
     def get_crontab(self):
         return '*/30 * * * *'

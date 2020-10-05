@@ -47,6 +47,19 @@ class ABaseAdapter:
     def __init__(self, key, base1s_id):
         self.base1s_id = base1s_id
         self.key = key
+        self.log_data = {
+            type_logs: {'done': 0, 'fail': 0},
+            type_apdx: {'done': 0, 'fail': 0, 'periods': 0},
+        }
+
+    def get_log_str(self):
+        result = f'{self.base1s_id} '
+        logs = self.log_data.get(type_logs)
+        result += f"[{type_logs}]:f.{logs['fail']}:d.{logs['done']} "
+        apdx = self.log_data.get(type_apdx)
+        result += f"[{type_apdx}]:f.{apdx['fail']}:d.{apdx['done']}:@{apdx['periods']} "
+        return result
+
 
     def submit_file(self, file, file_type):  # return file_id
         pass
@@ -73,15 +86,16 @@ class ABaseAdapter:
 def _process_unify(ftp_key, adapter, files_getter, file_parser, file_type, max_files=500, move_done=True):
     ftp_con = connect_server(ftp_key)
     log_files = files_getter(ftp_con, max_files)
-    files_ok = 0
+    files_done = 0
     files_fail = 0
     for file in log_files:
         is_ok = file_parser(ftp_con, file, adapter, move_done)
         if is_ok:
-            files_ok += 1
+            files_done += 1
         else:
             files_fail += 1
-    print(f"{ftp_key['user']}: [{file_type}] f.{files_fail}:k.{files_ok}")
+    adapter.log_data[file_type]['done'] = files_done
+    adapter.log_data[file_type]['fail'] = files_fail
     ftp_con.close()
 
 
@@ -103,7 +117,7 @@ def _calculate_apdex(adapter: ABaseAdapter):
             v = adapter.apdx_get_n_ns_nt_for(ops, period)
             adpex = (v.ns + v.nt/2)/v.n
             adapter.apdx_set_for(ops, period, adpex)
-    print(f'@{i}')
+    adapter.log_data[type_apdx]['periods'] = i
 
 
 def process_logs(ftp_key, adapter, max_files=500, move_done=True):
@@ -567,15 +581,16 @@ class FtptjparserTestCase(TestCase):
         for file in log_files:
             parse_apdx_file(ftp_con, file, adapter, False)
         ftp_con.close()
-        ftp_con.close()
 
     def test_process_logs(self):
         adapter = PGAdapter(KeyChain.PG_PERF_KEY, self.ftp_key['user'])
         process_logs(self.ftp_key, adapter, move_done=False)
+        print(adapter.get_log_str())
 
     def test_process_apdx(self):
         adapter = PGAdapter(KeyChain.PG_PERF_KEY, self.ftp_key['user'])
         process_apdx(self.ftp_key, adapter, move_done=False)
+        print(adapter.get_log_str())
 
 
 
