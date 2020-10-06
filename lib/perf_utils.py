@@ -100,7 +100,7 @@ def _process_unify(ftp_key, adapter, files_getter, file_parser, file_type, max_f
 
 
 def process_apdx(ftp_key, adapter, max_files=500, move_done=True):
-    _process_unify(ftp_key, adapter, get_apdx_files_for_sync, parse_apdx_file, type_apdx, max_files=500, move_done=move_done)
+    _process_unify(ftp_key, adapter, get_apdx_files_for_sync, parse_apdx_file, type_apdx, max_files, move_done)
     _calculate_apdex(adapter)
 
 
@@ -288,8 +288,8 @@ def parse_apdx_file(ftp_con, apdx_name, db_adapter: ABaseAdapter, move_done=True
                     'priority': ops_attribute['priority'],
                 }
                 line['status'] = 'NS' if line['target'] >= line['duration'] else 'NT'
-
                 db_adapter.submit_line(line, type_apdx)
+                lines_count += 1
 
     except Exception:
         if not move_done:
