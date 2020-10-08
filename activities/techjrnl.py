@@ -1,11 +1,13 @@
 from activities.activity import Activity
 
+
 from keys import KeyChain
-import lib.perf_utils as utils
+import lib.perfutils as utils
+
+import lib.levelscan as scan
 
 
 class TJSync(Activity):
-
     def run(self):
         ftp_key = KeyChain.FTP_TJ_KEYS['vgunf']
 
@@ -16,4 +18,12 @@ class TJSync(Activity):
 
     def get_crontab(self):
         return '*/30 * * * *'
+
+
+class LevelScan(Activity):
+    def run(self):
+        scan.scan_levels(KeyChain.PG_KEY)
+
+    def get_crontab(self):
+        return '15 * * * *'
 

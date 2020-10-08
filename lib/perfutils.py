@@ -5,6 +5,7 @@ import tempfile
 from datetime import datetime
 from datetime import timedelta
 from collections import namedtuple
+import csv
 
 import traceback
 import xml.etree.ElementTree as ET
@@ -24,6 +25,11 @@ type_apdx = 'apdx'
 dir_apdx = f'/{type_apdx}'
 dir_apdx_done = f'{dir_apdx}/done'
 dir_apdx_fail = f'{dir_apdx}/fail'
+
+type_cntr = 'cntr'
+dir_cntr = f'/{type_cntr}'
+dir_cntr_done = f'{type_cntr}/done'
+dir_cntr_fail = f'{type_cntr}/fail'
 
 
 class Period:
@@ -50,6 +56,7 @@ class ABaseAdapter:
         self.log_data = {
             type_logs: {'done': 0, 'fail': 0},
             type_apdx: {'done': 0, 'fail': 0, 'periods': 0},
+            type_cntr: {'done': 0, 'fail': 0, 'counters': 0, 'values': 0},
         }
 
     def get_log_str(self):
@@ -57,9 +64,10 @@ class ABaseAdapter:
         logs = self.log_data.get(type_logs)
         result += f"[{type_logs}]:f.{logs['fail']}:d.{logs['done']} "
         apdx = self.log_data.get(type_apdx)
-        result += f"[{type_apdx}]:f.{apdx['fail']}:d.{apdx['done']}:@{apdx['periods']} "
+        result += f"[{type_apdx}]:f.{apdx['fail']}:d.{apdx['done']}:p.{apdx['periods']} "
+        cntr = self.log_data.get(type_cntr)
+        result += f"[{type_cntr}]:f.{cntr['fail']}:d.{cntr['done']}:c.{cntr['counters']}:v.{cntr['values']} "
         return result
-
 
     def submit_file(self, file, file_type):  # return file_id
         pass
@@ -97,6 +105,10 @@ def _process_unify(ftp_key, adapter, files_getter, file_parser, file_type, max_f
     adapter.log_data[file_type]['done'] = files_done
     adapter.log_data[file_type]['fail'] = files_fail
     ftp_con.close()
+
+
+def process_cntr(ftp_key, adapter, max_files=500, move_done=True):
+    _process_unify(ftp_key, adapter, get_cntr_files_for_sync, parse_cntr_file, type_cntr, max_files, move_done)
 
 
 def process_apdx(ftp_key, adapter, max_files=500, move_done=True):
@@ -149,6 +161,10 @@ def get_tj_files_for_sync(ftp_con, max_count=1000):
 
 def get_apdx_files_for_sync(ftp_con, max_count=1000):
     return _get_file_list(ftp_con, dir_apdx, 'xml', max_count)
+
+
+def get_cntr_files_for_sync(ftp_con, max_count=1000):
+    return _get_file_list(ftp_con, dir_cntr, 'csv', max_count)
 
 
 def _parse_tj_line(line: str, db_adapter: ABaseAdapter, file_meta):
@@ -252,6 +268,75 @@ def parse_log_file(ftp_con, log_name, db_adapter: ABaseAdapter, move_done=True):
     return is_ok
 
 
+def parse_cntr_file(ftp_con, cntr_name, db_adapter: ABaseAdapter, move_done=True):
+    # Download log file
+    begin = datetime.now()
+    lines_count = 0
+    is_ok = False
+    fail_descr = None
+
+    tmp_dir = tempfile.gettempdir()
+    out_name = f"{tmp_dir}/{cntr_name}"
+    cntr_file = open(out_name, 'wb')
+    ftp_con.retrbinary("RETR " + f'{dir_cntr}/{cntr_name}', cntr_file.write)
+    cntr_file.close()
+
+    # Parse local copy
+    cntr_file = open(out_name, encoding="utf-16")
+    file_id = db_adapter.submit_file(cntr_name, type_cntr)
+
+    def get_hdr_params(the_hdr):
+        pure_hdr = the_hdr[1: len(the_hdr)]
+        re_hrp = r'\\\\(.+)\\(.+)\\(.+)'
+        raw = re.findall(re_hrp, '\n'.join(pure_hdr))
+        result = {
+                i: {
+                'id': pure_hdr[i],
+                'host': raw[i][0],
+                'context': raw[i][1],
+                'type': raw[i][2],
+            } for i in range(0, len(raw))}
+        return result
+
+    try:
+        cntr_data = iter(csv.reader(cntr_file))
+        hdr = next(cntr_data)
+        params = get_hdr_params(hdr)
+        for cntr_line in cntr_data:
+            lines_count += 1
+            stamp = datetime.strptime(cntr_line[0], '%m/%d/%Y %H:%M:%S.%f') - timedelta(hours=3)  # GMT 0 correction
+            cntr_values = cntr_line[1: len(cntr_line)]
+            for i in range(0, len(cntr_values)):
+                str_value = cntr_values[i]
+                line = {
+                    'file_id': file_id,
+                    'stamp': stamp,
+                    'cntr': params[i]['id'],
+                    'host': params[i]['host'],
+                    'context': params[i]['context'],
+                    'type': params[i]['type'],
+                    'flt_value': float(str_value) if str_value else .0,
+                    'str_value': str_value,
+                }
+                db_adapter.submit_line(line, type_cntr)
+    except Exception:
+        if not move_done:
+            raise Exception
+        fail_descr = traceback.format_exc()
+        is_ok = False
+    else:
+        is_ok = True
+
+    if move_done:
+        ftp_con.rename(f'{dir_apdx}/{cntr_name}', f'{dir_cntr_done if is_ok else dir_cntr_fail}/{cntr_name}')
+
+    cntr_file.close()
+    duration = (datetime.now() - begin).seconds
+    db_adapter.update_file_status(file_id, lines_count, duration, is_ok, fail_descr)
+    return is_ok
+
+
+
 def parse_apdx_file(ftp_con, apdx_name, db_adapter: ABaseAdapter, move_done=True):
     # Download log file
     begin = datetime.now()
@@ -311,7 +396,8 @@ def parse_apdx_file(ftp_con, apdx_name, db_adapter: ABaseAdapter, move_done=True
 class PGAdapter(ABaseAdapter):
     tables = {
         type_logs: 'TJLines',
-        type_apdx: 'ApdexLines'
+        type_apdx: 'ApdexLines',
+        type_cntr: 'ApdexLines'
     }
 
     def __init__(self, key, base1s_id):
@@ -543,7 +629,11 @@ class TestAdapter(ABaseAdapter):
 class FtptjparserTestCase(TestCase):
     def setUp(self):
         self.ftp_key = KeyChain.FTP_TJ_KEYS['tjtest']
-        self.adapter = PGAdapter(KeyChain.PG_PERF_KEY, self.ftp_key['user'])
+
+    def test_process_cntr(self):
+        adapter = PGAdapter(KeyChain.PG_PERF_KEY, self.ftp_key['user'])
+        process_cntr(self.ftp_key, adapter, move_done=False)
+        print(adapter.get_log_str())
 
     def test_submit_update_file(self):
         adapter = PGAdapter(KeyChain.PG_PERF_KEY, self.ftp_key['user'])
