@@ -328,7 +328,7 @@ def parse_cntr_file(ftp_con, cntr_name, db_adapter: ABaseAdapter, move_done=True
         is_ok = True
 
     if move_done:
-        ftp_con.rename(f'{dir_apdx}/{cntr_name}', f'{dir_cntr_done if is_ok else dir_cntr_fail}/{cntr_name}')
+        ftp_con.rename(f'{dir_cntr}/{cntr_name}', f'{dir_cntr_done if is_ok else dir_cntr_fail}/{cntr_name}')
 
     cntr_file.close()
     duration = (datetime.now() - begin).seconds
