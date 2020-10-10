@@ -56,7 +56,7 @@ class ABaseAdapter:
         self.log_data = {
             type_logs: {'done': 0, 'fail': 0},
             type_apdx: {'done': 0, 'fail': 0, 'periods': 0},
-            type_cntr: {'done': 0, 'fail': 0, 'counters': 0, 'values': 0},
+            type_cntr: {'done': 0, 'fail': 0},
         }
 
     def get_log_str(self):
@@ -66,7 +66,7 @@ class ABaseAdapter:
         apdx = self.log_data.get(type_apdx)
         result += f"[{type_apdx}]:f.{apdx['fail']}:d.{apdx['done']}:p.{apdx['periods']} "
         cntr = self.log_data.get(type_cntr)
-        result += f"[{type_cntr}]:f.{cntr['fail']}:d.{cntr['done']}:c.{cntr['counters']}:v.{cntr['values']} "
+        result += f"[{type_cntr}]:f.{cntr['fail']}:d.{cntr['done']} "
         return result
 
     def submit_file(self, file, file_type):  # return file_id
