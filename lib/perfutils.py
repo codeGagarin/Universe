@@ -307,15 +307,15 @@ def parse_cntr_file(ftp_con, cntr_name, db_adapter: ABaseAdapter, move_done=True
             stamp = datetime.strptime(cntr_line[0], '%m/%d/%Y %H:%M:%S.%f') - timedelta(hours=3)  # GMT 0 correction
             cntr_values = cntr_line[1: len(cntr_line)]
             for i in range(0, len(cntr_values)):
-                str_value = cntr_values[i]
+                str_value = cntr_values[i].replace(' ', '')
                 line = {
                     'file_id': file_id,
                     'stamp': stamp,
-                    'cntr': params[i]['id'],
+                    'counter': params[i]['id'],
                     'host': params[i]['host'],
                     'context': params[i]['context'],
                     'type': params[i]['type'],
-                    'flt_value': float(str_value) if str_value else .0,
+                    'flt_value': float(str_value) if str_value else None,
                     'str_value': str_value,
                 }
                 db_adapter.submit_line(line, type_cntr)
@@ -334,7 +334,6 @@ def parse_cntr_file(ftp_con, cntr_name, db_adapter: ABaseAdapter, move_done=True
     duration = (datetime.now() - begin).seconds
     db_adapter.update_file_status(file_id, lines_count, duration, is_ok, fail_descr)
     return is_ok
-
 
 
 def parse_apdx_file(ftp_con, apdx_name, db_adapter: ABaseAdapter, move_done=True):
@@ -397,7 +396,7 @@ class PGAdapter(ABaseAdapter):
     tables = {
         type_logs: 'TJLines',
         type_apdx: 'ApdexLines',
-        type_cntr: 'ApdexLines'
+        type_cntr: 'CounterLines'
     }
 
     def __init__(self, key, base1s_id):
@@ -514,21 +513,10 @@ class PGAdapter(ABaseAdapter):
         cursor = self._con.cursor(cursor_factory=psycopg2.extras.NamedTupleCursor)
         qstr = insert_query.as_string(self._con)
         cursor.execute(qstr)
-        self._con.commit()
-
-    def _logs_line_submit(self, line):
-        self._unify_line_submit(line, self.tables[type_logs])
-
-    def _apdx_line_submit(self, line):
-        self._unify_line_submit(line, self.tables[type_apdx])
 
     def submit_line(self, line, line_type):
         line['base1s'] = self.base1s_id
-        line_submitters = {
-            type_logs: self._logs_line_submit,
-            type_apdx: self._apdx_line_submit
-        }
-        line_submitters[line_type](line)
+        self._unify_line_submit(line, self.tables[line_type])
 
     def apdx_get_next_period(self):  # return next empty period for APDEX calc or None
         select_query = pgs.SQL(
@@ -609,23 +597,6 @@ class PGAdapter(ABaseAdapter):
         self._con.commit()
 
 
-#  ---- Test Area ---- #
-class TestAdapter(ABaseAdapter):
-    def _prn(self, msg):
-        print(f"BaseAdapter: {msg}")
-
-    def __init__(self, key, base1s_id):
-        super().__init__(key, base1s_id)
-        self._prn(f'Connect with key: {key} and base1s_id:{base1s_id}')
-
-    def submit_file(self, name, file_type):  # return file_id
-        self._prn(f'Submit file {name}:{file_type}')
-        return 1
-
-    def submit_line(self, line, line_type):
-        self._prn(f'{line_type}:{line}')
-
-
 class FtptjparserTestCase(TestCase):
     def setUp(self):
         self.ftp_key = KeyChain.FTP_TJ_KEYS['tjtest']
@@ -679,7 +650,7 @@ class FtptjparserTestCase(TestCase):
 
     def test_process_apdx(self):
         adapter = PGAdapter(KeyChain.PG_PERF_KEY, self.ftp_key['user'])
-        process_apdx(self.ftp_key, adapter, move_done=False)
+        process_apdx(self.ftp_key, adapter, move_done=False, max_files=1)
         print(adapter.get_log_str())
 
 
