@@ -19,7 +19,7 @@ def scan_levels(pg_key):
     points = re.findall(re_array, array, re.MULTILINE)
 
     connection = psycopg2.connect(dbname=pg_key["db_name"], user=pg_key["user"],
-                           password=pg_key["pwd"], host=pg_key["host"])
+                           password=pg_key["pwd"], host=pg_key["host"], port=pg_key.get('port'))
 
     cursor = connection.cursor()
 
