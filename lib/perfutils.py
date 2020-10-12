@@ -58,6 +58,7 @@ class ABaseAdapter:
             type_apdx: {'done': 0, 'fail': 0, 'periods': 0},
             type_cntr: {'done': 0, 'fail': 0},
         }
+        self.GMT = key.get('GMT', 0)
 
     def get_log_str(self):
         result = f'{self.base1s_id} '
@@ -182,7 +183,7 @@ def _parse_tj_line(line: str, db_adapter: ABaseAdapter, file_meta):
     ms = int(header[0][2])
 
     local_stamp = datetime(yy, mm, dd, hh, mnt, ss, ms)
-    utc_stamp = local_stamp - timedelta(minutes=180)  # GMT+3 compensation
+    utc_stamp = local_stamp - timedelta(minutes=180) + timedelta(hours=db_adapter.GMT)  # GMT+3 compensation
     record = {
         'file_id': file_meta['file_id'],
         'rphost': file_meta['rphost'],
@@ -304,7 +305,8 @@ def parse_cntr_file(ftp_con, cntr_name, db_adapter: ABaseAdapter, move_done=True
         params = get_hdr_params(hdr)
         for cntr_line in cntr_data:
             lines_count += 1
-            stamp = datetime.strptime(cntr_line[0], '%m/%d/%Y %H:%M:%S.%f') - timedelta(hours=3)  # GMT 0 correction
+            stamp = datetime.strptime(cntr_line[0], '%m/%d/%Y %H:%M:%S.%f')\
+                    - timedelta(hours=3) + timedelta(hours=db_adapter.GMT) # GMT 0 correction
             cntr_values = cntr_line[1: len(cntr_line)]
             for i in range(0, len(cntr_values)):
                 str_value = cntr_values[i].replace(' ', '')
@@ -365,7 +367,8 @@ def parse_apdx_file(ftp_con, apdx_name, db_adapter: ABaseAdapter, move_done=True
                     'ops_name': ops_attribute['name'],
                     'duration': float(measure_attribute['value']),
                     'user': measure_attribute['userName'],
-                    'start': datetime.strptime(measure_attribute['tSaveUTC'], '%Y-%m-%dT%H:%M:%S'),
+                    'start': datetime.strptime(measure_attribute['tSaveUTC'], '%Y-%m-%dT%H:%M:%S')
+                             + timedelta(hours=db_adapter.GMT),
                     'session': int(measure_attribute['sessionNumber']),
                     'fail': not bool(measure_attribute['runningError']),
                     'target': float(ops_attribute['targetValue']),
@@ -402,7 +405,7 @@ class PGAdapter(ABaseAdapter):
     def __init__(self, key, base1s_id):
         super().__init__(key, base1s_id)
         self._con = psycopg2.connect(dbname=key["db_name"], user=key["user"],
-                                     password=key["pwd"], host=key["host"])
+                                     password=key["pwd"], host=key["host"], port=key.get('port'))
 
     def _check_tjfile_exist(self, file_name, file_type):
         result = -1  # in case file not exist
@@ -600,14 +603,15 @@ class PGAdapter(ABaseAdapter):
 class FtptjparserTestCase(TestCase):
     def setUp(self):
         self.ftp_key = KeyChain.FTP_TJ_KEYS['tjtest']
+        self.pg_key = KeyChain.PG_YANDEX_PERF_KEY
 
     def test_process_cntr(self):
-        adapter = PGAdapter(KeyChain.PG_PERF_KEY, self.ftp_key['user'])
-        process_cntr(self.ftp_key, adapter, move_done=False)
+        adapter = PGAdapter(self.pg_key, self.ftp_key['user'])
+        process_cntr(self.ftp_key, adapter, move_done=False, max_files=1)
         print(adapter.get_log_str())
 
     def test_submit_update_file(self):
-        adapter = PGAdapter(KeyChain.PG_PERF_KEY, self.ftp_key['user'])
+        adapter = PGAdapter(self.pg_key, self.ftp_key['user'])
         file_name = f'test_{int(datetime.now().timestamp())}.log'
         file_id = adapter.submit_file(file_name, type_logs)
         adapter.update_file_status(file_id, 10, 1, False, 'Epic fail')
@@ -630,7 +634,7 @@ class FtptjparserTestCase(TestCase):
     def test_parse_log_file(self):
         ftp_con = connect_server(self.ftp_key)
         log_files = get_tj_files_for_sync(ftp_con, 150)
-        adapter = PGAdapter(KeyChain.PG_PERF_KEY, self.ftp_key['user'])
+        adapter = PGAdapter(self.pg_key, self.ftp_key['user'])
         for file in log_files:
             parse_log_file(ftp_con, file, adapter, False)
         ftp_con.close()
@@ -638,18 +642,18 @@ class FtptjparserTestCase(TestCase):
     def test_parse_apdx_file(self):
         ftp_con = connect_server(self.ftp_key)
         log_files = get_apdx_files_for_sync(ftp_con, 150)
-        adapter = PGAdapter(KeyChain.PG_PERF_KEY, self.ftp_key['user'])
+        adapter = PGAdapter(self.pg_key, self.ftp_key['user'])
         for file in log_files:
             parse_apdx_file(ftp_con, file, adapter, False)
         ftp_con.close()
 
     def test_process_logs(self):
-        adapter = PGAdapter(KeyChain.PG_PERF_KEY, self.ftp_key['user'])
+        adapter = PGAdapter(self.pg_key, self.ftp_key['user'])
         process_logs(self.ftp_key, adapter, move_done=False)
         print(adapter.get_log_str())
 
     def test_process_apdx(self):
-        adapter = PGAdapter(KeyChain.PG_PERF_KEY, self.ftp_key['user'])
+        adapter = PGAdapter(self.pg_key, self.ftp_key['user'])
         process_apdx(self.ftp_key, adapter, move_done=False, max_files=1)
         print(adapter.get_log_str())
 
