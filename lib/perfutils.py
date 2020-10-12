@@ -31,6 +31,13 @@ dir_cntr = f'/{type_cntr}'
 dir_cntr_done = f'{type_cntr}/done'
 dir_cntr_fail = f'{type_cntr}/fail'
 
+file_tree = {t:
+    {
+        'root': f'/{t}',
+        'done': f'{t}/done',
+        'fail': f'{t}/fail'
+    } for t in (type_logs, type_apdx, type_cntr)}
+
 
 class Period:
     def __init__(self, stamp: datetime = None):
@@ -76,7 +83,7 @@ class ABaseAdapter:
     def submit_line(self, line, line_type):
         pass
 
-    def update_file_status(self, file_id, lines_count, duration, isOk, fail_descr=None):
+    def update_file_status(self, file_id, duration, isOk, fail_descr=None):
         pass
 
     def apdx_get_next_period(self) -> Period:  # return next empty period for APDEX calc or None
@@ -128,13 +135,14 @@ def _calculate_apdex(adapter: ABaseAdapter):
         ops_list = adapter.apdx_get_ops_for(period)
         for ops in ops_list:
             v = adapter.apdx_get_n_ns_nt_for(ops, period)
-            adpex = (v.ns + v.nt/2)/v.n
+            adpex = (v.ns + v.nt / 2) / v.n
             adapter.apdx_set_for(ops, period, adpex)
     adapter.log_data[type_apdx]['periods'] = i
 
 
 def process_logs(ftp_key, adapter, max_files=500, move_done=True):
-    _process_unify(ftp_key, adapter, get_tj_files_for_sync, parse_log_file, type_logs, max_files=500, move_done=move_done)
+    _process_unify(ftp_key, adapter, get_tj_files_for_sync, parse_logs_file, type_logs, max_files=500,
+                   move_done=move_done)
 
 
 def connect_server(key):
@@ -174,7 +182,7 @@ def _parse_tj_line(line: str, db_adapter: ABaseAdapter, file_meta):
     re_params = r'([\w:]+)=([^,\r]+)'
     params = {g[0]: g[1] for g in re.findall(re_params, line)}
 
-    yy = 2000+int(file_meta['yy'])
+    yy = 2000 + int(file_meta['yy'])
     mm = int(file_meta['mm'])
     dd = int(file_meta['dd'])
     hh = int(file_meta['hh'])
@@ -196,117 +204,70 @@ def _parse_tj_line(line: str, db_adapter: ABaseAdapter, file_meta):
         'stamp': utc_stamp,
         'source': line
     }
-
     db_adapter.submit_line(record, type_logs)
 
 
-def _get_tj_file_meta(log_name):
-    re_params = r'_(\d+)_(\d\d)(\d\d)(\d\d)(\d\d)'
-    prm = re.findall(re_params, log_name)[0]
-    return {
-        'rphost': int(prm[0]),
-        'yy': int(prm[1]),
-        'mm': int(prm[2]),
-        'dd': int(prm[3]),
-        'hh': int(prm[4])
-    }
-
-
-def parse_log_file(ftp_con, log_name, db_adapter: ABaseAdapter, move_done=True):
-    # Download log file
-    begin = datetime.now()
-    lines_count = 0
-    is_ok = False
-    fail_descr = None
-
-    tmp_dir = tempfile.gettempdir()
-    out_name = f"{tmp_dir}/{log_name}"
-    log_file = open(out_name, 'wb')
-    ftp_con.retrbinary("RETR " + f'{dir_logs}/{log_name}', log_file.write)
-    log_file.close()
-
+def _parser_logs(local_file, file_id, file_name, db_adapter):
     # Parse local copy
-    log_file = open(out_name, encoding='utf-16')
+    log_file = open(local_file, encoding='utf-16')
+    with log_file:
+        def get_meta(log_name):
+            re_params = r'_(\d+)_(\d\d)(\d\d)(\d\d)(\d\d)'
+            prm = re.findall(re_params, log_name)[0]
+            return {
+                'rphost': int(prm[0]),
+                'yy': int(prm[1]),
+                'mm': int(prm[2]),
+                'dd': int(prm[3]),
+                'hh': int(prm[4])
+            }
 
-    re_hdr = r'^\d\d:\d\d\.\d+-'
-    accumulate_line = ''
-    file_meta = _get_tj_file_meta(log_name)
-    file_id = db_adapter.submit_file(log_name, type_logs)
-    file_meta['file_id'] = file_id
+        re_hdr = r'^\d\d:\d\d\.\d+-'
+        accumulate_line = ''
+        file_meta = get_meta(file_name)
+        file_meta['file_id'] = file_id
 
-    try:
         while True:
             log_line = log_file.readline()
 
             if not log_line:
                 if len(accumulate_line):
                     _parse_tj_line(accumulate_line, db_adapter, file_meta)
-                    lines_count += 1
                 break
             elif re.match(re_hdr, log_line):  # new line tag found
                 if len(accumulate_line) == 0:  # no line accumulated
                     accumulate_line += log_line
                 else:
                     _parse_tj_line(accumulate_line, db_adapter, file_meta)
-                    lines_count += 1
                     accumulate_line = log_line
                     continue
             else:
                 accumulate_line += log_line
-    except Exception:
-        if not move_done:
-            raise Exception
-        fail_descr = traceback.format_exc()
-        is_ok = False
-    else:
-        is_ok = True
-
-    if move_done:
-        ftp_con.rename(f'{dir_logs}/{log_name}', f'{dir_logs_done if is_ok else dir_logs_fail}/{log_name}')
-    log_file.close()
-    duration = (datetime.now() - begin).seconds
-    db_adapter.update_file_status(file_id, lines_count, duration, is_ok, fail_descr)
-    return is_ok
 
 
-def parse_cntr_file(ftp_con, cntr_name, db_adapter: ABaseAdapter, move_done=True):
-    # Download log file
-    begin = datetime.now()
-    lines_count = 0
-    is_ok = False
-    fail_descr = None
-
-    tmp_dir = tempfile.gettempdir()
-    out_name = f"{tmp_dir}/{cntr_name}"
-    cntr_file = open(out_name, 'wb')
-    ftp_con.retrbinary("RETR " + f'{dir_cntr}/{cntr_name}', cntr_file.write)
-    cntr_file.close()
-
+def _parser_cntr(local_file, file_id, file_name, db_adapter):
     # Parse local copy
-    cntr_file = open(out_name, encoding="utf-16")
-    file_id = db_adapter.submit_file(cntr_name, type_cntr)
-
-    def get_hdr_params(the_hdr):
-        pure_hdr = the_hdr[1: len(the_hdr)]
-        re_hrp = r'\\\\(.+)\\(.+)\\(.+)'
-        raw = re.findall(re_hrp, '\n'.join(pure_hdr))
-        result = {
+    cntr_file = open(local_file, encoding="utf-16")
+    with cntr_file:
+        def get_hdr_params(the_hdr):
+            pure_hdr = the_hdr[1: len(the_hdr)]
+            re_hrp = r'\\\\(.+)\\(.+)\\(.+)'
+            raw = re.findall(re_hrp, '\n'.join(pure_hdr))
+            result = {
                 i: {
-                'id': pure_hdr[i],
-                'host': raw[i][0],
-                'context': raw[i][1],
-                'type': raw[i][2],
-            } for i in range(0, len(raw))}
-        return result
+                    'id': pure_hdr[i],
+                    'host': raw[i][0],
+                    'context': raw[i][1],
+                    'type': raw[i][2],
+                } for i in range(0, len(raw))}
+            return result
 
-    try:
         cntr_data = iter(csv.reader(cntr_file))
         hdr = next(cntr_data)
         params = get_hdr_params(hdr)
         for cntr_line in cntr_data:
-            lines_count += 1
-            stamp = datetime.strptime(cntr_line[0], '%m/%d/%Y %H:%M:%S.%f')\
-                    - timedelta(hours=3) + timedelta(hours=db_adapter.GMT) # GMT 0 correction
+            stamp = datetime.strptime(cntr_line[0], '%m/%d/%Y %H:%M:%S.%f') \
+                    - timedelta(hours=3) + timedelta(hours=db_adapter.GMT)  # GMT 0 correction
             cntr_values = cntr_line[1: len(cntr_line)]
             for i in range(0, len(cntr_values)):
                 str_value = cntr_values[i].replace(' ', '')
@@ -321,41 +282,11 @@ def parse_cntr_file(ftp_con, cntr_name, db_adapter: ABaseAdapter, move_done=True
                     'str_value': str_value,
                 }
                 db_adapter.submit_line(line, type_cntr)
-    except Exception:
-        if not move_done:
-            raise Exception
-        fail_descr = traceback.format_exc()
-        is_ok = False
-    else:
-        is_ok = True
-
-    if move_done:
-        ftp_con.rename(f'{dir_cntr}/{cntr_name}', f'{dir_cntr_done if is_ok else dir_cntr_fail}/{cntr_name}')
-
-    cntr_file.close()
-    duration = (datetime.now() - begin).seconds
-    db_adapter.update_file_status(file_id, lines_count, duration, is_ok, fail_descr)
-    return is_ok
 
 
-def parse_apdx_file(ftp_con, apdx_name, db_adapter: ABaseAdapter, move_done=True):
-    # Download log file
-    begin = datetime.now()
-    lines_count = 0
-    is_ok = False
-    fail_descr = None
-
-    tmp_dir = tempfile.gettempdir()
-    out_name = f"{tmp_dir}/{apdx_name}"
-    apdx_file = open(out_name, 'wb')
-    ftp_con.retrbinary("RETR " + f'{dir_apdx}/{apdx_name}', apdx_file.write)
-    apdx_file.close()
-
-    # Parse local copy
-    apdx_file = open(out_name)
-    file_id = db_adapter.submit_file(apdx_name, type_apdx)
-
-    try:
+def _parser_apdx(local_file, file_id, file_name, db_adapter):
+    apdx_file = open(local_file)
+    with apdx_file:
         root = ET.parse(apdx_file).getroot()
         for ops in root:
             for measure in ops:
@@ -376,8 +307,28 @@ def parse_apdx_file(ftp_con, apdx_name, db_adapter: ABaseAdapter, move_done=True
                 }
                 line['status'] = 'NS' if line['target'] >= line['duration'] else 'NT'
                 db_adapter.submit_line(line, type_apdx)
-                lines_count += 1
 
+
+def _parse_unify_file(ftp_con, file_type, file_name, db_adapter, parser, move_done):
+    # Download log file
+    begin = datetime.now()
+    is_ok = False
+    fail_descr = None
+
+    root_dir = file_tree[file_type]["root"]
+    done_dir = file_tree[file_type]["done"]
+    fail_dir = file_tree[file_type]["fail"]
+
+    tmp_dir = tempfile.gettempdir()
+    out_name = f"{tmp_dir}/{file_name}"
+    parse_file = open(out_name, 'wb')
+    ftp_con.retrbinary("RETR " + f'{root_dir}/{file_name}', parse_file.write)
+    parse_file.close()
+
+    file_id = db_adapter.submit_file(file_name, file_type)
+
+    try:
+        parser(out_name, file_id, file_name, db_adapter)
     except Exception:
         if not move_done:
             raise Exception
@@ -387,12 +338,23 @@ def parse_apdx_file(ftp_con, apdx_name, db_adapter: ABaseAdapter, move_done=True
         is_ok = True
 
     if move_done:
-        ftp_con.rename(f'{dir_apdx}/{apdx_name}', f'{dir_apdx_done if is_ok else dir_apdx_fail}/{apdx_name}')
+        ftp_con.rename(f'{root_dir}/{file_name}', f'{done_dir if is_ok else fail_dir}/{file_name}')
 
-    apdx_file.close()
     duration = (datetime.now() - begin).seconds
-    db_adapter.update_file_status(file_id, lines_count, duration, is_ok, fail_descr)
+    db_adapter.update_file_status(file_id, duration, is_ok, fail_descr)
     return is_ok
+
+
+def parse_cntr_file(ftp_con, cntr_name, db_adapter: ABaseAdapter, move_done=True):
+    _parse_unify_file(ftp_con, type_cntr, cntr_name, db_adapter, _parser_cntr, move_done)
+
+
+def parse_logs_file(ftp_con, logs_name, db_adapter: ABaseAdapter, move_done=True):
+    _parse_unify_file(ftp_con, type_logs, logs_name, db_adapter, _parser_logs, move_done)
+
+
+def parse_apdx_file(ftp_con, apdx_name, db_adapter: ABaseAdapter, move_done=True):
+    _parse_unify_file(ftp_con, type_apdx, apdx_name, db_adapter, _parser_apdx, move_done)
 
 
 class PGAdapter(ABaseAdapter):
@@ -406,6 +368,9 @@ class PGAdapter(ABaseAdapter):
         super().__init__(key, base1s_id)
         self._con = psycopg2.connect(dbname=key["db_name"], user=key["user"],
                                      password=key["pwd"], host=key["host"], port=key.get('port'))
+        self._batch_params = []
+        self._batch_type = ''
+        self._batch_hdr = ()
 
     def _check_tjfile_exist(self, file_name, file_type):
         result = -1  # in case file not exist
@@ -484,14 +449,16 @@ class PGAdapter(ABaseAdapter):
             self._remove_file_data(file_id, file_type)
         else:
             file_id = self._get_new_tjfile_id(name, file_type)
+        self._batch_params.clear()
         return file_id
 
-    def update_file_status(self, file_id, lines_count, duration, isOk, fail_descr=None):
+    def update_file_status(self, file_id, duration, isOk, fail_descr=None):
+        lines_count = len(self._batch_params)
         params = {
             'lines_count': lines_count,
             'duration': duration,
             'status': 'done' if isOk else 'fail',
-            'fail_descr':  fail_descr
+            'fail_descr': fail_descr
         }
         update_query = pgs.SQL('UPDATE {} SET ({})=({}) WHERE {}={}').format(
             pgs.Identifier('TJFiles'),
@@ -504,8 +471,21 @@ class PGAdapter(ABaseAdapter):
         cursor = self._con.cursor(cursor_factory=psycopg2.extras.NamedTupleCursor)
         qstr = update_query.as_string(self._con)
         cursor.execute(qstr)
+
+        if len(self._batch_params):
+            params_count = len(self._batch_params[0])
+            hdr_params = [self.tables[self._batch_type]] + self._batch_hdr
+
+            part_into = ' ('+', '.join(['{}' for i in range(0, params_count)])+')'
+            part_values = ' ('+', '.join(['%s' for i in range(0, params_count)])+')'
+
+            batch_query = pgs.SQL('insert into {} ' + part_into).format(
+                *[pgs.Identifier(h) for h in hdr_params]
+            ) + pgs.SQL(' values ' + part_values)
+            psycopg2.extras.execute_batch(cursor, batch_query, self._batch_params)
+
         self._con.commit()
-        pass
+        self._batch_params.clear()
 
     def _unify_line_submit(self, line, table_name):
         insert_query = pgs.SQL('INSERT INTO {} ({}) VALUES ({})').format(
@@ -519,7 +499,10 @@ class PGAdapter(ABaseAdapter):
 
     def submit_line(self, line, line_type):
         line['base1s'] = self.base1s_id
-        self._unify_line_submit(line, self.tables[line_type])
+        #  self._unify_line_submit(line, self.tables[line_type])
+        self._batch_params.append(list(line.values()))
+        self._batch_type = line_type
+        self._batch_hdr = list(line.keys())
 
     def apdx_get_next_period(self):  # return next empty period for APDEX calc or None
         select_query = pgs.SQL(
@@ -614,7 +597,7 @@ class FtptjparserTestCase(TestCase):
         adapter = PGAdapter(self.pg_key, self.ftp_key['user'])
         file_name = f'test_{int(datetime.now().timestamp())}.log'
         file_id = adapter.submit_file(file_name, type_logs)
-        adapter.update_file_status(file_id, 10, 1, False, 'Epic fail')
+        adapter.update_file_status(file_id, 1, False, 'Epic fail')
         file_id = adapter.submit_file(file_name, type_logs)
         adapter.update_file_status(file_id, 27, 3, True)
 
@@ -636,7 +619,7 @@ class FtptjparserTestCase(TestCase):
         log_files = get_tj_files_for_sync(ftp_con, 150)
         adapter = PGAdapter(self.pg_key, self.ftp_key['user'])
         for file in log_files:
-            parse_log_file(ftp_con, file, adapter, False)
+            parse_logs_file(ftp_con, file, adapter, False)
         ftp_con.close()
 
     def test_parse_apdx_file(self):
@@ -656,7 +639,3 @@ class FtptjparserTestCase(TestCase):
         adapter = PGAdapter(self.pg_key, self.ftp_key['user'])
         process_apdx(self.ftp_key, adapter, move_done=False, max_files=1)
         print(adapter.get_log_str())
-
-
-
-
