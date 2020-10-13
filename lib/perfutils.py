@@ -329,7 +329,6 @@ def _parse_unify_file(ftp_con, file_type, file_name, db_adapter, parser, move_do
 
     try:
         parser(out_name, file_id, file_name, db_adapter)
-        is_ok = True
     except Exception:
         if not move_done:
             raise Exception
@@ -347,15 +346,15 @@ def _parse_unify_file(ftp_con, file_type, file_name, db_adapter, parser, move_do
 
 
 def parse_cntr_file(ftp_con, cntr_name, db_adapter: ABaseAdapter, move_done=True):
-    _parse_unify_file(ftp_con, type_cntr, cntr_name, db_adapter, _parser_cntr, move_done)
+    return _parse_unify_file(ftp_con, type_cntr, cntr_name, db_adapter, _parser_cntr, move_done)
 
 
 def parse_logs_file(ftp_con, logs_name, db_adapter: ABaseAdapter, move_done=True):
-    _parse_unify_file(ftp_con, type_logs, logs_name, db_adapter, _parser_logs, move_done)
+    return _parse_unify_file(ftp_con, type_logs, logs_name, db_adapter, _parser_logs, move_done)
 
 
 def parse_apdx_file(ftp_con, apdx_name, db_adapter: ABaseAdapter, move_done=True):
-    _parse_unify_file(ftp_con, type_apdx, apdx_name, db_adapter, _parser_apdx, move_done)
+    return _parse_unify_file(ftp_con, type_apdx, apdx_name, db_adapter, _parser_apdx, move_done)
 
 
 class PGAdapter(ABaseAdapter):
