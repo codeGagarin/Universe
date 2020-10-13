@@ -14,7 +14,7 @@ class TJSync(Activity):
         adapter = utils.PGAdapter(KeyChain.PG_YANDEX_PERF_KEY, ftp_key['user'])
         utils.process_logs(ftp_key, adapter, max_files=500)
         utils.process_apdx(ftp_key, adapter, max_files=500)
-        utils.process_cntr(ftp_key, adapter, max_files=10)
+        utils.process_cntr(ftp_key, adapter, max_files=100)
 
         print(adapter.get_log_str())
 

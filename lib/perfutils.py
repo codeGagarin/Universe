@@ -329,6 +329,7 @@ def _parse_unify_file(ftp_con, file_type, file_name, db_adapter, parser, move_do
 
     try:
         parser(out_name, file_id, file_name, db_adapter)
+        is_ok = True
     except Exception:
         if not move_done:
             raise Exception
