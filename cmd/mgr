@@ -1,0 +1,18 @@
+#!/bin/bash
+
+
+#  pg_dump -h rc1a-7y6mcl1uz570ro1a.mdb.yandexcloud.net -p 6432 -U LogsRobot -Fc Logs > "$TMPDIR"dump.sql
+
+# full binary backup
+pg_dump -h rc1a-7y6mcl1uz570ro1a.mdb.yandexcloud.net -p 6432 -U LogsRobot -F c -Z 9 -f "$TMPDIR"base.backup Logs -v
+pg_restore -h rc1a-z9ekk03wuu47zqwh.mdb.yandexcloud.net -p 6432 -U user1 -d db1 --role=my_role_name "$TMPDIR"base.backup -v
+pg_restore -h 91.224.23.227 -p 5432 -U fargo -c -d mirror_test /tmp/dump.sql
+psql -h 91.224.23.227 -p 5432 -U fargo -f ~/proj/uni_test/pretest.sql mirror_test
+rm /tmp/dump.sql
+
+
+pg_restore -d my_database_name --role=my_role_name my_file.backup
+
+#  rc1a-z9ekk03wuu47zqwh.mdb.yandexcloud.net -- orbita_ssd
+#  rc1a-vq2r6da5gb5w3rh6.mdb.yandexcloud.net -- orbita_ssd_cpu
+#  rc1a-ydw330xh54fv7efd.mdb.yandexcloud.net,rc1c-ms1362ogbi1uaplw.mdb.yandexcloud.net -- orbita_2

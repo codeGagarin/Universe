@@ -11,10 +11,10 @@ class TJSync(Activity):
     def run(self):
         ftp_key = KeyChain.FTP_TJ_KEYS['vgunf']
 
-        adapter = utils.PGAdapter(KeyChain.PG_YANDEX_PERF_KEY, ftp_key['user'])
+        adapter = utils.PGAdapter(KeyChain.PG_YANDEX_SSD_CPU, ftp_key['user'])
         utils.process_logs(ftp_key, adapter, max_files=500)
         utils.process_apdx(ftp_key, adapter, max_files=500)
-        utils.process_cntr(ftp_key, adapter, max_files=100)
+        utils.process_cntr(ftp_key, adapter, max_files=500)
 
         print(adapter.get_log_str())
 
@@ -24,7 +24,6 @@ class TJSync(Activity):
 
 class LevelScan(Activity):
     def run(self):
-        scan.scan_levels(KeyChain.PG_YANDEX_PERF_KEY)
         scan.scan_levels(KeyChain.PG_YANDEX_SSD_CPU)
 
 
