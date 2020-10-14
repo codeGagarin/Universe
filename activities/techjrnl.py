@@ -25,6 +25,8 @@ class TJSync(Activity):
 class LevelScan(Activity):
     def run(self):
         scan.scan_levels(KeyChain.PG_YANDEX_PERF_KEY)
+        scan.scan_levels(KeyChain.PG_YANDEX_SSD_CPU)
+
 
     def get_crontab(self):
         return '15 * * * *'
