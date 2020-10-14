@@ -6,6 +6,7 @@ from datetime import datetime
 from datetime import timedelta
 from collections import namedtuple
 import csv
+import os
 
 import traceback
 import xml.etree.ElementTree as ET
@@ -340,6 +341,7 @@ def _parse_unify_file(ftp_con, file_type, file_name, db_adapter, parser, move_do
     if move_done:
         ftp_con.rename(f'{root_dir}/{file_name}', f'{done_dir if is_ok else fail_dir}/{file_name}')
 
+    os.remove(out_name)
     duration = (datetime.now() - begin).seconds
     db_adapter.update_file_status(file_id, duration, is_ok, fail_descr)
     return is_ok
@@ -586,7 +588,7 @@ class PGAdapter(ABaseAdapter):
 class FtptjparserTestCase(TestCase):
     def setUp(self):
         self.ftp_key = KeyChain.FTP_TJ_KEYS['tjtest']
-        self.pg_key = KeyChain.PG_YANDEX_PERF_KEY
+        self.pg_key = KeyChain.PG_PERF_KEY
 
     def test_process_cntr(self):
         adapter = PGAdapter(self.pg_key, self.ftp_key['user'])
