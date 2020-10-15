@@ -8,12 +8,15 @@ from psycopg2 import sql
 from keys import KeyChain
 from report import Report
 from activities.reports import ReportActivity
+from lib.tablesync import TableSyncActivity
+from loader import Loader
 app = Flask(__name__)
 
 
 @app.route('/')
 def index():
     return render_template('index.html')
+
 
 @app.route('/report/')
 def report():
@@ -29,19 +32,13 @@ def report():
     return index_page if index_page else render_template(rpt.get_template(), rpt=rpt)
 
 
-@app.route('/reportm/')
-def reportm():
-    conn = Report.get_connection(KeyChain.PG_KEY)
-    index_page = None
-
-    rpt = Report.factory(conn, dict(request.args))
-    if not rpt:
-        index_page = render_template('index.html')
-    else:
-        rpt.request_data(conn)
-    conn['cn'].close()
-    #  rpt.web_server_name = "http://127.0.0.1:5000"  # delete this now! for transform testing
-    return index_page if index_page else ReportActivity.get_report_html(rpt, KeyChain)
+@app.route('/tablesync/')
+def tablesync():
+    ldr = Loader(KeyChain)
+    act = TableSyncActivity(ldr)
+    act['index'] = request.args['idx']
+    act.apply()
+    return f'{str(act.due_date)}'
 
 
 @app.route('/default/')
