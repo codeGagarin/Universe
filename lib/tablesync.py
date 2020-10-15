@@ -14,7 +14,7 @@ from keys import KeyChain
 from activities.activity import Activity
 
 _index = {
-    'tjextdescr': {
+    'tjexcdescr': {
         'path': 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSz33JT'
                 '-RwNwpbUeXw9xhms6rzjmnmTtmyStdAgruxDmdmUyY9uAcLxE6tQTe-'
                 '_ONHVtX_PQXrDxUMi/pub?gid=0&single=true&output=csv',
@@ -40,7 +40,7 @@ class TableSyncActivity(Activity):
 
     def apply(self, due_date=None):
         if not due_date:
-            due_date = datetime.now() + timedelta(seconds=60)
+            due_date = datetime.now() + timedelta(seconds=30)
         super().apply(due_date)
         self.due_date = due_date
 
