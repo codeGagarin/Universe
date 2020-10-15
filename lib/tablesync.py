@@ -31,6 +31,10 @@ _index = {
 
 
 class TableSyncActivity(Activity):
+    def __init__(self, ldr, params=None):
+        super().__init__(ldr, params)
+        self.due_date = None
+
     def _fields(self):
         return 'index'
 
@@ -42,7 +46,7 @@ class TableSyncActivity(Activity):
         if not due_date:
             due_date = datetime.now() + timedelta(seconds=30)
         super().apply(due_date)
-        self.due_date = due_date
+        self.due_date = due_date + timedelta(seconds=60-due_date.second)  # next minute
 
 
 def download_table(url):

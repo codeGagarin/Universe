@@ -38,7 +38,7 @@ def tablesync():
     act = TableSyncActivity(ldr)
     act['index'] = request.args['idx']
     act.apply()
-    return f'{str(act.due_date)}'
+    return f'{str(act.due_date.strftime("%H:%M:%S"))}'
 
 
 @app.route('/default/')
