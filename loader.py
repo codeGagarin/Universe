@@ -161,9 +161,10 @@ class Loader:
         query = sql.SQL('SELECT {} FROM {} WHERE {}').format(
             sql.SQL(', ').join(map(sql.Identifier, ('id', 'type', 'start'))),
             sql.Identifier(self._table_name),
-            sql.SQL('{} = {} AND {} > {}').format(
+            sql.SQL('{} = {} AND {} > {} AND {} is Null').format(
                 sql.Identifier('status'), sql.Literal('todo'),
                 sql.Identifier('start'), sql.Literal(datetime.now()),
+                sql.Identifier('params')
             )
         )
 
@@ -328,3 +329,9 @@ class Loader:
 
     def get_IS_connector(self):  # __init__ defined
         pass
+
+from keys import KeyChain
+class TestLoader(TestCase):
+    def test_loader(self):
+        ldr = Loader(KeyChain)
+        ldr.track_schedule()
