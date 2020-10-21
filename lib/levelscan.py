@@ -6,6 +6,17 @@ from datetime import datetime
 import psycopg2
 from psycopg2 import sql
 
+from lib.schedutils import Activity
+from keys import KeyChain
+
+
+class LevelScan(Activity):
+    def run(self):
+        scan_levels(KeyChain.PG_PERF_KEY)
+
+    def get_crontab(self):
+        return '21 * * * *'
+
 
 def scan_levels(pg_key):
     url = 'http://www.meteo.nw.ru/weather/lo_levelsd.php'

@@ -1,8 +1,9 @@
 from activities.activity import Email
 from activities.intraservice import ISActualizer, ISSync, IS404TaskCloser
 from activities.reports import LoaderStateReporter2, HelpdeskWeekly
-from activities.techjrnl import TJSync, LevelScan
+from activities.techjrnl import TJSync
 from lib.tablesync import TableSyncActivity
+from lib.levelscan import LevelScan
 
 
 def init_ldr(ldr):
@@ -13,8 +14,9 @@ def init_ldr(ldr):
     ldr.register(HelpdeskWeekly)
     ldr.register(IS404TaskCloser)
     ldr.register(TJSync)
-    ldr.register(LevelScan)
     ldr.register(TableSyncActivity)
+    ldr.register(LevelScan)
+
 
 
 

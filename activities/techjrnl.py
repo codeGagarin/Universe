@@ -20,13 +20,3 @@ class TJSync(Activity):
 
     def get_crontab(self):
         return '*/30 * * * *'
-
-
-class LevelScan(Activity):
-    def run(self):
-        scan.scan_levels(KeyChain.PG_PERF_KEY)
-
-
-    def get_crontab(self):
-        return '15 * * * *'
-

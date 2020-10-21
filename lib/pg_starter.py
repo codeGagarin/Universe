@@ -111,6 +111,7 @@ class PGStarter(Starter):
                         sql.SQL(', ').join(sql.Literal(value) for value in insert_params.values())
                     )
                 cursor.execute(insert_new_schedule_query)
+                self._db_conn.commit()
 
         # prepare journal record list for removing
         rec_for_delete = [rec[0] for rec in schedule if not rec[3]]
