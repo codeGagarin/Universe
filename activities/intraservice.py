@@ -11,7 +11,9 @@ from connector import ISConnector
 class PGActivity(Activity):
     def __init__(self, ldr, params=None):
         super().__init__(ldr, params)
-        self._db_conn = KeyChain.PG_KEY
+        pg_key = KeyChain.PG_KEY
+        self._db_conn = psycopg2.connect(dbname=pg_key["db_name"], user=pg_key["user"],
+                                         password=pg_key["pwd"], host=pg_key["host"], port=pg_key.get("port", None))
 
     def sql_exec(self, query, result=None, result_factory=None, auto_commit=True, named_result=False):
         if named_result:
