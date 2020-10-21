@@ -1,16 +1,54 @@
 from datetime import datetime, timedelta
+import psycopg2
 from psycopg2 import sql
+from psycopg2 import extras
 
+from keys import KeyChain
 from activities.activity import Activity
+from connector import ISConnector
 
 
-class ISSync(Activity):
+class PGActivity(Activity):
+    def __init__(self, ldr, params=None):
+        super().__init__(ldr, params)
+        self._db_conn = KeyChain.PG_KEY
+
+    def sql_exec(self, query, result=None, result_factory=None, auto_commit=True, named_result=False):
+        if named_result:
+            cursor = self._db_conn.cursor(cursor_factory=psycopg2.extras.NamedTupleCursor)
+        else:
+            cursor = self._db_conn.cursor()
+
+        sql_str = query.as_string(self._db_conn)
+        cursor.execute(sql_str)
+        if result is None:
+            result = []
+        try:
+            rows = cursor.fetchall()
+        except Exception:
+            # empty query result case
+            if auto_commit:
+                self._db_conn.commit()
+            return result
+
+        if result_factory:
+            for row in rows:
+                result_factory(row, result)
+        else:
+            result = rows
+        cursor.close()
+        if auto_commit:
+            self._db_conn.commit()
+        return result
+
+
+class ISSync(PGActivity):
     def _fields(self):
         return 'from to'
 
     def run(self):
-        pg_con = self._ldr.get_PG_connector()
-        is_con = self._ldr.get_IS_connector()
+        pg_con = self._db_conn
+        is_con = ISConnector(KeyChain.IS_KEY)
 
         update_pack = is_con.get_update_pack(self['from'], self['to'])
         for task in update_pack['Tasks'].values():
@@ -36,7 +74,7 @@ class ISSync(Activity):
               f"Ex:{len(update_pack['Executors'])}.")
 
 
-class ISActualizer(Activity):
+class ISActualizer(PGActivity):
 
     def get_crontab(self):
         return '0 */1 * * *'
@@ -48,7 +86,7 @@ class ISActualizer(Activity):
             sql.Literal(from_date), sql.Literal(to_date), sql.Literal(activity_id),
             sql.Identifier('id')
         )
-        return self._ldr.sql_exec(query, auto_commit=False)[0][0]
+        return self.sql_exec(query, auto_commit=False)[0][0]
 
     def run(self):
         query = sql.SQL('SELECT {}, {} FROM {} ORDER BY {} DESC LIMIT 1').format(
@@ -57,7 +95,7 @@ class ISActualizer(Activity):
             sql.Identifier('SyncJobs'),
             sql.Identifier('to')
         )
-        result = self._ldr.sql_exec(query, auto_commit=False)
+        result = self.sql_exec(query, auto_commit=False)
         if not len(result):
             last_update_tic = datetime(2019, 10, 1, 0, 0, 0)
             print("First launch detected")
@@ -80,10 +118,10 @@ class ISActualizer(Activity):
 
         job_id = self._add_job(from_date, to_date, activity_id)
         print(f'Job id:{job_id} added.')
-        self._ldr.sql_commit()
+        self._db_conn.commit()
 
 
-class IS404TaskCloser(Activity):
+class IS404TaskCloser(PGActivity):
     """Closed all union 404 url tasks"""
     def get_crontab(self):
         return '30 */1 * * *'
@@ -92,20 +130,20 @@ class IS404TaskCloser(Activity):
         # mark new open task
         query = sql.SQL('UPDATE "Tasks" SET "m_lastClosedTouch"="Created" '
                         ' WHERE "Closed" IS NULL AND "m_lastClosedTouch" IS NULL')
-        self._ldr.sql_exec(query)
+        self.sql_exec(query)
 
         # get 1/24 opened task count
         query = sql.SQL('SELECT COUNT(*) AS cc FROM "Tasks" WHERE "Closed" IS NULL')
-        rows = self._ldr.sql_exec(query, named_result=True)
+        rows = self.sql_exec(query, named_result=True)
         open_tasks_count = rows[0].cc
         limit = open_tasks_count/12
 
         # select older closed touch tasks
         query = sql.SQL('SELECT "Id" AS idx FROM "Tasks" WHERE "Closed" IS NULL ORDER BY "m_lastClosedTouch" LIMIT 10')
-        rows = self._ldr.sql_exec(query, named_result=True)
+        rows = self.sql_exec(query, named_result=True)
 
         # check 404 url task error
-        is_conn = self._ldr.get_IS_connector()
+        is_conn = ISConnector(KeyChain.IS_KEY)
         for rec in rows:
             if is_conn.is_404(rec.idx):
                 # closed 404 tasks
@@ -120,4 +158,4 @@ class IS404TaskCloser(Activity):
                 # update last_touch param
                 query = sql.SQL('UPDATE "Tasks" SET "m_lastClosedTouch"={} '
                                 ' WHERE "Id"={}').format(sql.Literal(datetime.now()), sql.Literal(rec.idx))
-            self._ldr.sql_exec(query)
+            self.sql_exec(query)
