@@ -7,7 +7,6 @@ from datetime import timedelta
 from collections import namedtuple
 import csv
 import os
-
 import traceback
 import xml.etree.ElementTree as ET
 
@@ -15,6 +14,7 @@ import psycopg2
 import psycopg2.extras
 from psycopg2 import sql as pgs
 
+from lib.schedutils import Activity
 from keys import KeyChain
 
 type_logs = 'logs'
@@ -39,6 +39,19 @@ file_tree = {t:
         'fail': f'{t}/fail'
     } for t in (type_logs, type_apdx, type_cntr)}
 
+
+class TJSync(Activity):
+    def run(self):
+        ftp_key = KeyChain.FTP_TJ_KEYS['vgunf']
+
+        adapter = PGAdapter(KeyChain.PG_PERF_KEY, ftp_key['user'])
+        process_logs(ftp_key, adapter, max_files=500)
+        process_apdx(ftp_key, adapter, max_files=500)
+        process_cntr(ftp_key, adapter, max_files=500)
+        print(adapter.get_log_str())
+
+    def get_crontab(self):
+        return '*/30 * * * *'
 
 class Period:
     def __init__(self, stamp: datetime = None):
