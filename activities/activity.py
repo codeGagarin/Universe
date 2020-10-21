@@ -2,42 +2,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import smtplib
 
-
-class Activity:
-    def __init__(self, ldr, params=None):
-        if params:
-            self._params = params
-        else:
-            self._params = {}.fromkeys(self._fields().split())
-        self._ldr = ldr
-
-    def __setitem__(self, key, value):
-        # key legal check
-        if key not in self._fields().split():
-            raise KeyError
-        self._params[key] = value
-
-    def __getitem__(self, key):
-        return self._params.get(key, None)
-        pass
-
-    def get_params(self):
-        return self._params
-
-    def _fields(self):
-        return ''
-
-    def get_type(self):
-        return self.__class__.__name__
-
-    def get_crontab(self):
-        return None
-
-    def apply(self, due_date=None):
-        return self._ldr.to_plan(self, due_date)
-
-    def run(self):
-        pass
+from lib.schedutils import Activity
 
 
 class Email(Activity):
