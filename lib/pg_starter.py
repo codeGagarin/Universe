@@ -275,6 +275,9 @@ class PGStarterTest(TestCase):
         status = self._starter.get_activity_status(ida)
         self.assertEqual(status, PGStarter.DONE)
 
+    def test_track_schedule(self):
+        self._starter.track_schedule()
+
 
 from activities.intraservice import ISActualizer
 
