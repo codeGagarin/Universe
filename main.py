@@ -1,5 +1,5 @@
-from loader import Loader
+from lib.pg_starter import PGStarter
 from keys import KeyChain
 
-ldr = Loader(KeyChain)
-ldr.track_schedule()
+starter = PGStarter(KeyChain.PG_STARTER_KEY)
+starter.track_schedule()
