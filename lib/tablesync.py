@@ -108,11 +108,11 @@ def table_sync(table_index):
 
 class Tablesynctest(TestCase):
     def test_table_sync(self):
-        table_sync('tjextdescr')
+        table_sync('tjexcdescr')
 
     def _test_activity(self):
         ldr = None  # Loader(KeyChain)
         act = TableSyncActivity(ldr)
-        act['index'] = 'tjextdescr'
+        act['index'] = 'tjexcdescr'
         act.apply()
         act.run()
