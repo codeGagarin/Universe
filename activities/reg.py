@@ -3,7 +3,7 @@ from activities.intraservice import ISActualizer, ISSync, IS404TaskCloser
 from activities.reports import LoaderStateReporter2, HelpdeskWeekly
 from lib.perfutils import TJSync
 from lib.tablesync import TableSyncActivity
-from lib.levelscan import LevelScan
+from lib.levelscan import LevelScan, FZLevelScan
 
 
 def init_ldr(ldr):
@@ -16,6 +16,9 @@ def init_ldr(ldr):
     ldr.register(TJSync)
     ldr.register(TableSyncActivity)
     ldr.register(LevelScan)
+    ldr.register(FZLevelScan)
+
+
 
 
 
