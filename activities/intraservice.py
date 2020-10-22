@@ -4,8 +4,9 @@ from psycopg2 import sql
 from psycopg2 import extras
 
 from keys import KeyChain
-from activities.activity import Activity
+from lib.schedutils import Activity
 from connector import ISConnector
+from connector import PGConnector
 
 
 class PGActivity(Activity):
@@ -49,7 +50,7 @@ class ISSync(PGActivity):
         return 'from to'
 
     def run(self):
-        pg_con = self._db_conn
+        pg_con = PGConnector(KeyChain.PG_KEY)
         is_con = ISConnector(KeyChain.IS_KEY)
 
         update_pack = is_con.get_update_pack(self['from'], self['to'])
@@ -91,10 +92,11 @@ class ISActualizer(PGActivity):
         return self.sql_exec(query, auto_commit=False)[0][0]
 
     def run(self):
-        query = sql.SQL('SELECT {}, {} FROM {} ORDER BY {} DESC LIMIT 1').format(
+        query = sql.SQL('SELECT {}, {} FROM {} WHERE {} IS NOT NULL ORDER BY {} DESC LIMIT 1').format(
             sql.Identifier('to'),
             sql.Identifier('activity_id'),
             sql.Identifier('SyncJobs'),
+            sql.Identifier('activity_id'),
             sql.Identifier('to')
         )
         result = self.sql_exec(query, auto_commit=False)
@@ -161,3 +163,13 @@ class IS404TaskCloser(PGActivity):
                 query = sql.SQL('UPDATE "Tasks" SET "m_lastClosedTouch"={} '
                                 ' WHERE "Id"={}').format(sql.Literal(datetime.now()), sql.Literal(rec.idx))
             self.sql_exec(query)
+
+
+from unittest import TestCase
+from lib.schedutils import NullStarter
+
+
+class ISActualizerTest(TestCase):
+    def test_run(self):
+        a = ISActualizer(NullStarter())
+        a.run()

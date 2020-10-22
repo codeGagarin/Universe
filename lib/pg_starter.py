@@ -245,10 +245,13 @@ class PGStarterTest(TestCase):
         def run(self):
             self._ldr.run_result = self['result']
 
+    def setUp(self) -> None:
+        self._starter = PGStarter(KeyChain.PG_STARTER_KEY)
+        self._starter.register(self.TestActivity)
+
     def test_to_plan(self):
-        starter = PGStarter(KeyChain.PG_STARTER_KEY)
+        starter = self._starter
         starter.run_result = None
-        starter.register(self.TestActivity)
         a = PGStarterTest.TestActivity(starter)
         result = datetime.now()
         a['result'] = result
@@ -263,6 +266,23 @@ class PGStarterTest(TestCase):
         report = starter.get_state(datetime.now())
         for record in report['data']:
             print(' | '.join([str(v) for v in record]))
+
+    def test_get_activity_status(self):
+        a = PGStarterTest.TestActivity(self._starter)
+        ida = a.apply()
+        self._starter.track_schedule()
+        self._starter.track_schedule()
+        status = self._starter.get_activity_status(ida)
+        self.assertEqual(status, PGStarter.DONE)
+
+
+from activities.intraservice import ISActualizer
+
+class ISActualizerTest(TestCase):
+    def test_run(self):
+        a = ISActualizer(PGStarter(KeyChain.PG_STARTER_KEY))
+        a.run()
+
 
 
 

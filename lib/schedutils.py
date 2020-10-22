@@ -144,6 +144,9 @@ class NullStarter(Starter):
     def track_schedule(self):
         pass
 
+    def get_activity_status(self, activity_id: int):
+        return self.DONE
+
 
 from unittest import TestCase
 
