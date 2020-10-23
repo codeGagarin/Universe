@@ -5,23 +5,23 @@ from io import StringIO
 import jinja2
 import premailer
 
-
-
-from activities.activity import Activity, Email
+from lib.schedutils import Activity
+from activities.activity import Email
 from report import DiagReport, HelpdeskReport
+from keys import KeyChain
 
 
 class ReportActivity(Activity):
 
     @classmethod
-    def get_report_html(cls, report, key_chain):
+    def get_report_html(cls, report, web_path):
         proj_root = str(Path(__file__).parent.parent)
         templates_root = proj_root+"/templates"
         template_ldr = jinja2.FileSystemLoader(searchpath=templates_root)
         template_env = jinja2.Environment(loader=template_ldr)
         template_name = report.get_template()
         template = template_env.get_template(template_name)
-        report.web_server_name = key_chain.WEB_PATH
+        report.web_server_name = web_path
         html_text = template.render(rpt=report, eml=True)
         css_path = f'{proj_root}/static/css/bootstrap.css'
         f = open(css_path)
@@ -43,13 +43,13 @@ class LoaderStateReporter2(ReportActivity):
 
     def run(self):
         report = DiagReport()
-        conn = report.get_connection(self._ldr.key_chain.PG_KEY)
+        conn = report.get_connection(KeyChain.PG_STARTER_KEY)
         report.request_data(conn)
 
         email = Email(self._ldr)
         email['to'] = ('belov78@gmail.com',)
         email['subject'] = 'Loader daily report'
-        email['body'] = self.get_report_html(report, self._ldr.key_chain)
+        email['body'] = self.get_report_html(report, KeyChain.WEB_PATH)
         email.run()
 
 
@@ -65,7 +65,7 @@ class HelpdeskWeekly(ReportActivity):
         params = self.get_report_params()
         for prm in params.values():
             report = HelpdeskReport(prm['params'])
-            conn = report.get_connection(self._ldr.key_chain.PG_KEY)
+            conn = report.get_connection(KeyChain.PG_KEY)
             report.request_data(conn)
 
             email = Email(self._ldr)
@@ -73,5 +73,5 @@ class HelpdeskWeekly(ReportActivity):
             email['to'] = report.users_to_email(conn, prm['to'])
             email['cc'] = report.users_to_email(conn, prm['cc'])
             email['subject'] = prm['subj']
-            email['body'] = self.get_report_html(report, self._ldr.key_chain)
+            email['body'] = self.get_report_html(report, KeyChain.WEB_PATH)
             email.apply()

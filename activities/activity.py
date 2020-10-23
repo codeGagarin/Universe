@@ -3,6 +3,7 @@ from email.mime.text import MIMEText
 import smtplib
 
 from lib.schedutils import Activity
+from keys import KeyChain
 
 
 class Email(Activity):
@@ -14,9 +15,9 @@ class Email(Activity):
 
         key = self['smtp'] if self['smtp'] else 'DEF'
 
-        acc_key = self._ldr.key_chain.SMTP_KEY.get(key, None)
+        acc_key = KeyChain.SMTP_KEY.get(key, None)
         if not acc_key:
-            acc_key = self._ldr.key_chain.SMTP_KEY['DEF']
+            acc_key = KeyChain.SMTP_KEY['DEF']
 
         msg = MIMEMultipart('alternative')
         msg['Subject'] = self['subject']

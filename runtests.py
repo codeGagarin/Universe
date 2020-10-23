@@ -5,17 +5,17 @@ import jinja2
 from flask import url_for
 
 from keys import KeyChain
-from loader import Loader
+from lib.pg_starter import PGStarter
 from activities.reg import *
 from report import *
 from connector import *
 
 
 class TestActivities(TestCase):
-    ldr: Loader
+    ldr: PGStarter
     @classmethod
     def setUpClass(cls):
-        cls.ldr = Loader(KeyChain)
+        cls.ldr = PGStarter(KeyChain.PG_STARTER_KEY)
 
     def tearDown(self):
         self.ldr.track_schedule()
