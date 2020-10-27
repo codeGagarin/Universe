@@ -4,6 +4,7 @@ from activities.reports import LoaderStateReporter2, HelpdeskWeekly
 from lib.perfutils import TJSync
 from lib.tablesync import TableSyncActivity
 from lib.levelscan import LevelScan, FZLevelScan
+from lib.monitutils import Monitoring
 
 
 def init_ldr(ldr):
@@ -17,6 +18,8 @@ def init_ldr(ldr):
     ldr.register(TableSyncActivity)
     ldr.register(LevelScan)
     ldr.register(FZLevelScan)
+    ldr.register(Monitoring)
+
 
 
 
