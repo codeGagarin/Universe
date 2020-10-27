@@ -1,16 +1,14 @@
-from flask import Flask
-from flask import request
-from flask import render_template
-from flask import url_for
-import psycopg2
-from psycopg2 import sql
+from flask import Flask, request, render_template, url_for, jsonify
 
 from keys import KeyChain
 from report import Report
-from activities.reports import ReportActivity
+
 from lib.tablesync import TableSyncActivity
 from loader import Loader
+import lib.telebots as bots
+
 app = Flask(__name__)
+path_root = 'bot_root'
 
 
 @app.route('/')
@@ -34,6 +32,7 @@ def report():
 
 @app.route('/tablesync/')
 def tablesync():
+    """ Table Sync Webhook """
     ldr = Loader(KeyChain)
     act = TableSyncActivity(ldr)
     act['index'] = request.args['idx']
@@ -42,7 +41,7 @@ def tablesync():
 
 
 @app.route('/default/')
-def params():
+def defualt():
     conn = Report.get_connection(KeyChain.PG_KEY)
     result = "<h1>Defaults map</h1>"
     for name, params_dict in Report.default_map(conn).items():
@@ -52,5 +51,14 @@ def params():
     return result
 
 
+@app.route(f'/{path_root}/<token>', methods=['GET', 'POST'])
+def bots_update(token):
+    if request.method == 'POST':
+        params = request.get_json()
+        bots.update(token, params)
+        return jsonify({'statusCode': 400})
+
+
 if __name__ == '__main__':
+    bots.init(path_root)
     app.run(debug=True)
