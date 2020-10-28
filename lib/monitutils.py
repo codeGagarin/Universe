@@ -11,7 +11,7 @@ import lib.bots.perf_alarm as alarm
 
 class Monitoring(Activity):
     def get_crontab(self):
-        return '30 */1 * * *'
+        return '40 */1 * * *'
 
     def run(self):
         db_key = KeyChain.PG_PERF_KEY
