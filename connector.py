@@ -351,6 +351,16 @@ class PGConnector(DataConnector):
         sql_str = f'DELETE FROM "{resource}" WHERE "{resource_field}" = {value}'
         self._sql_exec(sql_str)
 
+    def delete_task_executors(self, task: DataEntity):
+        executor = Executor()
+        resource = self.get_resource_name(executor)
+        field = 'TaskId'
+        resource_field = self.get_resource_field(executor, field)
+        value = _PGW(task)['Id']
+        sql_str = f'DELETE FROM "{resource}" WHERE "{resource_field}" = {value}'
+        self._sql_exec(sql_str)
+
+
 
 # ToDo: need to rename field 'Expenses' to 'Actuals' in database
 _INTRA_CONNECTOR_MAPPING = {

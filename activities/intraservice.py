@@ -56,6 +56,7 @@ class ISSync(PGActivity):
         update_pack = is_con.get_update_pack(self['from'], self['to'])
         for task in update_pack['Tasks'].values():
             pg_con.delete_task_actuals(task)
+            pg_con.delete_task_executors(task)
             pg_con.update(task)
 
         for user in update_pack['Users'].values():
@@ -167,6 +168,14 @@ class IS404TaskCloser(PGActivity):
 
 from unittest import TestCase
 from lib.schedutils import NullStarter
+
+
+class ISSyncTest(TestCase):
+    def test_update(self):
+        s = ISSync(NullStarter())
+        s['from'] = datetime(2020, 10, 30, 12, 00)
+        s['to'] = s['from'] + timedelta(hours=1)
+        s.run()
 
 
 class ISActualizerTest(TestCase):
