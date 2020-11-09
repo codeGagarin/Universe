@@ -1,6 +1,7 @@
 from datetime import datetime
 import requests
 import unittest
+import json
 
 from abc import abstractmethod
 from unittest import TestCase
@@ -493,6 +494,56 @@ class ISConnector(DataConnector):
 
         return result
 
+    def _api_request_get(self, resource: str, params: dict, result_factory, result=None):
+        if not result:
+            result = {}
+
+        base_url = self._acc_key['url']
+        session = requests.Session()
+        retries = Retry(total=25,
+                        backoff_factor=0.0001,
+                        status_forcelist=[500, 502, 503, 504])
+        session.mount('https://', HTTPAdapter(max_retries=retries))
+
+        # Make API request
+        url = f"{base_url}{resource}"
+        r = session.get(url=url, auth=self._auth, params=params, verify=self._certVerify)
+        raw_data = dict(r.json())
+        session.close()
+        if r.status_code != 200:
+            print(f"IS API Request error: {url}\r Response: {raw_data}")
+            raise EnvironmentError
+
+        result_factory(result, raw_data)
+        if raw_data.get('Paginator'):
+            page_count = raw_data['Paginator']['PageCount']
+
+            if page_count > 1:
+                for page in range(page_count, 0, -1):
+                    params.update({'Page': page})
+                    r = session.get(url=url, auth=self._auth, params=params, verify=self._certVerify)
+                    raw_data = dict(r.json())
+                    result_factory(result, raw_data)
+
+        return result
+
+    def _api_request_put(self, resource: str, params: dict):
+        base_url = self._acc_key['url']
+        session = requests.Session()
+        retries = Retry(total=25,
+                        backoff_factor=0.0001,
+                        status_forcelist=[500, 502, 503, 504])
+        session.mount('https://', HTTPAdapter(max_retries=retries))
+
+        # Make API request
+        url = f"{base_url}{resource}"
+        _json = json.dumps(params)
+        r = session.put(url=url, auth=self._auth, json=_json, verify=self._certVerify)
+        raw_data = str(r.json())
+        session.close()
+        if r.status_code != 200:
+            raise EnvironmentError(f"IS API Request error: {url} Response: {raw_data}")
+
     def __init__(self, acc_key: dict):
         self._tables_map = _INTRA_CONNECTOR_MAPPING['tables_map']
         self._fields_map = _INTRA_CONNECTOR_MAPPING['fields_map']
@@ -701,3 +752,12 @@ class Service(DataEntity):
         super().__init__(data)
 
 
+from unittest import TestCase
+
+
+class ISConnectorTest(TestCase):
+    def _test_api_request_put(self):
+        c = ISConnector(KeyChain.IS_KEY)
+        upd_params = {'AssetIds': ' '}
+        # upd_params = {'ServiceId': 192}
+        c._api_request_put('task/162899', upd_params)
