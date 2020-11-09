@@ -75,9 +75,13 @@ def table_update(db_key, table_name: str, table_data: dict, mapping: dict, key: 
     key_sub_query = ', '.join(key_list)
     field_sub_query = ', '.join(mapping.keys())
     values_sub_query = ', '.join('%s' for i in range(0, len(mapping)))
-    conflict_sub_query = ', '.join([f'{field}=excluded.{field}' for field in mapping.keys() if field not in key_list])
-    if len(mapping)-len(key_list) > 1:
-        conflict_sub_query = f'({conflict_sub_query})'
+    if len(mapping)-len(key_list) == 1:
+        conflict_sub_query = ', '.join([f'{field}=excluded.{field}' for field in mapping.keys() if field not in key_list])
+    else:
+        field_list = [str(field) for field in mapping.keys() if field not in key_list]
+        left_part = f'{", ".join(field_list)}'
+        right_part = f'{", ".join("exclded.{}".format(f) for f in field_list)}'
+        conflict_sub_query = f'({left_part})=({right_part})'
 
     submit_query = \
         'insert into "' + table_name + '"(' + field_sub_query + ') values ('+values_sub_query+')' \

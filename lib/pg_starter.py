@@ -12,6 +12,7 @@ from psycopg2 import extras
 
 from lib.schedutils import Starter
 from lib.schedutils import Activity
+import lib.tablesync as tablesync
 
 from activities import reg
 
@@ -21,18 +22,31 @@ class PGStarter(Starter):
 
     def __init__(self, pg_key):
         super().__init__(pg_key)
-        self._registry = {}
-        reg.init_ldr(self)
         self._db_conn = psycopg2.connect(dbname=pg_key["db_name"], user=pg_key["user"],
                                          password=pg_key["pwd"], host=pg_key["host"], port=pg_key.get("port", None))
+
+        self.external_tabs = {}
+        # download external crontabs setting
+        _tab = tablesync.download_table(pg_key['cron_tabs'])
+        for rec in _tab['data']:
+            _type = rec[0]
+            _cron = rec[1]
+            if croniter.is_valid(_cron):
+                self.external_tabs[_type]=_cron
+
+        self._registry = {}
+        reg.init_ldr(self)
 
     def register(self, factory):
         """ Activities register method for activities produce and schedule control
         """
-        activity = factory(self)
-        self._registry[activity.get_type()] = {
+        _act = factory(self)
+        _type = _act.get_type()
+        _cron = self.external_tabs.get(_type) or _act.get_crontab()
+
+        self._registry[_type] = {
             'factory': factory,
-            'crontab': activity.get_crontab(),
+            'crontab': _cron,
         }
 
     def to_plan(self, activity: Activity, due_date=None) -> int:
@@ -277,6 +291,9 @@ class PGStarterTest(TestCase):
 
     def test_track_schedule(self):
         self._starter.track_schedule()
+
+    def test_external_crontabs(self):
+        print(self._starter._registry)
 
 
 from activities.intraservice import ISActualizer

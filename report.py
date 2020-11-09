@@ -11,6 +11,7 @@ import psycopg2
 from psycopg2 import sql
 from psycopg2 import extras
 
+from keys import KeyChain
 _eval_map = {5: 4, 4: 2, 3: 5, 2: 6, 1: 1}
 
 
@@ -362,6 +363,8 @@ class DiagReport(Report):
                     'params': {}
                 }
         }
+    def get_cron_link(self):
+        return KeyChain.PG_STARTER_KEY['cron_link']
 
     def set_up(self, url_params):
         if url_params:
