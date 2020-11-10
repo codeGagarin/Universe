@@ -50,7 +50,7 @@ class LoaderStateReporter2(ReportActivity):
         email['to'] = ('belov78@gmail.com',)
         email['subject'] = 'Loader daily report'
         email['body'] = self.get_report_html(report, KeyChain.WEB_PATH)
-        email.run()
+        email.apply()
 
 
 class HelpdeskWeekly(ReportActivity):
@@ -75,3 +75,14 @@ class HelpdeskWeekly(ReportActivity):
             email['subject'] = prm['subj']
             email['body'] = self.get_report_html(report, KeyChain.WEB_PATH)
             email.apply()
+
+
+from unittest import TestCase
+from lib.schedutils import NullStarter
+
+class LoaderStateReporterTest(TestCase):
+    def test_run(self):
+        s = NullStarter()
+        a = LoaderStateReporter2(s)
+        a.run()
+
