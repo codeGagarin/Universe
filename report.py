@@ -85,12 +85,15 @@ class Report:
         """ Jinja call for get_data() method """
         return self._data
 
-    def _N(self):
-        return self._navigate
+    def _N(self, kind=None):
+        return self._navigate.get(kind, {})
 
-    def _P(self):
-        """ Jinja call for _params attribute """
-        return self._params
+    def _P(self, key=None):
+        """ Jinja call for _params attribute
+            returns report Params dict or
+            param value for 'key'
+        """
+        return self._params.get(key) if key else self._params
 
     def __init__(self, params=None, url_params=None):
         self._data = None
@@ -347,11 +350,13 @@ class Report:
         cursor.close()
         return result
 
-    def _add_navigate_point(self, _db_conn, caption: str, params: dict):
-        self._navigate[caption] = self.get_idx(_db_conn, params)
+    def _add_navigate_point(self, _db_conn, caption, params: dict, kind=None):
+        # in case if there is no kind attribute in navigation map
+        self._navigate[kind] = self._navigate.get(kind) or {}
+        self._navigate[kind][caption] = self.get_idx(_db_conn, params)
 
-    def get_navigate(self):
-        return self._navigate
+    def get_navigate(self, kind=None):
+        return self._navigate[kind]
 
 
 class DiagReport(Report):
@@ -363,6 +368,7 @@ class DiagReport(Report):
                     'params': {}
                 }
         }
+
     def get_cron_link(self):
         return KeyChain.PG_STARTER_KEY['cron_link']
 
@@ -387,6 +393,26 @@ class DiagReport(Report):
         start = datetime.combine(sp['from'], datetime.min.time())
         fin = datetime.combine(sp['to'], datetime.max.time())
 
+        # configure types navigation layer
+        type_map_query = sql.SQL('select "type" as t, count(*) as c from "Loader"'
+                                 '  where start between {} and {} group by "type" '
+                                 ' order by t').format(
+            sql.Literal(start),
+            sql.Literal(fin),
+        )
+
+        for record in self._sql_exec(conn, type_map_query, named_result=True):
+            _type = record[0]
+            _count = record[1]
+            _params = {
+                'from': sp['from'],
+                'to': sp['to'],
+            }
+            if self._P('act_type') != _type:
+                _params['act_type'] = _type
+
+            self._add_navigate_point(conn, (_type, _count), _params, 'types')
+
         # update fail status if request it
         upd_id = sp.get('upd_id')
         if upd_id:
@@ -395,14 +421,22 @@ class DiagReport(Report):
             )
             self._sql_exec(conn, query)
 
+        where_list = [sql.SQL('{} BETWEEN {} AND {}').format(
+            sql.Identifier('start'),
+            sql.Literal(start),
+            sql.Literal(fin)
+        )]
+
+        sp_type = sp.get('act_type')
+        if sp_type:
+            where_list.append(
+                sql.SQL(' and "type" = {}').format(sql.Literal(sp_type))
+            )
+
         query = sql.SQL('SELECT "id", "type", "status", "start", "finish", "duration", "params",'
                         ' "result", NULL as status_detail FROM {} WHERE {} ORDER BY {} DESC').format(
             sql.Identifier('Loader'),
-            sql.SQL('{} BETWEEN {} AND {}').format(
-                sql.Identifier('start'),
-                sql.Literal(start),
-                sql.Literal(fin)
-            ),
+            sql.Composed(where_list),
             sql.Identifier('start')
         )
 
