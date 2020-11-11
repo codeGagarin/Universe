@@ -394,16 +394,19 @@ class DiagReport(Report):
         fin = datetime.combine(sp['to'], datetime.max.time())
 
         # configure types navigation layer
-        type_map_query = sql.SQL('select "type" as t, count(*) as c from "Loader"'
-                                 '  where start between {} and {} group by "type" '
-                                 ' order by t').format(
+        type_map_query = sql.SQL('select "type" as t, count(*) as c, sum(CASE WHEN "status"={} THEN 1 ELSE 0 END) as f'
+                                 '  from "Loader" where start between {} and {} group by "type"'
+                                 '  order by t').format(
+            sql.Literal('fail'),
             sql.Literal(start),
             sql.Literal(fin),
         )
 
         for record in self._sql_exec(conn, type_map_query, named_result=True):
-            _type = record[0]
-            _count = record[1]
+            _type = record.t
+            _count = record.c
+            _fail = record.f
+
             _params = {
                 'from': sp['from'],
                 'to': sp['to'],
@@ -411,7 +414,7 @@ class DiagReport(Report):
             if self._P('act_type') != _type:
                 _params['act_type'] = _type
 
-            self._add_navigate_point(conn, (_type, _count), _params, 'types')
+            self._add_navigate_point(conn, (_type, _count, _fail), _params, 'types')
 
         # update fail status if request it
         upd_id = sp.get('upd_id')

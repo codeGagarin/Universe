@@ -20,20 +20,28 @@
   </ul>
 </nav>
 
-
 <div class="btn-group btn-group-xs" role="group" aria-label="Extra-small button group">
-    {% for pair, params in rpt._N('types').items() %}
-        {% set cap = pair[0] %}
-        {% set count = pair[1] %}
+    {% for cad_data, params in rpt._N('types').items() %}
+        {% set cap = cad_data[0] %}
+        {% set count = cad_data[1] %}
+        {% set fail = cad_data[2] %}
+
+        {% set btn_style = "btn btn-default" %}
+        {% if fail != 0 %}
+            {% set btn_style = "btn btn-danger" %}
+        {% endif %}
 
         {% if cap == rpt._P()['act_type'] %}
-            {% set btn_style = "btn btn-default:active" %}
-        {% else %}
-            {% set btn_style = "btn btn-default" %}
+            {% set btn_style = btn_style + ":active" %}
         {% endif %}
 
         <button type="button" class= "{{ btn_style }}" onClick="location.href='{{ rpt.url_for('report', params)}}'">
-            {{ "{} ({})".format(cap, count) }}
+            {% if fail==0 %}
+                {{ "{} ({})".format(cap, count) }}
+            {% else %}
+                {{ "{} ({}/{})".format(cap, count, fail) }}
+            {% endif %}
+
         </button>
     {% endfor %}
 </div>
