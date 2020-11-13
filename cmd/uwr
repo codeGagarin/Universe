@@ -1,0 +1,4 @@
+#!/bin/bash
+echo 'Restart UWSGI service'
+sh ~/proj/uni/www/run stop
+sh ~/proj/uni/www/run start

@@ -18,8 +18,7 @@ cd ~/proj/uni/
 git fetch --all
 git reset --hard origin/master
 echo 'Git Pull -- Ok'
-sh ~/proj/uni/www/run stop
-sh ~/proj/uni/www/run start
+sh cmd/uwr
 logout
 EOF
 
