@@ -61,7 +61,7 @@ def download_table(url):
         csv_data = iter(csv.reader(csv_file))
         table = {
             'header': list(next(csv_data)),
-            'data': [[value for value in record] for record in csv_data]
+            'data': []  # [[value for value in record] for record in csv_data]
         }
     os.remove(tmp_file_path)
     return table
@@ -120,3 +120,6 @@ class Tablesynctest(TestCase):
         act['index'] = 'tjexcdescr'
         act.apply()
         act.run()
+
+    def test_download_table(self):
+        download_table(KeyChain.PG_STARTER_KEY['cron_tabs'])
