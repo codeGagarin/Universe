@@ -14,7 +14,7 @@ import psycopg2
 import psycopg2.extras
 from psycopg2 import sql as pgs
 
-from lib.schedutils import Activity
+from lib.schedutils import Activity, NullStarter
 from keys import KeyChain
 
 type_logs = 'logs'
@@ -52,6 +52,7 @@ class TJSync(Activity):
 
     def get_crontab(self):
         return '*/30 * * * *'
+
 
 class Period:
     def __init__(self, stamp: datetime = None):
@@ -491,8 +492,8 @@ class PGAdapter(ABaseAdapter):
             params_count = len(self._batch_params[0])
             hdr_params = [self.tables[self._batch_type]] + self._batch_hdr
 
-            part_into = ' ('+', '.join(['{}' for i in range(0, params_count)])+')'
-            part_values = ' ('+', '.join(['%s' for i in range(0, params_count)])+')'
+            part_into = ' (' + ', '.join(['{}' for i in range(0, params_count)]) + ')'
+            part_values = ' (' + ', '.join(['%s' for i in range(0, params_count)]) + ')'
 
             batch_query = pgs.SQL('insert into {} ' + part_into).format(
                 *[pgs.Identifier(h) for h in hdr_params]
@@ -596,6 +597,30 @@ class PGAdapter(ABaseAdapter):
         cursor = self._con.cursor(cursor_factory=psycopg2.extras.NamedTupleCursor)
         cursor.execute(update_query)
         self._con.commit()
+
+
+# update "CounterLines" set _type = type where id in (select id from "CounterLines" where _type is Null limit 4000000)
+
+class DutyActivity(Activity):
+    def get_crontab(self):
+        return '*/5 * * * *'
+
+    def run(self):
+        db_key = KeyChain.PG_PERF_KEY
+        conn = psycopg2.connect(dbname=db_key["db_name"], user=db_key["user"],
+                                password=db_key["pwd"], host=db_key["host"], port=db_key.get('port'))
+        limit = 500000
+        update_query = 'update "CounterLines" set _type = type where id in ' \
+                       f'(select id from "CounterLines" where _type is Null limit {limit})'
+
+        cursor = conn.cursor()
+        cursor.execute(update_query)
+        conn.commit()
+
+
+class DutyActivityTest(TestCase):
+    def test_run(self):
+        DutyActivity(NullStarter).run()
 
 
 class FtptjparserTestCase(TestCase):
