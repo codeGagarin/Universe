@@ -44,10 +44,11 @@ class PGStarter(Starter):
         _type = _act.get_type()
         _cron = self.external_tabs.get(_type) or _act.get_crontab()
 
-        self._registry[_type] = {
-            'factory': factory,
-            'crontab': _cron,
-        }
+        if croniter.is_valid(_cron):
+            self._registry[_type] = {
+                'factory': factory,
+                'crontab': _cron,
+            }
 
     def to_plan(self, activity: Activity, due_date=None) -> int:
         query_params = {
