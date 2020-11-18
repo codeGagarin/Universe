@@ -603,7 +603,7 @@ class PGAdapter(ABaseAdapter):
 
 class DutyActivity(Activity):
     def get_crontab(self):
-        return '*/5 * * * *'
+        return '' # '*/5 * * * *'
 
     def run(self):
         db_key = KeyChain.PG_PERF_KEY
@@ -616,6 +616,7 @@ class DutyActivity(Activity):
         cursor = conn.cursor()
         cursor.execute(update_query)
         conn.commit()
+
 
 
 class DutyActivityTest(TestCase):
