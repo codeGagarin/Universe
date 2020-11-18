@@ -55,6 +55,7 @@ class Monitoring(Activity):
         if r.status_code == 503:
             print('Komtet Orbita 503 error detected!')
             subprocess.run(['sh', 'cmd/uwr'])
+        s.close()
 
     def run(self):
         self.check_income_counter_data('vgunf')

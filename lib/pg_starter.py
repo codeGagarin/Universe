@@ -43,12 +43,10 @@ class PGStarter(Starter):
         _act = factory(self)
         _type = _act.get_type()
         _cron = self.external_tabs.get(_type) or _act.get_crontab()
-
-        if croniter.is_valid(_cron):
-            self._registry[_type] = {
-                'factory': factory,
-                'crontab': _cron,
-            }
+        self._registry[_type] = {
+            'factory': factory,
+            'crontab': _cron,
+        }
 
     def to_plan(self, activity: Activity, due_date=None) -> int:
         query_params = {
@@ -103,7 +101,8 @@ class PGStarter(Starter):
 
         # check current crontab schedule from script
         for activity_type, params in self._registry.items():
-            if params['crontab'] is None:
+            cron_tab = params['crontab'] or ''
+            if not croniter.is_valid(cron_tab):
                 continue
             next_start = croniter(params['crontab'], datetime.now()).get_next(datetime)
             need_to_plan = True
@@ -139,6 +138,13 @@ class PGStarter(Starter):
             )
             cursor.execute(delete_not_valid_record_query)
             self._db_conn.commit()
+
+    def clear_schedule(self):
+        """ WARNING: Delete all schedule records Using for test fixture ONLY """
+        q_clear_all = sql.SQL('delete from {}').format(sql.Identifier(self._table_name))
+        cursor = self._db_conn.cursor()
+        cursor.execute(q_clear_all)
+        self._db_conn.commit()
 
     def track_schedule(self):
         self._update_current_crontab_schedule()
@@ -262,6 +268,7 @@ class PGStarterTest(TestCase):
 
     def setUp(self) -> None:
         self._starter = PGStarter(KeyChain.PG_STARTER_KEY)
+        self._starter.clear_schedule()
         self._starter.register(self.TestActivity)
 
     def test_to_plan(self):
