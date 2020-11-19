@@ -51,7 +51,7 @@ class TJSync(Activity):
         print(adapter.get_log_str())
 
     def get_crontab(self):
-        return '*/30 * * * *'
+        return '' #  '*/30 * * * *'
 
 
 class Period:
@@ -603,7 +603,7 @@ class PGAdapter(ABaseAdapter):
 
 class DutyActivity(Activity):
     def get_crontab(self):
-        return '*/5 * * * *'
+        return '' #  '*/5 * * * *'
 
     def run(self):
         db_key = KeyChain.PG_PERF_KEY
