@@ -51,7 +51,7 @@ class TJSync(Activity):
         print(adapter.get_log_str())
 
     def get_crontab(self):
-        return '' #  '*/30 * * * *'
+        return '*/30 * * * *'
 
 
 class Period:
