@@ -11,7 +11,7 @@ import psycopg2.extras
 
 from keys import KeyChain
 # from loader import Loader
-from activities.activity import Activity
+from activities.mail import Activity
 
 _index = {
     'tjexcdescr': {

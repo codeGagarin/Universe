@@ -50,8 +50,8 @@ class TJSync(Activity):
         process_cntr(ftp_key, adapter, max_files=500)
         print(adapter.get_log_str())
 
-    def get_crontab(self):
-        return '*/30 * * * *'
+    # def get_crontab(self):
+    #     return '*/30 * * * *'
 
 
 class Period:
@@ -111,6 +111,9 @@ class ABaseAdapter:
         pass
 
     def apdx_set_for(self, operation, p: Period, apdex_value):  # set APDEX value for ops/hour
+        pass
+
+    def cntr_get_update_period(self, file_id):
         pass
 
 
@@ -269,12 +272,12 @@ def _parser_cntr(local_file, file_id, file_name, db_adapter):
             re_hrp = r'\\\\(.+)\\(.+)\\(.+)'
             raw = re.findall(re_hrp, '\n'.join(pure_hdr))
             result = {
-                i: {
-                    'id': pure_hdr[i],
-                    'host': raw[i][0],
+                _i: {
+                    'id': pure_hdr[_i],
+                    'host': raw[_i][0],
                     'context': raw[i][1],
-                    'type': raw[i][2],
-                } for i in range(0, len(raw))}
+                    'type': raw[_i][2],
+                } for _i in range(0, len(raw))}
             return result
 
         cntr_data = iter(csv.reader(cntr_file))
@@ -598,8 +601,17 @@ class PGAdapter(ABaseAdapter):
         cursor.execute(update_query)
         self._con.commit()
 
+    def cntr_get_update_period(self, file_id):
+        update_query = pgs.SQL('select min(stamp), max(stamp) from "CounterLines" where file_id={}').format(
+            pgs.Literal(file_id)
+        )
 
-# update "CounterLines" set _type = type where id in (select id from "CounterLines" where _type is Null limit 4000000)
+        cursor = self._con.cursor(cursor_factory=psycopg2.extras.NamedTupleCursor)
+        cursor.execute(update_query)
+        result = cursor.fetchone()
+
+        return (result[0], result[1]) if result else (None, None)
+
 
 class DutyActivity(Activity):
     def get_crontab(self):
@@ -680,3 +692,14 @@ class FtptjparserTestCase(TestCase):
         adapter = PGAdapter(self.pg_key, self.ftp_key['user'])
         process_apdx(self.ftp_key, adapter, move_done=False, max_files=1)
         print(adapter.get_log_str())
+
+    def test_cntr_gep_upd_period(self):
+        adapter = PGAdapter(self.pg_key, self.ftp_key['user'])
+
+        _from, _to = adapter.cntr_get_update_period(-100)  # nevergood file_id
+        self.assertIsNone(_from)
+        self.assertIsNone(_to)
+
+        _from, _to = adapter.cntr_get_update_period(51)
+        print(f'from:{_from} -- to:{_to}')
+

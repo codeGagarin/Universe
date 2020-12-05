@@ -6,7 +6,7 @@ import jinja2
 import premailer
 
 from lib.schedutils import Activity
-from activities.activity import Email
+from activities.mail import Email
 from report import DiagReport, HelpdeskReport
 from keys import KeyChain
 
