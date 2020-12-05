@@ -17,7 +17,7 @@ class ParserJob:
     transfer_path: str
     store_place: str
     gmt_time_zone: int = +3
-    max_files: int = 500,
+    max_files: int = 500
     line_validator: Callable[[dict], None] = None
 
 
