@@ -4,30 +4,25 @@ from datetime import datetime, timedelta
 import subprocess
 
 import requests
-import json
-
-from unittest import TestCase
-
-from urllib3.util.retry import Retry
-from requests.auth import HTTPBasicAuth
-from requests.adapters import HTTPAdapter
-
-
 
 from keys import KeyChain
 from lib.schedutils import Activity, NullStarter
 import lib.telebots.perf_alarm as alarm
+from lib.pg_utils import PGMix
 
 
-class Monitoring(Activity):
+class Monitoring(Activity, PGMix):
+    def __init__(self, ldr):
+        Activity.__init__(self, ldr)
+        PGMix.__init__(self, KeyChain.PG_PERF_KEY)
+
     def get_crontab(self):
         return '40 */1 * * *'
 
     def check_income_counter_data(self, base1s):
         db_key = KeyChain.PG_PERF_KEY
-        connection = psycopg2.connect(dbname=db_key["db_name"], user=db_key["user"],
-                                      password=db_key["pwd"], host=db_key["host"], port=db_key.get('port'))
-        cursor = connection.cursor()
+        mix = PGMix(db_key)
+        cursor = mix._cursor()
 
         now = datetime.now()
         delta = timedelta(minutes=now.minute, seconds=now.second, microseconds=now.microsecond)
@@ -60,6 +55,9 @@ class Monitoring(Activity):
     def run(self):
         self.check_income_counter_data('vgunf')
         self.check_komtet_503_error()
+
+
+from unittest import TestCase
 
 
 class MonitoringTest(TestCase):
