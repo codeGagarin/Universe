@@ -118,7 +118,7 @@ class _ProcessorTest(TestCase):
                 data_type='logs',
                 transfer_path='logs',
                 store_place='TJLines',
-                time_zone_adjust=+3,
+                time_zone_adjust=+1,
                 max_files=1,
             )
         )
@@ -129,7 +129,7 @@ class _ProcessorTest(TestCase):
                 transfer_path='apdx',
                 store_place='ApdexLines',
                 time_zone_adjust=+3,
-                max_files=1,
+                max_files=30,
             )
         )
         processor.add_parser_job(
