@@ -18,31 +18,30 @@ def _get_meta(file_name: str):
     }
 
 
-def _parse_line(line: str, file_meta: dict, gmt_time_zone: int):
+def _parse_line(line: str, name_meta: dict, time_zone_adjust: int):
     re_header = r'^(\d\d):(\d\d)\.(\d+)-(\d+),(\w+),(\d+),'
     header = re.findall(re_header, line)
     re_params = r'([\w:]+)=([^,\r]+)'
     params = {g[0]: g[1] for g in re.findall(re_params, line)}
 
-    yy = 2000 + int(file_meta['yy'])
-    mm = int(file_meta['mm'])
-    dd = int(file_meta['dd'])
-    hh = int(file_meta['hh'])
-    mnt = int(header[0][0])
-    ss = int(header[0][1])
-    ms = int(header[0][2])
+    stamp = datetime(
+        2000 + int(name_meta['yy']),
+        int(name_meta['mm']),
+        int(name_meta['dd']),
+        int(name_meta['hh']),
+        int(header[0][0]),  # minutes
+        int(header[0][1]),  # seconds
+        int(header[0][2])  # milliseconds
+    ) + timedelta(hours=time_zone_adjust)
 
-    local_stamp = datetime(yy, mm, dd, hh, mnt, ss, ms)
-    utc_stamp = local_stamp - timedelta(minutes=180) + timedelta(hours=gmt_time_zone)
     record = {
-        'rphost': file_meta['rphost'],
-        'ms': ms,
+        'rphost': name_meta['rphost'],
         'dur': header[0][3],
         'event': header[0][4], 'lvl': header[0][5],
         'osthread': params.get('OSThread'),
         'exception': params.get('Exception'),
         'descr': params.get('Descr'),
-        'stamp': utc_stamp,
+        'stamp': stamp,
         'source': line
     }
     return record
@@ -51,7 +50,7 @@ def _parse_line(line: str, file_meta: dict, gmt_time_zone: int):
 def parse(local_path: str, origin_file_name: str, gmt_time_zone: int):
     re_hdr = r'^\d\d:\d\d\.\d+-'
     accumulate_line = ''
-    file_meta = _get_meta(origin_file_name)
+    name_meta = _get_meta(origin_file_name)
 
     with open(local_path, encoding='utf-16') as log_file:
         while True:
@@ -59,13 +58,13 @@ def parse(local_path: str, origin_file_name: str, gmt_time_zone: int):
 
             if not log_line:
                 if len(accumulate_line):
-                    yield _parse_line(accumulate_line, file_meta, gmt_time_zone)
+                    yield _parse_line(accumulate_line, name_meta, gmt_time_zone)
                 break
             elif re.match(re_hdr, log_line):  # new line tag found
                 if len(accumulate_line) == 0:  # no line accumulated
                     accumulate_line += log_line
                 else:
-                    yield _parse_line(accumulate_line, file_meta, gmt_time_zone)
+                    yield _parse_line(accumulate_line, name_meta, gmt_time_zone)
                     accumulate_line = log_line
                     continue
             else:

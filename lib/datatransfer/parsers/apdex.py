@@ -7,10 +7,10 @@ from datetime import datetime, timedelta
 from xml.etree import ElementTree
 
 
-def parse(local_path: str, origin_file_name: str, gmt_time_zone: int):
-    apedx_file = open(local_path)
-    with apedx_file:
-        root = ElementTree.parse(apedx_file).getroot()
+def parse(local_path: str, origin_file_name: str, time_zone_adjust: int):
+    apdex_file = open(local_path)
+    with apdex_file:
+        root = ElementTree.parse(apdex_file).getroot()
         for ops in root:
             for measure in ops:
                 ops_attribute = ops.attrib
@@ -20,8 +20,9 @@ def parse(local_path: str, origin_file_name: str, gmt_time_zone: int):
                     'ops_name': ops_attribute['name'],
                     'duration': float(measure_attribute['value']),
                     'user': measure_attribute['userName'],
-                    'start': datetime.strptime(measure_attribute['tSaveUTC'], '%Y-%m-%dT%H:%M:%S')
-                        + timedelta(hours=gmt_time_zone),
+                    'start':
+                        datetime.strptime(measure_attribute['tSaveUTC'], '%Y-%m-%dT%H:%M:%S') +
+                        timedelta(hours=time_zone_adjust),
                     'session': int(measure_attribute['sessionNumber']),
                     'fail': not bool(measure_attribute['runningError']),
                     'target': float(ops_attribute['targetValue']),

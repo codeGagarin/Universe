@@ -22,7 +22,7 @@ def _get_hdr_params(header_line):
     return result
 
 
-def parse(local_path: str, origin_file_name: str, gmt_time_zone: int):
+def parse(local_path: str, origin_file_name: str, gmt_time_adjust: int):
     counter_file = open(local_path, encoding="utf-16")
     with counter_file:
 
@@ -31,8 +31,7 @@ def parse(local_path: str, origin_file_name: str, gmt_time_zone: int):
         params = _get_hdr_params(hdr_line)
 
         for counter_line in counter_data:
-            stamp = datetime.strptime(counter_line[0], '%m/%d/%Y %H:%M:%S.%f') \
-                    - timedelta(hours=3) + timedelta(gmt_time_zone)  # GMT 0 correction
+            stamp = datetime.strptime(counter_line[0], '%m/%d/%Y %H:%M:%S.%f') + timedelta(hours=gmt_time_adjust)
 
             counter_values = counter_line[1: len(counter_line)]
             for i in range(len(counter_values)):

@@ -3,7 +3,6 @@
 """
 
 from dataclasses import dataclass
-from datetime import datetime
 from typing import List, Callable
 import traceback
 
@@ -16,7 +15,7 @@ class ParserJob:
     data_type: str
     transfer_path: str
     store_place: str
-    gmt_time_zone: int = +3
+    time_zone_adjust: int = +3
     max_files: int = 500
     line_validator: Callable[[dict], None] = None
 
@@ -77,7 +76,7 @@ class Processor:
                 try:
                     path = self._transfer.local_path(trans_id)
 
-                    for line in job.parser(path, store_badge.name, job.gmt_time_zone):
+                    for line in job.parser(path, store_badge.name, job.time_zone_adjust):
                         if job.line_validator:
                             job.line_validator(line)
                         self._storage.submit_line(batch_id, line)
@@ -119,7 +118,7 @@ class _ProcessorTest(TestCase):
                 data_type='logs',
                 transfer_path='logs',
                 store_place='TJLines',
-                gmt_time_zone=+3,
+                time_zone_adjust=+3,
                 max_files=1,
             )
         )
@@ -129,7 +128,7 @@ class _ProcessorTest(TestCase):
                 data_type='apdx',
                 transfer_path='apdx',
                 store_place='ApdexLines',
-                gmt_time_zone=+3,
+                time_zone_adjust=+3,
                 max_files=1,
             )
         )
@@ -139,7 +138,7 @@ class _ProcessorTest(TestCase):
                 data_type='cntr',
                 transfer_path='cntr',
                 store_place='CounterLines',
-                gmt_time_zone=+3,
+                time_zone_adjust=+3,
                 max_files=1,
             )
         )

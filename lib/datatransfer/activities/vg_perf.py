@@ -32,7 +32,7 @@ class VGPerf(Activity):
                 data_type='logs',
                 transfer_path='logs',
                 store_place='TJLines',
-                gmt_time_zone=+3,
+                time_zone_adjust=0,
                 max_files=self.DEFAULT_MAX_FILES,
             )
         )
@@ -42,7 +42,7 @@ class VGPerf(Activity):
                 data_type='apdx',
                 transfer_path='apdx',
                 store_place='ApdexLines',
-                gmt_time_zone=+3,
+                time_zone_adjust=+3,
                 max_files=self.DEFAULT_MAX_FILES,
             )
         )
@@ -52,7 +52,7 @@ class VGPerf(Activity):
                 data_type='cntr',
                 transfer_path='cntr',
                 store_place='CounterLines',
-                gmt_time_zone=+3,
+                time_zone_adjust=+3,
                 max_files=self.DEFAULT_MAX_FILES,
             )
         )
