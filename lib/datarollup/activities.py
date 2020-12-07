@@ -1,7 +1,6 @@
 from datetime import datetime, timedelta
 
 from lib.schedutils import Activity, NullStarter
-from lib.pg_utils import PGMix
 from .utils import RollupRule, AggregateRule
 from . import utils
 from keys import KeyChain
@@ -45,8 +44,8 @@ class CounterLinesRoll(Activity):
                 year=_to.year,
                 month=_to.month,
                 day=_to.day,
-                hour=_to.hour+1
-            )
+                hour=_to.hour
+            ) + timedelta(hours=1)
 
     def run(self):
         rollup_interval_count = 0
@@ -72,11 +71,18 @@ class _CounterLinesRollTest(TestCase):
     def setUp(self) -> None:
         self.counters_roll = CounterLinesRoll(NullStarter)
 
-    def test_run(self):
+    def _test_run(self):
         a = self.counters_roll
         a['from'] = datetime(2020, 9, 29, 12, 5)
         a['to'] = a['from'] + timedelta(hours=1)
         a['base1s'] = 'tjtest'
+        a.run()
+
+    def test_run2(self):
+        dump = '{"from": "datetime:2020-12-07 22:10:09.214000", ' \
+               '"to": "datetime:2020-12-07 23:10:04.206000", "base1s": "vgunf"}'
+        a = self.counters_roll
+        a.update_params(dump)
         a.run()
 
     def test_full_period(self):
