@@ -11,13 +11,20 @@ from ._session import TransferSession, StorageSession, FileBadge
 
 @dataclass()
 class ParserJob:
+    class Validator:
+        """ Interface for validators class, use it for manage transfer process """
+
+        def on_line(self, line: dict):
+            """ call for all parsing lines, until it storage submitted (read/write) """
+            pass
+
     parser: Callable
     data_type: str
     transfer_path: str
     store_place: str
     time_zone_adjust: int = +3
     max_files: int = 500
-    line_validator: Callable[[dict], None] = None
+    validator: Validator = None
 
 
 class _Log:
@@ -77,8 +84,8 @@ class Processor:
                     path = self._transfer.local_path(trans_id)
 
                     for line in job.parser(path, store_badge.name, job.time_zone_adjust):
-                        if job.line_validator:
-                            job.line_validator(line)
+                        if job.validator:
+                            job.validator.on_line(line)
                         self._storage.submit_line(batch_id, line)
 
                 except Exception:
@@ -94,6 +101,8 @@ class Processor:
 
 
 from unittest import TestCase
+from datetime import datetime
+
 
 from keys import KeyChain
 from .pg_session import PGSession, DataFilter
@@ -143,12 +152,16 @@ class _ProcessorTest(TestCase):
             )
         )
 
-        # # detect counter_lines timeline bounds
-        # left_bound: datetime = None
-        # right_bound: datetime = None
-        # def counter_line_validator(line: dict):
-        #     now =
-        #
+        # detect counter_lines timeline bounds
+        left_bound = None
+        right_bound = None
+
+        def counter_line_validator(line: dict):
+            stamp = line['stamp']
+            if not left_bound:
+                left_bound = stamp
+
+
 
         processor.execute()
 

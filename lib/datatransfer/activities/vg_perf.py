@@ -4,6 +4,8 @@
 
 from keys import KeyChain
 from lib.schedutils import Activity
+from lib.datarollup import CounterLinesRoll
+
 from .._index import Processor, DataFilter, FtpSession, PGSession, ParserJob
 from ..parsers import techjrnl, syscounters, apdex
 from .apdex_calc import ApdexCalc
@@ -46,6 +48,7 @@ class VGPerf(Activity):
                 max_files=self.DEFAULT_MAX_FILES,
             )
         )
+        validator = CountersBoundValidator()
         processor.add_parser_job(
             ParserJob(
                 parser=syscounters.parse,
@@ -54,6 +57,7 @@ class VGPerf(Activity):
                 store_place='CounterLines',
                 time_zone_adjust=+3,
                 max_files=self.DEFAULT_MAX_FILES,
+                validator=validator
             )
         )
         processor.execute()
@@ -61,6 +65,23 @@ class VGPerf(Activity):
         calc = ApdexCalc(self._ldr)
         calc['base1s'] = base1s
         calc.apply()
+
+        roll = CounterLinesRoll(self._ldr)
+        roll['base1s'] = base1s
+        roll['from'] = validator.left
+        roll['to'] = validator.right
+        roll.apply()
+
+
+class CountersBoundValidator(ParserJob.Validator):
+    def __init__(self):
+        self.left = None
+        self.right = None
+
+    def on_line(self, line: dict):
+        stamp = line['stamp']
+        self.left = min(stamp, self.left or stamp)
+        self.right = max(stamp, self.right or stamp)
 
 
 from unittest import TestCase

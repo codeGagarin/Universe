@@ -47,7 +47,6 @@ class CounterLinesRoll(Activity):
                 hour=_to.hour+1
             )
 
-
     def run(self):
         self.rule.data_filter = {'base1s': self['base1s']}
         _from, _to = self.full_period(self['from'], self['to'])
@@ -63,9 +62,12 @@ import unittest
 from unittest import TestCase
 
 
-class CounterLinesRollTest(TestCase):
+class _CounterLinesRollTest(TestCase):
+    def setUp(self) -> None:
+        self.counters_roll = CounterLinesRoll(NullStarter)
+
     def test_run(self):
-        a = CounterLinesRoll(NullStarter)
+        a = self.counters_roll
         a['from'] = datetime(2020, 9, 29, 12, 5)
         a['to'] = a['from'] + timedelta(hours=1)
         a['base1s'] = 'tjtest'
