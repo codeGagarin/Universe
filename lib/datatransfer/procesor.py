@@ -101,7 +101,6 @@ class Processor:
 
 
 from unittest import TestCase
-from datetime import datetime
 
 
 from keys import KeyChain
@@ -151,17 +150,6 @@ class _ProcessorTest(TestCase):
                 max_files=1,
             )
         )
-
-        # detect counter_lines timeline bounds
-        left_bound = None
-        right_bound = None
-
-        def counter_line_validator(line: dict):
-            stamp = line['stamp']
-            if not left_bound:
-                left_bound = stamp
-
-
 
         processor.execute()
 
