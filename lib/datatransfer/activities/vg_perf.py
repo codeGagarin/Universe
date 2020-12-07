@@ -66,11 +66,12 @@ class VGPerf(Activity):
         calc['base1s'] = base1s
         calc.apply()
 
-        roll = CounterLinesRoll(self._ldr)
-        roll['base1s'] = base1s
-        roll['from'] = validator.left
-        roll['to'] = validator.right
-        roll.apply()
+        if validator.left and validator.right:  # check if Apdex file is an empty
+            roll = CounterLinesRoll(self._ldr)
+            roll['base1s'] = base1s
+            roll['from'] = validator.left
+            roll['to'] = validator.right
+            roll.apply()
 
 
 class CountersBoundValidator(ParserJob.Validator):
