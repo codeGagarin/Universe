@@ -1,8 +1,9 @@
 from datetime import datetime, timedelta
 
 from lib.schedutils import Activity, NullStarter
-from lib.datarollup.utils import RollupRule, AggregateRule
-from lib.datarollup import utils
+from lib.pg_utils import PGMix
+from .utils import RollupRule, AggregateRule
+from . import utils
 from keys import KeyChain
 
 
@@ -48,7 +49,9 @@ class CounterLinesRoll(Activity):
             )
 
     def run(self):
+        rollup_interval_count = 0
         self.rule.data_filter = {'base1s': self['base1s']}
+
         _from, _to = self.full_period(self['from'], self['to'])
         with utils.get_connection(KeyChain.PG_PERF_KEY) as conn:
             for table_name, delta in self.roll_data_map.items():
@@ -56,6 +59,9 @@ class CounterLinesRoll(Activity):
                 for interval in interval_list:
                     utils.clear_interval(conn, interval, self.rule, table_name)
                     utils.roll_up_interval_into(conn, interval, table_name, self.rule)
+                    rollup_interval_count += 1
+
+        print(f'Rollup: {rollup_interval_count} interval(s)')
 
 
 import unittest
