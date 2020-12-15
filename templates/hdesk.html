@@ -80,7 +80,9 @@
                     <td>{% if r.parent %} -- {% endif %} {{ r.name }}</td>
                     <td class="info" align="right">{{ lib.detail_link(rpt, r.income, r.income_d) }}</td>
                     <td class="info" align="right">{{ lib.detail_link(rpt, r.closed, r.closed_d)}}({{lib.detail_link(rpt, (r.closed_exp/60)|round(1, 'common'), r.closed_exp_d)}})</td>
-                    <td align="right">{{ lib.detail_link(rpt, r.open, r.open_d) }}</td>
+                    <td align="right">
+                        {{ lib.detail_link(rpt, r.open, r.open_d) }}({{ lib.detail_link(rpt, (r.open_exp/60)|round(1, 'common'), r.open_exp_d) }})
+                    </td>
                     <td align="right">{{ lib.detail_link(rpt, r.no_exec, r.no_exec_d) }}</td>
                     <td align="right">{{ lib.detail_link(rpt, r.no_deadline, r.no_deadline_d) }}</td>
                 </tr>

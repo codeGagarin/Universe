@@ -924,6 +924,20 @@ class HelpdeskReport(Report):
             }
             return _get_detail_srv(TaskReport, detail)
 
+        def _open_exp(params):
+            return _do_query_grp(ss('select t."ServiceId", sum(e."Minutes") from "Tasks" t'
+                                    ' right join "Expenses" e on t."Id" = e."TaskId"'
+                                    ' where t."Closed" is Null {}'
+                                    ' group by t."ServiceId" ').format(
+                srv_where
+            ))
+
+        def _open_exp_d(params):
+            detail = {
+                'frame': 'open',
+            }
+            return _get_detail_srv(ExpensesReport, detail)
+
         def _no_exec(params):
             return _do_query_grp(ss('select t."ServiceId", count(t."Id") from "Tasks" t'
                                     ' where t."Closed" is NULL {}'
@@ -953,6 +967,8 @@ class HelpdeskReport(Report):
                     'closed_exp_d': _sm_header(_closed_exp_d),
                     'open': _sm_header(_open),
                     'open_d': _sm_header(_open_d, 'open'),
+                    'open_exp': _sm_header(_open_exp),
+                    'open_exp_d': _sm_header(_open_exp_d),
                     'no_exec': _sm_header(_no_exec),
                     'no_exec_d': _sm_header(_open_d, 'no_exec'),
                     'no_deadline': _sm_header(_no_deadline),
@@ -1100,8 +1116,12 @@ class ExpensesReport(Report):
             if executors:
                 fl.append(ss('ex."UserId" in {}').format(sl(tuple(executors))))
                 fl.append(ss('ex."DateExp" BETWEEN {} AND {}').format(sl(ffrom), sl(tto)))
+
             if frame == 'closed':
                 fl.append(ss('t."Closed" BETWEEN {} AND {}').format(sl(ffrom), sl(tto)))
+            elif frame == 'open':
+                fl.append(ss('t."Closed" IS NULL'))
+
             if len(services):
                 fl.append(ss('(t."ServiceId" in {0} OR ps."ParentId" in {0})').format(sl(tuple(services))))
             return ss(' AND ').join(fl) if len(fl) else sl(True)
