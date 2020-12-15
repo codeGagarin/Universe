@@ -8,7 +8,7 @@ _updater = Updater(token=_key['token'], use_context=True)
 _dispatcher = _updater.dispatcher
 
 
-def get_key_updater(sender):
+def get_key_updater():
     """ External callback """
     return _key, _updater
 

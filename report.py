@@ -514,7 +514,7 @@ class HelpdeskReport(Report):
                     'executors': (
                         7379,  # DrA
                         5329,  # VaL
-                        5599,  # LaA
+                        # 5599,  Anna Latkina - RIP
                         7988,  # PlE
                         396,  # KrS
                         5731,  # PoI
@@ -526,6 +526,17 @@ class HelpdeskReport(Report):
                         8958,  # DeA
                         8949,  # KaI
                     ),
+                    'frame': 'weekly',
+                },
+            },
+            'BGL': {
+                'smtp': 'DEF',
+                'to': tuple(),
+                'cc': ('v.ulianov@prosto12.ru', 'i.belov@prosto12.ru',),
+                'subj': '[Weekly] Недельный отчет Helpdesk',
+                'params': {
+                    'services': (198, ),
+                    'executors': tuple(),
                     'frame': 'weekly',
                 },
             },
@@ -830,8 +841,9 @@ class HelpdeskReport(Report):
 
             return {'head': head, 'body': named_body}
 
-        head_map = _get_util_map()
-        data['utl'] = _get_head_body(head_map, exs)
+        if len(exs):
+            head_map = _get_util_map()
+            data['utl'] = _get_head_body(head_map, exs)
 
         def _parent(params):
             res = {}

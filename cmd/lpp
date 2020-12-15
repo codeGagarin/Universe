@@ -1,0 +1,5 @@
+#!/bin/bash
+ssh -tt belovgm19@91.224.22.111 << EOF
+cd ~/proj/uni/
+python
+EOF

@@ -91,6 +91,7 @@
 </div>
 {% endif %}
 
+{% if rpt._D().utl  %}
 <div class="row">
     <div class="{{ util_table_class }}">
         <table class="table">
@@ -222,6 +223,8 @@
         </table>
     </div>
 </div>
+{% endif %}
+
 {{ lib.profile_stat(rpt, stat) }}
 {% endblock %}
 
