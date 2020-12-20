@@ -48,7 +48,7 @@ class Monitoring(Activity, PGMix):
         r = s.get(url, headers={'User-Agent': 'Monitoring Activity'})
 
         print(f'Status code:{r.status_code}')
-        if r.status_code in (503, 502):
+        if r.status_code in (503, 502, 501, 500):
             print('Komtet Orbita 503 error detected!')
             subprocess.run(['sh', 'cmd/uwr'])
             print('Restart')
