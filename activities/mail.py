@@ -36,7 +36,7 @@ class Email(Activity):
             msg['Cc'] = ", ".join(self['cc']) if self['cc'] else ''
 
         # Record the MIME type of html - text/html.
-        body = MIMEText(html_body, 'html')
+        body = MIMEText(html_body or '', 'html')
 
         # Attach HTML part into message container.
         msg.attach(body)
@@ -51,3 +51,17 @@ class Email(Activity):
         except smtplib.SMTPException as error:
             print(f"Unable to send email\nError: {error}")
             raise error
+
+
+from unittest import TestCase
+from lib.schedutils import NullStarter
+
+
+class EmailActivityTest(TestCase):
+    def setUp(self) -> None:
+        self.a = Email(NullStarter())
+        self.a['to'] = tuple('i.belov@prosto12.ru')
+        self.a['subject'] = 'test'
+
+    def test_send(self):
+        self.a.run()
