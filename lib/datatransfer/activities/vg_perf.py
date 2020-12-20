@@ -55,7 +55,7 @@ class VGPerf(Activity):
                 data_type='cntr',
                 transfer_path='cntr',
                 store_place='CounterLines',
-                time_zone_adjust=+3,
+                time_zone_adjust=0,
                 max_files=self.DEFAULT_MAX_FILES,
                 validator=validator
             )
