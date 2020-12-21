@@ -52,7 +52,7 @@ class PGStarter(Starter):
         query_params = {
             'type': activity.get_type(),
             'status': self.TODO,
-            'start': due_date if due_date else datetime.now(),
+            'plan': due_date if due_date else datetime.now(),
             'params': activity.dump_params()
         }
         insert_query = sql.SQL("INSERT INTO {}({}) VALUES ({}) RETURNING {}").format(
@@ -82,11 +82,11 @@ class PGStarter(Starter):
     def _update_current_crontab_schedule(self):
         # select not execute record from journal
         query = sql.SQL('SELECT {} FROM {} WHERE {}').format(
-            sql.SQL(', ').join(map(sql.Identifier, ('id', 'type', 'start'))),
+            sql.SQL(', ').join(map(sql.Identifier, ('id', 'type', 'plan'))),
             sql.Identifier(self._table_name),
             sql.SQL('{} = {} AND {} > {} AND {} is Null').format(
                 sql.Identifier('status'), sql.Literal(self.TODO),
-                sql.Identifier('start'), sql.Literal(datetime.now()),
+                sql.Identifier('plan'), sql.Literal(datetime.now()),
                 sql.Identifier('params')
             )
         )
@@ -97,18 +97,18 @@ class PGStarter(Starter):
         rows = rows if rows else list()  # change None to empty list
 
         # id, type, start and valid state (used later)
-        schedule = [[row.id, row.type, row.start, False] for row in rows]
+        schedule = [[row.id, row.type, row.plan, False] for row in rows]
 
         # check current crontab schedule from script
         for activity_type, params in self._registry.items():
             cron_tab = params['crontab'] or ''
             if not croniter.is_valid(cron_tab):
                 continue
-            next_start = croniter(params['crontab'], datetime.now()).get_next(datetime)
+            next_plan = croniter(params['crontab'], datetime.now()).get_next(datetime)
             need_to_plan = True
             for rec in schedule:
                 if rec[1] == activity_type:
-                    if next_start == rec[2]:
+                    if next_plan == rec[2]:
                         rec[3] = True
                         need_to_plan = False
                         break
@@ -116,7 +116,7 @@ class PGStarter(Starter):
                 insert_params = {
                     'type': activity_type,
                     'status': 'todo',
-                    'start': next_start,
+                    'plan': next_plan,
                 }
                 insert_new_schedule_query =\
                     sql.SQL('insert into {}({}) values({})').format(
@@ -157,7 +157,7 @@ class PGStarter(Starter):
                     sql.Identifier('id'), sql.Identifier('type'),
                     sql.Identifier('params'), sql.Identifier(self._table_name),
                     sql.Identifier('status'), sql.Literal(self.TODO),
-                    sql.Identifier('start'), sql.Literal(datetime.now())
+                    sql.Identifier('plan'), sql.Literal(datetime.now())
                 )
             cursor = self._db_conn.cursor(cursor_factory=psycopg2.extras.NamedTupleCursor)
             cursor.execute(select_next_record_query)
@@ -170,9 +170,16 @@ class PGStarter(Starter):
             act_type = record.type
             act_dump = record.params
 
+            start = datetime.now()
+            update_params = {
+                'start': start,
+                'status': self.WORKING,
+            }
+
             update_progress_status_query = sql.SQL('UPDATE {} SET ({}) = ({}) WHERE {} = {}').format(
                 sql.Identifier(self._table_name),
-                sql.Identifier('status'), sql.Literal(self.WORKING),
+                sql.SQL(', ').join([sql.Identifier(key) for key in update_params.keys()]),
+                sql.SQL(', ').join([sql.Literal(value) for value in update_params.values()]),
                 sql.Identifier('id'), sql.Literal(act_id),
             )
             cursor.execute(update_progress_status_query)
@@ -181,7 +188,6 @@ class PGStarter(Starter):
             # stdout redirect
             prn_stream = io.StringIO()  # sys.stdout
             with redirect_stdout(prn_stream):
-                start = datetime.now()
                 try:
                     factory = self._registry[act_type]['factory']
                     activity = factory(self)
@@ -229,12 +235,11 @@ class PGStarter(Starter):
         start = datetime(on_day.year, on_day.month, on_day.day)
         finish = start + timedelta(days=1)
 
-        fields = 'id type status start finish duration params result'.split()
+        fields = 'id type status plan start finish duration params result logs'.split()
         query_state_data = sql.SQL('SELECT {} FROM {} WHERE {} ORDER BY {} DESC').format(
             sql.SQL(', ').join(sql.Identifier(f) for f in fields),
             sql.Identifier(self._table_name),
-            sql.SQL('{} BETWEEN {} AND {} {}').format(
-                sql.Identifier('start'),
+            sql.SQL('plan BETWEEN {} AND {} {}').format(
                 sql.Literal(start),
                 sql.Literal(finish),
                 sql.SQL('') if not status_filter else sql.SQL('AND {} IN ({})').format(
