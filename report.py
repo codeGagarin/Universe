@@ -424,10 +424,8 @@ class DiagReport(Report):
             )
             self._sql_exec(conn, query)
 
-        where_list = [sql.SQL('{} BETWEEN {} AND {}').format(
-            sql.Identifier('start'),
-            sql.Literal(start),
-            sql.Literal(fin)
+        where_list = [sql.SQL('plan BETWEEN {} AND {}').format(
+            sql.Literal(start), sql.Literal(fin)
         )]
 
         sp_type = sp.get('act_type')
@@ -436,11 +434,11 @@ class DiagReport(Report):
                 sql.SQL(' and "type" = {}').format(sql.Literal(sp_type))
             )
 
-        query = sql.SQL('SELECT "id", "type", "status", "start", "finish", "duration", "params",'
+        query = sql.SQL('SELECT "id", "type", "status", "plan", "start", "finish", "duration", "params",'
                         ' "result", NULL as status_detail FROM {} WHERE {} ORDER BY {} DESC').format(
             sql.Identifier('Loader'),
             sql.Composed(where_list),
-            sql.Identifier('start')
+            sql.Identifier('plan')
         )
 
         def _status_detail(rec):

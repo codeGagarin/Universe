@@ -52,6 +52,7 @@
             <th>Id</th>
             <th>Type</th>
             <th>Status</th>
+            <th>Plan</th>
             <th>Start</th>
             <th>Finish</th>
             <th>Duration</th>
@@ -60,14 +61,10 @@
         </tr>
     </thead>
     <tbody>
+        {% set class_map = {'warning': 'warning', 'finish': 'success', 'fail': 'danger' } %}
+
         {% for row in rpt._D().body %}
-        <tr class=
-        {% if row.status == 'warning' %} "warning"
-        {% elif row.status == 'finish' %} "success"
-        {% elif row.status == 'fail' %} "danger"
-        {% else %} ""
-        {% endif %}
-        >
+        <tr class="{{ class_map[row.status] }}">
 
         <td align="right">{{ row.id }}</td>
         <td>{{ row.type }}</td>
@@ -76,6 +73,7 @@
         {% else %}
             <td align="center">{{ row.status }}</td>
         {% endif %}
+        <td align="center">{{ ("%s"|format(row.plan))[11: 19] }}</td>
         <td align="center">{{ ("%s"|format(row.start))[11: 19] }}</td>
         <td align="center">{{ ("%s"|format(row.finish))[11: 19] }}</td>
         <td align="right">
