@@ -529,7 +529,7 @@ class HelpdeskReport(Report):
             },
             'BGL': {
                 'smtp': 'DEF',
-                'to': tuple('it@bglogistic.ru',),
+                'to': ('it@bglogistic.ru',),
                 'cc': ('v.ulianov@prosto12.ru', 'i.belov@prosto12.ru',),
                 'subj': '[Weekly] Недельный отчет о заявках',
                 'params': {
