@@ -529,7 +529,7 @@ class HelpdeskReport(Report):
             },
             'BGL': {
                 'smtp': 'DEF',
-                'to': ('it@bglogistic.ru',),
+                'to': ['it@bglogistic.ru'],
                 'cc': ('v.ulianov@prosto12.ru', 'i.belov@prosto12.ru',),
                 'subj': '[Weekly] Недельный отчет о заявках',
                 'params': {
@@ -538,6 +538,17 @@ class HelpdeskReport(Report):
                     'frame': 'weekly',
                 },
             },
+            'PRJ_OAK_01': {
+                'smtp': 'DEF',
+                'to': ('v.ulianov@prosto12.ru', 'i.belov@prosto12.ru',),
+                'subj': '[PRJ_OAK_01] Отчет о проекте',
+                'params': {
+                    'services': (200, ),
+                    'executors': tuple(),
+                    'frame': 'weekly',
+                },
+            }
+
         }
 
     def set_up(self, params_url):
