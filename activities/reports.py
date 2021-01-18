@@ -70,9 +70,9 @@ class HelpdeskWeekly(ReportActivity):
 
             email = Email(self._ldr)
             email['smtp'] = prm['smtp']
-            email['to'] = report.users_to_email(conn, prm['to'])
-            email['cc'] = report.users_to_email(conn, prm['cc'])
-            email['subject'] = prm['subj']
+            email['to'] = report.users_to_email(conn, prm.get('to', []))
+            email['cc'] = report.users_to_email(conn, prm.get('cc', []))
+            email['subject'] = prm.get('subj', '')
             email['body'] = self.get_report_html(report, KeyChain.WEB_PATH)
             email.apply()
 
@@ -80,9 +80,20 @@ class HelpdeskWeekly(ReportActivity):
 from unittest import TestCase
 from lib.schedutils import NullStarter
 
+
 class LoaderStateReporterTest(TestCase):
     def test_run(self):
         s = NullStarter()
         a = LoaderStateReporter2(s)
         a.run()
+
+
+class HelpdeskWeeklyTest(TestCase):
+    def setUp(self) -> None:
+        self.stater = NullStarter()
+        self.hdw = HelpdeskWeekly(self.stater)
+
+    def test_run(self):
+        self.hdw.run()
+
 
