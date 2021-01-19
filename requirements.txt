@@ -1,4 +1,6 @@
 simplejson
 flask
+psycopg2
+python-telegram-bot
 requests==2.21.0
 python_dateutil==2.8.0
