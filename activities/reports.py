@@ -82,10 +82,12 @@ from lib.schedutils import NullStarter
 
 
 class LoaderStateReporterTest(TestCase):
+    def setUp(self) -> None:
+        self.stater = NullStarter()
+        self.lsr2 = HelpdeskWeekly(self.stater)
+
     def test_run(self):
-        s = NullStarter()
-        a = LoaderStateReporter2(s)
-        a.run()
+        self.lsr2.run()
 
 
 class HelpdeskWeeklyTest(TestCase):

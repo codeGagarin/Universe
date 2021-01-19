@@ -15,13 +15,24 @@ __all__ = \
 
 
 class PGMix:
+    def _connect(self) -> psycopg2.extensions.connection:
+        return psycopg2.connect(
+            dbname=self._pg_key["db_name"],
+            user=self._pg_key["user"],
+            password=self._pg_key["pwd"],
+            host=self._pg_key["host"],
+            port=self._pg_key.get('port')
+        )
+
     def __init__(self, key):
-        self._pg_conn = psycopg2.connect(dbname=key["db_name"], user=key["user"],
-                                         password=key["pwd"], host=key["host"], port=key.get('port'))
+        self._pg_key = key
+        self._pg_conn = self._connect()
         self._extras = psycopg2.extras
         self._extensions = psycopg2.extensions
 
     def _cursor(self, named=False) -> psycopg2.extensions.cursor:
+        if self._pg_conn.closed:
+            self._pg_conn = self._connect()
         return self._pg_conn.cursor(
             cursor_factory=psycopg2.extras.NamedTupleCursor if named else None)
 

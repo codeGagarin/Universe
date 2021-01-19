@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% import 'macro.html' as lib %}
+{% set caption = ("Diagnostic report on %s")|format(rpt._D().from) %}
+{% block title %}{{ caption }}{% endblock %}
+{% block head %}
+    {{ super() }}
+    <style type="text/css">
+        .important { color: #336699; }
+    </style>
+{% endblock %}
+{% block content %}
+    <h1>{{caption}}</h1>
+
+<nav aria-label="Page navigation">
+  <ul class="pagination">
+    {% for cap, params in rpt._N().items() %}
+      <li><a href="{{ rpt.report_url_for(params) }}">{{ cap }}</a></li>
+    {% endfor %}
+  </ul>
+</nav>
+
+<div class="btn-group btn-group-xs" role="group" aria-label="Extra-small button group">
+    {% for cad_data, params in rpt._N('types').items() %}
+        {% set cap = cad_data[0] %}
+        {% set count = cad_data[1] %}
+        {% set fail = cad_data[2] %}
+
+        {% set btn_style = "btn btn-default" %}
+        {% if fail != 0 %}
+            {% set btn_style = "btn btn-danger" %}
+        {% endif %}
+
+        {% if cap == rpt._D()['act_type'] %}
+            {% set btn_style = btn_style + ":active" %}
+        {% endif %}
+
+        <button type="button" class= "{{ btn_style }}" onClick="location.href='{{ rpt.report_url_for(params)}}'">
+            {% if fail==0 %}
+                {{ "{} ({})".format(cap, count) }}
+            {% else %}
+                {{ "{} ({}/{})".format(cap, count, fail) }}
+            {% endif %}
+
+        </button>
+    {% endfor %}
+</div>
+
+<table class="table table-hover">
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>Type</th>
+            <th>Status</th>
+            <th>Plan</th>
+            <th>Start</th>
+            <th>Finish</th>
+            <th>Duration</th>
+            <th>Params</th>
+            <th>Result</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% set class_map = {'warning': 'warning', 'done': 'success', 'fail': 'danger' } %}
+
+        {% for row in rpt._D().body.content %}
+            <tr class="{{ class_map[row.status] }}">
+
+            <td align="right"><a href="{{ rpt.report_url_for(rpt._D().body.url[row.id]) }}">{{ row.id }}</a></td>
+
+            <td>{{ row.type }}</td>
+            <td align="center">{{ row.status }}</td>
+            <td align="center">{{ ("%s"|format(row.plan))[11: 19] }}</td>
+            <td align="center">{{ ("%s"|format(row.start))[11: 19] }}</td>
+            <td align="center">{{ ("%s"|format(row.finish))[11: 19] }}</td>
+            <td align="right">
+                {% if row.duration != None %}
+                    {{ row.duration }}
+                {% endif %}
+            </td>
+            <td title="{{row.params}}"><small>{{ (row.params if row.params else "")|truncate(40, True)|escape() }}</small></td>
+            <td title="{{row.result}}"><small>{{ (row.result if row.result else "")|truncate(120, True)|escape() }}</small></td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{{ lib.profile_stat(rpt, stat) }}
+{% endblock %}

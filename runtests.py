@@ -42,6 +42,17 @@ class TestActivities(TestCase):
         activity = Email(self.ldr, params)
         activity.run()
 
+    def test_EMail(self):
+        cn = HelpdeskReport.get_connection(KeyChain.PG_KEY)
+        li = ('it@bglogistic.ru',)
+        to = HelpdeskReport.users_to_email(cn, li)
+
+        mail = Email(self.ldr)
+        mail['to'] = to
+        mail.apply()
+
+
+
     def test_SMTP(self):
         params = {
             'smtp': 'RRT',
@@ -68,6 +79,11 @@ class TestReports(TestCase):
         template_name = report.get_template()
         template = template_env.get_template(template_name)
         return template.render(rpt=report)
+
+    def test_users_to_email(self):
+        cn = HelpdeskReport.get_connection(KeyChain.PG_KEY)
+        li = ('it@bglogistic.ru',)
+        print(HelpdeskReport.users_to_email(cn, li))
 
     def test_DiagReport(self):
         self.render_report(DiagReport, 15706847338409224)

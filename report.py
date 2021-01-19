@@ -461,7 +461,7 @@ class DiagReport(Report):
         return {'body': result}
 
     def get_template(self):
-        return 'diag.html'
+        return '_diag.html'
 
 
 class HelpdeskReport(Report):

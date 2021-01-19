@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% import 'macro.html' as lib %}
+{% set caption = "Job %s: %s"|format(rpt._D().type, rpt._D().id) %}
+
+{% block title %}{{ caption }}{% endblock %}
+{% block head %}
+    {{ super() }}
+    <style type="text/css">
+        .important { color: #336699; }
+    </style>
+{% endblock %}
+{% block content %}
+    <h1>{{ caption }}</h1>
+
+    {{ lib.flash_section() }}
+
+    <table class="table table-condensed">
+        <tbody>
+        {% for field in rpt.field_list %}
+            <tr>
+                <th>
+                    {{ field }}
+                </th>
+                <td>
+                    {{ rpt._D()[field] or '' }}
+                </td>
+            </tr>
+        {% endfor %}
+
+        </tbody>
+    </table>
+    <form action="{{ rpt.action_url() }}" method="post">
+        <input type="hidden" name="job" value="{{ rpt._D().id }}">
+        <input type="hidden" name="idx" value="{{ rpt.idx }}">
+        <input type="hidden" name="back" value="{{ rpt._P().back }}">
+        <input type="submit" class="btn btn-default" name="action" value="Close">
+        <input type="submit" class="btn btn-danger" name="action" value="Redo">
+    </form>
+
+{% endblock %}

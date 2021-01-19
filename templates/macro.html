@@ -8,6 +8,18 @@
     <span class="text-success" title="{{ hint }}">{{ title }}</span>
 {% endmacro %}
 
+{% macro flash_section() %}
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert alert-success" role="alert">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+{% endmacro %}
+
+
+
 {% macro mark_date(date) %}
     {% if date %}
         {% set my = {'Jan':'янв', 'Feb':'фев', 'Mar':'мар', 'Apr':'апр', 'May':'май', 'Jun':'июн',
@@ -17,7 +29,6 @@
         {{ date.strftime('%d.{}.%Y').format((my[mm])|default(mm)) }}
     {% endif %}
 {% endmacro %}
-
 
 
 {% macro ticket_link(ticket_id) %}
