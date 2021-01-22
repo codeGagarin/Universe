@@ -51,7 +51,7 @@ class PGStarter(Starter):
     def to_plan(self, activity: Activity, due_date=None) -> int:
         query_params = {
             'type': activity.get_type(),
-            'status': self.TODO,
+            'status': self.JobStatus.TODO,
             'plan': due_date if due_date else datetime.now(),
             'params': activity.dump_params()
         }
@@ -85,7 +85,7 @@ class PGStarter(Starter):
             sql.SQL(', ').join(map(sql.Identifier, ('id', 'type', 'plan'))),
             sql.Identifier(self._table_name),
             sql.SQL('{} = {} AND {} > {} AND {} is Null').format(
-                sql.Identifier('status'), sql.Literal(self.TODO),
+                sql.Identifier('status'), sql.Literal(self.JobStatus.TODO),
                 sql.Identifier('plan'), sql.Literal(datetime.now()),
                 sql.Identifier('params')
             )
@@ -156,7 +156,7 @@ class PGStarter(Starter):
                 sql.SQL('SELECT {}, {}, {} FROM {} WHERE {}={} AND {}<={} LIMIT 1').format(
                     sql.Identifier('id'), sql.Identifier('type'),
                     sql.Identifier('params'), sql.Identifier(self._table_name),
-                    sql.Identifier('status'), sql.Literal(self.TODO),
+                    sql.Identifier('status'), sql.Literal(self.JobStatus.TODO),
                     sql.Identifier('plan'), sql.Literal(datetime.now())
                 )
             cursor = self._db_conn.cursor(cursor_factory=psycopg2.extras.NamedTupleCursor)
@@ -173,7 +173,7 @@ class PGStarter(Starter):
             start = datetime.now()
             update_params = {
                 'start': start,
-                'status': self.WORKING,
+                'status': self.JobStatus.WORKING,
             }
 
             update_progress_status_query = sql.SQL('UPDATE {} SET ({}) = ({}) WHERE {} = {}').format(
@@ -195,9 +195,9 @@ class PGStarter(Starter):
                     activity.run()
                 except Exception:
                     print('Fail:\n', traceback.format_exc())
-                    status = self.FAIL
+                    status = self.JobStatus.FAIL
                 else:
-                    status = self.DONE
+                    status = self.JobStatus.DONE
             finish = datetime.now()
             duration = (finish - start).seconds
 
@@ -300,7 +300,7 @@ class PGStarterTest(TestCase):
         self._starter.track_schedule()
         self._starter.track_schedule()
         status = self._starter.get_activity_status(ida)
-        self.assertEqual(status, PGStarter.DONE)
+        self.assertEqual(status, PGStarter.JobStatus.DONE)
 
     def test_track_schedule(self):
         self._starter.track_schedule()

@@ -60,13 +60,15 @@
         </tr>
     </thead>
     <tbody>
-        {% set class_map = {'warning': 'warning', 'done': 'success', 'fail': 'danger' } %}
+        {% set class_map = {
+            rpt.JobStatus.WORKING: 'warning',
+            rpt.JobStatus.DONE: 'success',
+            rpt.JobStatus.FAIL: 'danger'
+        } %}
 
         {% for row in rpt._D().body.content %}
             <tr class="{{ class_map[row.status] }}">
-
             <td align="right"><a href="{{ rpt.report_url_for(rpt._D().body.url[row.id]) }}">{{ row.id }}</a></td>
-
             <td>{{ row.type }}</td>
             <td align="center">{{ row.status }}</td>
             <td align="center">{{ ("%s"|format(row.plan))[11: 19] }}</td>

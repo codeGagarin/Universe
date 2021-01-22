@@ -1,11 +1,15 @@
 from datetime import datetime, timedelta
 
+from lib.schedutils import Starter as StarterClass
+
 from .._report import PGReport, _Params, sql
 from ..period import get_period
 from .job_details import JobDetails
 
 
 class Starter(PGReport):
+    JobStatus = StarterClass.JobStatus  # using for FAIL, DONE, etc job status constants in Jinja template
+
     def prepare_navigation(self, params):
         prev_point = get_period(params['from'], 'day', -1)
         next_point = get_period(params['from'], 'day', 1)
@@ -17,7 +21,7 @@ class Starter(PGReport):
             'SELECT type AS type, COUNT(*) AS count, SUM(CASE WHEN status={} THEN 1 ELSE 0 END) AS fail'
             '  FROM "Loader" WHERE plan >= {} AND plan < {} GROUP BY type'
             '  ORDER BY type').format(
-            sql.Literal('fail'),
+            sql.Literal(self.JobStatus.FAIL),
             sql.Literal(params['from']),
             sql.Literal(params['to'] + timedelta(days=1)),
         )

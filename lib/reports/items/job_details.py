@@ -1,7 +1,10 @@
+from lib.schedutils import Starter
 from .._report import PGReport, _Params, sql
 
 
 class JobDetails(PGReport):
+    JobStatus = Starter.JobStatus
+
     field_list = [
         'id',
         'type',
@@ -26,12 +29,11 @@ class JobDetails(PGReport):
             cursor.execute(
                 sql.SQL('UPDATE {} SET status={} where id={}').format(
                     sql.Identifier('Loader'),
-                    sql.Literal('todo'),
+                    sql.Literal(self.JobStatus.TODO),
                     sql.Literal(self._D().id),
                 )
             )
             self._commit()
-
 
     def _prepare_data(self, params: _Params) -> dict:
         starter_id = params['job_id']

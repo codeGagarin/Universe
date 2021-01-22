@@ -3,16 +3,19 @@
     Use it for inherit in your own starter or/and activities implementation
     NullStarter implementation use for custom activities testing
 """
-import simplejson as json
+from dataclasses import dataclass
 from datetime import datetime
+
+import simplejson as json
 
 
 class Starter:
-    # activities life-cycle status
-    DONE = 'finish'
-    FAIL = 'fail'
-    TODO = 'todo'
-    WORKING = 'working'
+    @dataclass
+    class JobStatus:
+        DONE = 'finish'
+        FAIL = 'fail'
+        TODO = 'todo'
+        WORKING = 'working'
 
     def __init__(self, db_key):
         """ Default constructor """
@@ -145,7 +148,7 @@ class NullStarter(Starter):
         pass
 
     def get_activity_status(self, activity_id: int):
-        return self.DONE
+        return self.JobStatus.DONE
 
 
 from unittest import TestCase
