@@ -10,6 +10,8 @@ import os
 import traceback
 import xml.etree.ElementTree as ET
 
+from typing import NamedTuple
+
 import psycopg2
 import psycopg2.extras
 from psycopg2 import sql as pgs
@@ -107,7 +109,7 @@ class ABaseAdapter:
     def apdx_get_ops_for(self, p: Period) -> list:  # return ops list
         pass
 
-    def apdx_get_n_ns_nt_for(self, operation, p: Period):  # return dict
+    def apdx_get_n_ns_nt_for(self, operation, p: Period) -> NamedTuple:  # return dict
         pass
 
     def apdx_set_for(self, operation, p: Period, apdex_value):  # set APDEX value for ops/hour
@@ -556,7 +558,7 @@ class PGAdapter(ABaseAdapter):
         rows = cursor.fetchall()
         return [row.ops_uid for row in rows]
 
-    def apdx_get_n_ns_nt_for(self, operation, period: Period):  # return dict
+    def apdx_get_n_ns_nt_for(self, operation, period: Period) -> NamedTuple:  # return dict
         n_query = pgs.SQL('SELECT count(*) FROM {} WHERE {} BETWEEN {} AND {} AND {}={} AND {}={}').format(
             pgs.Identifier('ApdexLines'),
             pgs.Identifier('start'),
@@ -614,6 +616,7 @@ class PGAdapter(ABaseAdapter):
 
 
 class DutyActivity(Activity):
+    """ CLASS for some random duty actions """
     def get_crontab(self):
         return '' #  '*/5 * * * *'
 
