@@ -6,7 +6,7 @@ from lib.schedutils import Activity
 from keys import KeyChain
 
 
-class Email(Activity):
+class EmailActivity(Activity):
     def _fields(self):
         return 'subject from to cc body smtp'
 
@@ -59,7 +59,7 @@ from lib.schedutils import NullStarter
 
 class EmailActivityTest(TestCase):
     def setUp(self) -> None:
-        self.a = Email(NullStarter())
+        self.a = EmailActivity(NullStarter())
         self.a['to'] = tuple('i.belov@prosto12.ru')
         self.a['subject'] = 'test'
 

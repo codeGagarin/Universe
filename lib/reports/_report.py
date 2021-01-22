@@ -40,9 +40,9 @@ class Report:
     def default_params(cls) -> _Params:
         return _Params({'type': cls.get_type()})
 
-    def request_data(self, params: _Params, idx: int):
+    def request_data(self, params: _Params = None, idx: int = 0):
         self.idx = idx
-        self._params = params
+        self._params = params or {}
         self._data = self._prepare_data(params)
         self._params_box.flush()
 
@@ -112,6 +112,9 @@ class Report:
 
 
 class PGReport(Report, _PGMix):
+    def get_report_key(self):
+        return KeyChain.PG_REPORT_KEY
+
     def __init__(self, box: ParamsBox):
         Report.__init__(self, box)
-        _PGMix.__init__(self, KeyChain.PG_REPORT_KEY)
+        _PGMix.__init__(self, self.get_report_key())

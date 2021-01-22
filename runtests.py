@@ -39,7 +39,7 @@ class TestActivities(TestCase):
     def teest_EMail(self):
         activity_id = 5489
         params = self.ldr.id_to_params(activity_id)
-        activity = Email(self.ldr, params)
+        activity = EmailActivity(self.ldr, params)
         activity.run()
 
     def test_EMail(self):
@@ -47,7 +47,7 @@ class TestActivities(TestCase):
         li = ('it@bglogistic.ru',)
         to = HelpdeskReport.users_to_email(cn, li)
 
-        mail = Email(self.ldr)
+        mail = EmailActivity(self.ldr)
         mail['to'] = to
         mail.apply()
 
@@ -61,7 +61,7 @@ class TestActivities(TestCase):
             'subject': 'smpt test',
             'body': 'Body'
         }
-        activity = Email(self.ldr, params)
+        activity = EmailActivity(self.ldr, params)
         activity.run()
 
 

@@ -6,7 +6,7 @@ import jinja2
 import premailer
 
 from lib.schedutils import Activity
-from activities.mail import Email
+from lib.mail import EmailActivity
 from report import DiagReport, HelpdeskReport
 from keys import KeyChain
 
@@ -38,15 +38,15 @@ class ReportActivity(Activity):
 
 
 class LoaderStateReporter2(ReportActivity):
-    def get_crontab(self):
-        return '0 3 * * *'
+    # def get_crontab(self):
+    #     return '0 3 * * *'
 
     def run(self):
         report = DiagReport()
         conn = report.get_connection(KeyChain.PG_STARTER_KEY)
         report.request_data(conn)
 
-        email = Email(self._ldr)
+        email = EmailActivity(self._ldr)
         email['to'] = ('belov78@gmail.com',)
         email['subject'] = 'Loader daily report'
         email['body'] = self.get_report_html(report, KeyChain.WEB_PATH)
@@ -68,7 +68,7 @@ class HelpdeskWeekly(ReportActivity):
             conn = report.get_connection(KeyChain.PG_KEY)
             report.request_data(conn)
 
-            email = Email(self._ldr)
+            email = EmailActivity(self._ldr)
             email['smtp'] = prm['smtp']
             email['to'] = report.users_to_email(conn, prm.get('to', []))
             email['cc'] = report.users_to_email(conn, prm.get('cc', []))

@@ -85,3 +85,4 @@ class Starter(PGReport):
                 'from': params['from'],
                 'act_type': params.get('act_type')
             }
+
