@@ -10,9 +10,9 @@ from .job_details import JobDetails
 class Starter(PGReport):
     JobStatus = StarterClass.JobStatus  # using for FAIL, DONE, etc job status constants in Jinja template
 
-    def prepare_navigation(self, params):
-        prev_point = get_period(params['from'], 'day', -1)
-        next_point = get_period(params['from'], 'day', 1)
+    def prepare_navigation(self):
+        prev_point = get_period(self._params['from'], 'day', -1)
+        next_point = get_period(self._params['from'], 'day', 1)
         self.add_nav_point('Prev day', _Params({'from': prev_point['from'], 'to': prev_point['to']}))
         self.add_nav_point('Next day', _Params({'from': next_point['from'], 'to': next_point['to']}))
 
@@ -22,17 +22,17 @@ class Starter(PGReport):
             '  FROM "Loader" WHERE plan >= {} AND plan < {} GROUP BY type'
             '  ORDER BY type').format(
             sql.Literal(self.JobStatus.FAIL),
-            sql.Literal(params['from']),
-            sql.Literal(params['to'] + timedelta(days=1)),
+            sql.Literal(self._params['from']),
+            sql.Literal(self._params['to'] + timedelta(days=1)),
         )
 
         with self._cursor(named=True) as cursor:
             cursor.execute(type_nav_query)
             for record in cursor:
                 nav_params = _Params({
-                    'from': params['from'], 'to': params['to'],
+                    'from': self._params['from'], 'to': self._params['to'],
                 })
-                if params.get('act_type') != record.type:
+                if self._params.get('act_type') != record.type:
                     nav_params['act_type'] = record.type
                 self.add_nav_point((record.type, record.count, record.fail), nav_params, 'types')
 
@@ -74,7 +74,7 @@ class Starter(PGReport):
             params['from'] = default_report_date
             params['to'] = default_report_date
 
-        self.prepare_navigation(params)
+        self.prepare_navigation()
 
         # prepare main report data
         report_query = self.gen_data_query(params)
