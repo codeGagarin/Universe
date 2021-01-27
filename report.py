@@ -512,7 +512,7 @@ class HelpdeskReport(Report):
                     'executors': (
                         7379,  # DrA
                         5329,  # VaL
-                        # 5599,  Anna Latkina - RIP
+                        # 5599, # LaA - RIP
                         7988,  # PlE
                         396,  # KrS
                         5731,  # PoI
