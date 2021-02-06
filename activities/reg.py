@@ -7,6 +7,7 @@ from lib.levelscan import LevelScan, FZLevelScan
 from lib.monitutils import Monitoring
 from lib.datarollup import CounterLinesRoll
 from lib.datatransfer import VGPerf, ApdexCalc
+from lib.intraservice import ClosedFix
 
 
 def init_ldr(ldr):
@@ -24,5 +25,6 @@ def init_ldr(ldr):
     ldr.register(CounterLinesRoll)
     ldr.register(VGPerf)
     ldr.register(ApdexCalc)
+    ldr.register(ClosedFix)
 
 
