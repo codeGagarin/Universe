@@ -128,8 +128,8 @@ class ISActualizer(PGActivity):
 
 class IS404TaskCloser(PGActivity):
     """Closed all union 404 url tasks"""
-    def get_crontab(self):
-        return '30 */1 * * *'
+    # def get_crontab(self):
+    #     return '30 */1 * * *'
 
     def run(self):
         # mark new open task
@@ -137,7 +137,7 @@ class IS404TaskCloser(PGActivity):
                         ' WHERE "Closed" IS NULL AND "m_lastClosedTouch" IS NULL')
         self.sql_exec(query)
 
-        # get 1/24 opened task count
+        # get 1/12 opened task count
         query = sql.SQL('SELECT COUNT(*) AS cc FROM "Tasks" WHERE "Closed" IS NULL')
         rows = self.sql_exec(query, named_result=True)
         open_tasks_count = rows[0].cc
