@@ -547,6 +547,17 @@ class HelpdeskReport(Report):
                     'executors': tuple(),
                     'frame': 'weekly',
                 },
+            },
+            'MINVODY': {
+                'smtp': 'DEF',
+                'to': (9632,),
+                'cc': ('alsep975@gmail.com', 'olgaavalishvili@minvody.net', 'igor.belov@station-hotels.ru'),
+                'subj': '[Минеральные воды] Отчет о задачах',
+                'params': {
+                    'services': (201,),
+                    'executors': (9632,),
+                    'frame': 'weekly',
+                },
             }
 
         }
