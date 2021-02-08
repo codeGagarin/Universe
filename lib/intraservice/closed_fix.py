@@ -12,7 +12,7 @@ class ClosedFix(Activity, PGMix):
         PGMix.__init__(self, KeyChain.PG_KOMTET_KEY)
 
     def get_crontab(self):
-        return '30 */1 * * *'
+        return '30 */2 * * *'
 
     def run(self):
         cursor = self._cursor(named=True)
@@ -24,10 +24,10 @@ class ClosedFix(Activity, PGMix):
                        ' WHERE "Closed" IS NULL AND "m_lastClosedTouch" IS NULL')
         self._commit()
 
-        # get 1/24 of all opened task count
+        # get 1/12 of all opened task count
         cursor.execute('SELECT COUNT(*) AS cc FROM "Tasks" WHERE "Closed" IS NULL')
         open_tasks_count = cursor.fetchone().cc
-        session_limit = round(open_tasks_count/24)
+        session_limit = round(open_tasks_count/12)
 
         # get tasks for current session
         open_task_query = 'SELECT "Id" AS task_id FROM "Tasks" WHERE "Closed" IS Null' \
@@ -61,8 +61,6 @@ class ClosedFix(Activity, PGMix):
                     pg_connector.update(task)
 
         self._commit()
-
-
 
 
 from unittest import TestCase
