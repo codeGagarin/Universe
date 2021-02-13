@@ -12,7 +12,7 @@ echo ''
 echo ''
 
 echo  'Submit keys'
-scp ~/PycharmProjects/Universe/keys_pr.py belovgm19@91.224.22.111:~/proj/uni/keys.py
+scp ~/Projects/Universe/keys_pr.py belovgm19@91.224.22.111:~/proj/uni/keys.py
 ssh -tt belovgm19@91.224.22.111 << EOF
 cd ~/proj/uni/
 git fetch --all
