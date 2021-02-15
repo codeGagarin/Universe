@@ -18,10 +18,16 @@ class ClosedFix(Activity, PGMix):
         cursor = self._cursor(named=True)
         is_connector = ISConnector(KeyChain.IS_KEY)
         pg_connector = PGConnector(KeyChain.PG_KOMTET_KEY)
+        now = datetime.now()
 
         # mark new open task
-        cursor.execute('UPDATE "Tasks" SET "m_lastClosedTouch"=now() '
-                       ' WHERE "Closed" IS NULL AND "m_lastClosedTouch" IS NULL')
+        cursor.execute(
+            sql.SQL(
+                'UPDATE "Tasks" SET "m_lastClosedTouch"={} '
+                ' WHERE "Closed" IS NULL AND "m_lastClosedTouch" IS NULL').format(
+                sql.Literal(now)
+            )
+        )
         self._commit()
 
         # get 1/12 of all opened task count
@@ -36,8 +42,10 @@ class ClosedFix(Activity, PGMix):
         task_list = [record.task_id for record in cursor]
 
         # mark current session tasks
-        mark_task_query = 'UPDATE "Tasks" SET "m_lastClosedTouch"=now() where "Id" in ({})'.format(
-            ', '.join(map(str, task_list))
+        mark_task_query = sql.SQL(
+            'UPDATE "Tasks" SET "m_lastClosedTouch"={} where "Id" in ({})').format(
+            sql.Literal(now),
+            sql.SQL(', ').join(map(sql.Literal, task_list))
         )
         cursor.execute(mark_task_query)
         self._commit()
