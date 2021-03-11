@@ -32,7 +32,7 @@ def _file_list(path: str):
     return [
         file for file in
         [
-            os.path.join(path, file) for file in os.listdir(path)
+            os.path.join(path, file) for file in os.listdir(os.path.expanduser(path))
             if file[-len(ARC_EXTENSION):] != ARC_EXTENSION
         ]
         if os.path.isfile(file)
@@ -66,6 +66,7 @@ class Archiver(Activity):
 
 
 from unittest import TestCase
+import unittest
 from lib.schedutils import NullStarter
 
 
@@ -76,3 +77,7 @@ class TestArchiver(TestCase):
 
     def test_run(self):
         self.a.run()
+
+
+if __name__ == '__main__':
+    unittest.main()
