@@ -9,7 +9,7 @@ ARC_EXTENSION = 'tar.gz'
 
 
 def gen_pack_name(year: int, month: int) -> str:
-    return f'{year}-{month}.{ARC_EXTENSION}'
+    return f'{year}-{month:02}.{ARC_EXTENSION}'
 
 
 def _path_to_pack(file_path) -> str:
