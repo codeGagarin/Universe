@@ -8,6 +8,7 @@ from lib.monitutils import Monitoring
 from lib.datarollup import CounterLinesRoll
 from lib.datatransfer import VGPerf, ApdexCalc
 from lib.intraservice import ClosedFix
+from lib.archiver import Archiver
 
 
 def init_ldr(ldr):
@@ -26,5 +27,6 @@ def init_ldr(ldr):
     ldr.register(VGPerf)
     ldr.register(ApdexCalc)
     ldr.register(ClosedFix)
+    ldr.register(Archiver)
 
 
