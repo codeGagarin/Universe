@@ -53,11 +53,15 @@ def to_pack(target_path: list, ignore_list=None):
                     file_name = os.path.basename(file)
                     print(f'{pack_name} <- {file_name}')
                     tar.add(file, arcname=file_name)
-                    # os.remove(file)
+                    os.remove(file)
 
 
 class Archiver(Activity):
-    TARGET_PATH = ['~/ftp/vgunf/logs/done']
+    TARGET_PATH = [
+        '~/ftp/vgunf/logs/done',
+        '~/ftp/vgunf/cntr/done',
+        '~/ftp/vgunf/apdx/done',
+    ]
 
     def run(self):
         to_pack(self.TARGET_PATH, [gen_pack_name(datetime.today().year, datetime.today().month)])
