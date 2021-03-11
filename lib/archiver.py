@@ -61,6 +61,7 @@ class Archiver(Activity):
         '~/ftp/vgunf/logs/done',
         '~/ftp/vgunf/cntr/done',
         '~/ftp/vgunf/apdx/done',
+        '~/ftp/skzup/logs',
     ]
 
     def run(self):
