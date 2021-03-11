@@ -32,7 +32,7 @@ def _file_list(path: str):
     return [
         file for file in
         [
-            os.path.join(path, file) for file in os.listdir(os.path.expanduser(path))
+            os.path.join(path, file) for file in os.listdir(path)
             if file[-len(ARC_EXTENSION):] != ARC_EXTENSION
         ]
         if os.path.isfile(file)
@@ -41,6 +41,7 @@ def _file_list(path: str):
 
 def to_pack(target_path: list, ignore_list=None):
     for path in target_path:
+        path = os.path.expanduser(path)
         print(f'Target path: {path}')
         packs = _pack_list(_file_list(path))
         for pack_name, file_list in packs.items():
