@@ -54,7 +54,8 @@ class LoaderStateReporter2(ReportActivity):
 
 
 class HelpdeskWeekly(ReportActivity):
-    def get_crontab(self):
+    @classmethod
+    def get_crontab(cls):
         return '0 7 * * 1'
 
     @classmethod

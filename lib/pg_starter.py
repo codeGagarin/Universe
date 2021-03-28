@@ -5,7 +5,6 @@ from datetime import timedelta
 from croniter import croniter
 import traceback
 
-
 import psycopg2
 from psycopg2 import sql
 from psycopg2 import extras
@@ -14,14 +13,15 @@ from lib.schedutils import Starter
 from lib.schedutils import Activity
 import lib.tablesync as tablesync
 
-from activities import reg
+from keys import KeyChain
 
 
 class PGStarter(Starter):
     _table_name = "Loader"
 
-    def __init__(self, pg_key):
-        super().__init__(pg_key)
+    def __init__(self, activity_list=None, report_list=None):
+        pg_key = KeyChain.PG_STARTER_KEY
+        super().__init__(activity_list, report_list)
         self._db_conn = psycopg2.connect(dbname=pg_key["db_name"], user=pg_key["user"],
                                          password=pg_key["pwd"], host=pg_key["host"], port=pg_key.get("port", None))
 
@@ -33,20 +33,6 @@ class PGStarter(Starter):
             _cron = rec[1]
             if croniter.is_valid(_cron):
                 self.external_tabs[_type]=_cron
-
-        self._registry = {}
-        reg.init_ldr(self)
-
-    def register(self, factory):
-        """ Activities register method for activities produce and schedule control
-        """
-        _act = factory(self)
-        _type = _act.get_type()
-        _cron = self.external_tabs.get(_type) or _act.get_crontab()
-        self._registry[_type] = {
-            'factory': factory,
-            'crontab': _cron,
-        }
 
     def to_plan(self, activity: Activity, due_date=None) -> int:
         query_params = {
@@ -257,7 +243,6 @@ class PGStarter(Starter):
 
 
 from unittest import TestCase
-from keys import KeyChain
 
 
 class PGStarterTest(TestCase):
@@ -265,16 +250,16 @@ class PGStarterTest(TestCase):
         def _fields(self) -> str:
             return 'result'
 
-        def get_crontab(self):
+        @classmethod
+        def get_crontab(cls):
             return None  # '0/5 * * * *'
 
         def run(self):
             self._ldr.run_result = self['result']
 
     def setUp(self) -> None:
-        self._starter = PGStarter(KeyChain.PG_STARTER_KEY)
+        self._starter = PGStarter([self.TestActivity])
         self._starter.clear_schedule()
-        self._starter.register(self.TestActivity)
 
     def test_to_plan(self):
         starter = self._starter

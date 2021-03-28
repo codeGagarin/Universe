@@ -1,6 +1,6 @@
 
 {% macro hdr_title(hdr, title) %}
-## deprecated
+
 <span class="text-success" title="{{ title }}">{{hdr}}</span>
 {% endmacro %}
 
@@ -36,15 +36,16 @@
 {% endmacro %}
 
 {%- macro detail_link(report, value, detail) -%}
-{% if value %}<a href="{{report.url_for('report', detail)}}">{{value}}</a>{% else %}{{value}}{% endif %}
+{% if value and detail %}<a href="{{report.url_for('report', detail)}}">{{value}}</a>{% else %}{{value}}{% endif %}
 {%- endmacro -%}
 
 {%- macro profile_stat(rpt, stat) -%}
-{% if rpt._P().query_list %}
+{#
+{% if rpt._p().query_list %}
 <details> <summary><small class="text-muted"> _EXT: {{rpt._EXT.seconds}}.{{rpt._EXT.microseconds}} sec</small></summary>
 <details><summary><small class="text-muted"> Query list </small></summary>
     <table class="table table-condensed">
-    {% for val in rpt._P().query_list%}
+    {% for val in rpt._p().query_list%}
         <tr>
             <td>{{ loop.index }}</td>
             <td>{{ val[0] }}</td>
@@ -54,9 +55,10 @@
     {% endfor%}
     </table>
 </details>
-<pre>{{rpt._P().pstats|escape}}</pre>
+<pre>{{rpt._p().pstats|escape}}</pre>
 </details>
 {% endif %}
+#}
 {%- endmacro -%}
 
 {%- macro mark_service(parent, service) -%}

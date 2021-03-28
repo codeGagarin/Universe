@@ -1,8 +1,10 @@
-simplejson
-flask
+simplejson~=3.17.2
+flask~=1.1.2
 psycopg2
-croniter
+croniter~=1.0.2
 python-telegram-bot
 requests==2.21.0
 python_dateutil==2.8.0
-premailer
+premailer~=3.7.0
+Jinja2~=2.11.2
+urllib3~=1.24.3

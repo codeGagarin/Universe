@@ -13,16 +13,12 @@ class EmailActivity(Activity):
     def run(self):
         html_body = self['body']
 
-        key = self['smtp'] if self['smtp'] else 'DEF'
-
-        acc_key = KeyChain.SMTP_KEY.get(key, None)
-        if not acc_key:
-            acc_key = KeyChain.SMTP_KEY['DEF']
+        acc_key = KeyChain.SMTP_KEY[self['smtp']]
 
         msg = MIMEMultipart('alternative')
         msg['Subject'] = self['subject']
         msg['From'] = acc_key['from'] if acc_key.get('from', None) else acc_key['user']
-        test_address = acc_key.get('test_address')
+        test_address = KeyChain.SMTP_KEY.get('DEBUG')
         if test_address == 'Nope':
             print("Successfully sent [Nope] email")
             return

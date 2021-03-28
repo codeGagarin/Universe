@@ -1,0 +1,62 @@
+% from 'macro.html' import mark_title, mark_date, mark_minutes, ticket_link
+% extends "base.html"
+
+% set title = "Детализация трудозатрат"
+
+{% block title %} {{ title }} {% endblock %}
+{% block head %} {{ super() }} {% endblock %}
+
+% block content
+
+
+<div class="row">
+    <div class="col-md-10">
+        <h1>{{ title }}</h1>
+        <small class="text-muted">
+            для задачи: #{{ticket_link(PR().TASK_ID)}}<br>
+            <b>Наименование: </b>{{ LC().TASK_NAME }}<br>
+            <b>Содержание: </b>{{ LC().TASK_DESCR or ''}}<br>
+        </small>
+
+        % set field_list = PR().FIELD_LIST or ()
+        % set Fields = rpt.Fields
+        <table class="table">
+            <thead style="font-weight: bold;">
+                <tr>
+                    <td class="text-muted">#</td>
+                    <td>{{ mark_title('Дата', 'Дата приложения трудозатрат')}}</td>
+                    % if Fields.EXECUTOR in field_list
+                        <td> Исполнитель </td>
+                    % endif
+                    <td>Комментарий</td>
+                    <td align="right" style="bold"><b>ЧЧ</b></td>
+                </tr>
+            </thead>
+            <tbody>
+                % for rec in DT().lines
+                <tr>
+                    <td align="right" class="text-muted">{{ loop.index }}.</td>
+                    <td nowrap>{{ mark_date(rec.date_exp) }}</td>
+                    % if Fields.EXECUTOR in field_list
+                        <td nowrap>{{ rec.executor }}</td>
+                    % endif
+                    <td> <p class="text-muted small">{{ rec.comment or '' }}</p></td>
+                    <td align="right">{{ mark_minutes(rec.minutes) }}</td>
+                </tr>
+                % endfor
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="2"></td>
+                    % if Fields.EXECUTOR in field_list
+                        <td></td>
+                    % endif
+                    <td colspan="1"></td>
+                    <td align="right"><b>{{ mark_minutes(DT().lines|sum(attribute='minutes')) }}</b></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+% endblock

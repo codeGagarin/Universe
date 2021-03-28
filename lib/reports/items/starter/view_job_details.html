@@ -1,7 +1,7 @@
-{% extends "base.html" %}
-{% import 'macro.html' as lib %}
-{% set caption = "Job %s: %s"|format(rpt._D().type, rpt._D().id) %}
+% extends "base.html"
+% from 'macro.html' import flash_section with context
 
+{% set caption = "Job %s: %s"|format(DT().job.type, DT().job.id) %}
 {% block title %}{{ caption }}{% endblock %}
 {% block head %}
     {{ super() }}
@@ -12,27 +12,26 @@
 {% block content %}
     <h1>{{ caption }}</h1>
 
-    {{ lib.flash_section() }}
+    {{ flash_section() }}
 
     <table class="table table-condensed">
         <tbody>
-        {% for field in rpt.field_list %}
+        {% for field_name in LC().FIELD_LIST %}
             <tr>
                 <th>
-                    {{ field }}
+                    {{ field_name }}
                 </th>
                 <td>
-                    {{ rpt._D()[field] or '' }}
+                    {{ DT().job[field_name] or '' }}
                 </td>
             </tr>
         {% endfor %}
-
         </tbody>
     </table>
     <form action="{{ rpt.action_url() }}" method="post">
-        <input type="hidden" name="job" value="{{ rpt._D().id }}">
+        <input type="hidden" name="job" value="{{ DT().id }}">
         <input type="hidden" name="idx" value="{{ rpt.idx }}">
-        <input type="hidden" name="back" value="{{ rpt._P().back }}">
+        <input type="hidden" name="back" value="{{ PR().back }}">
         <input type="submit" class="btn btn-default" name="action" value="Close">
         <input type="submit" class="btn btn-danger" name="action" value="Redo">
     </form>

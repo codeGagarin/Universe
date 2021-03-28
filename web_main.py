@@ -1,11 +1,12 @@
-from flask import Flask, request, render_template, url_for, jsonify, redirect, flash
+from flask import Flask, request, render_template, jsonify, redirect, flash, get_flashed_messages
 
 from keys import KeyChain
 from report import Report
 
-from lib.reports import manager
+from lib.reports.manager import Manager
+from lib.reports.report_reg import report_list
+from lib.reports.items.presets import PresetReport
 
-from lib.tablesync import TableSyncActivity
 import lib.telebots as bots
 
 app = Flask(__name__)
@@ -35,11 +36,13 @@ def report():
 @app.route('/report_v2/')
 def report_v2():
     rpt = manager.report_factory(request.args['idx'])
+    return report_v2_render(rpt) if rpt else render_template('index.html')
 
-    if not rpt:
-        return render_template('index.html')
 
-    return render_template(rpt.get_template(), rpt=rpt)
+def report_v2_render(rpt):
+    env = rpt.environment()
+    env['get_flashed_messages'] = get_flashed_messages
+    return render_template(rpt.get_template(), **env)
 
 
 @app.route('/action/', methods=['POST'])
@@ -50,31 +53,27 @@ def action():
         return redirect(rpt.report_url_for(target_idx))
 
 
-@app.route('/tablesync/')
-def tablesync():
-    # """ Table Sync Webhook """
-    # ldr = Loader(KeyChain)
-    # act = TableSyncActivity(ldr)
-    # act['index'] = request.args['idx']
-    # act.apply()
-    # return f'{str(act.due_date.strftime("%H:%M:%S"))}'
-    pass
-
-
 @app.route('/default/')
 def default():
-    result = "<h1>NG Defaults map</h1>"
-    for name, idx in manager.reports_map().items():
-        url = url_for('report_v2', **{'idx': idx})
-        result += f'<a href="{url}">{name}</a><br>'
+    def update_data(_params, _locals, _data):
+        _data['NG'] = {_name: _idx for _name, _idx in manager.preset_map().items()}
+        _data['OS'] = {_name: _params_dict for _name, _params_dict in Report.default_map(conn).items()}
 
-    conn = Report.get_connection(KeyChain.PG_KEY)
-    result += "<h1>Defaults map</h1>"
-    for name, params_dict in Report.default_map(conn).items():
-        url = url_for('report', **params_dict)
-        result += f'<a href="{url}">{name}</a><br>'
-    conn['cn'].commit()
-    return result
+    rpt = PresetReport(manager)
+    rpt.update_data = update_data
+
+    os_report = Report()
+
+    def os_url_for(idx):
+        return os_report.url_for('report', idx)
+
+    rpt.OS_REPORT_URL = os_url_for
+
+    conn = Report.get_connection(KeyChain.PG_KEY)  # Old school style
+    rpt.request_data()
+    conn['cn'].commit()  # Old school style
+
+    return report_v2_render(rpt)
 
 
 @app.route(f'/{path_root}/<token>', methods=['GET', 'POST'])
@@ -85,6 +84,15 @@ def bots_update(token):
         return jsonify({'statusCode': 400})
 
 
+Flask.jinja_options = {'extensions': ['jinja2.ext.autoescape', 'jinja2.ext.with_'], 'line_statement_prefix': '%'}
+
+
+@app.context_processor
+def inject_debug():
+    return dict(debug=app.debug)
+
+
 if __name__ == '__main__':
+    manager = Manager(report_list)
     bots.init(path_root)
-    app.run(debug=True)
+    app.run(debug=KeyChain.FLASK_DEBUG_MODE)

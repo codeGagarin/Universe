@@ -15,7 +15,8 @@ class VGPerf(Activity):
 
     DEFAULT_MAX_FILES = 300
 
-    def get_crontab(self):
+    @classmethod
+    def get_crontab(cls):
         return '*/30 * * * *'
 
     def run(self):

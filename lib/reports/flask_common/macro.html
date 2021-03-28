@@ -1,0 +1,55 @@
+% macro hdr_title(hdr, title)
+    <span class="text-success" title="{{ title }}">{{ hdr }}</span>
+% endmacro
+
+{% macro mark_title(title, hint) %}
+    <span class="text-success" title="{{ hint }}">{{ title }}</span>
+{% endmacro %}
+
+% macro flash_section()
+    % with messages = get_flashed_messages()
+        % if messages
+            % for message in messages
+                <div class="alert alert-success" role="alert">{{ message }}</div>
+            % endfor
+        % endif
+    % endwith
+% endmacro
+
+{% macro mark_date(date) -%}
+    {% if date %}
+        {% set my = {'Jan':'янв', 'Feb':'фев', 'Mar':'мар', 'Apr':'апр', 'May':'май', 'Jun':'июн',
+                    'Jul':'июл', 'Avg':'авг', 'Sep':'сен', 'Oct':'окт', 'Nov':'ноя', 'Dec':'дек'} %}
+        {% set mm = date.strftime('%h') -%}
+        {{ date.strftime('%d.{}.%Y').format((my[mm])|default(mm)) }}
+    {%- endif %}
+{%- endmacro %}
+
+{%- macro mark_minutes(minutes) -%}
+    {% if minutes -%}
+        {{ minutes // 60 }}:{{ '{:02}'.format(minutes % 60) }}
+    {%- else -%}
+        0:00
+    {%- endif %}
+{%- endmacro -%}
+
+% macro ticket_link(ticket_id)
+    <a href="https://prosto12.intraservice.ru/Task/View/{{ticket_id}}">{{ticket_id}}</a>
+% endmacro
+
+{%- macro detail_link(value, key, detail_kind=None) -%}
+    {%- if value and value!='0:00' and key -%}
+    <a href="{{ REPORT_URL(DL(key, detail_kind)) }}">{{ value }}</a>
+    {%- else -%}
+        {{ value }}
+    {%- endif -%}
+{%- endmacro -%}
+
+{%- macro mark_service(parent, service) -%}
+    {% if parent %}
+        {{ parent }}<br> <p class="text-muted small">{{ service }}</p>
+    {% else %}
+        {{ service }}
+    {% endif %}
+{%- endmacro -%}
+

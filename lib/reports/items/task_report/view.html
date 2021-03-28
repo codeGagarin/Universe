@@ -1,0 +1,187 @@
+% from 'macro.html' import mark_title, ticket_link, mark_date, mark_service, detail_link, mark_minutes with context
+% extends "base.html"
+
+% set title = "Отчет по задачам"
+
+% block title
+    {{ title }}
+% endblock
+
+% block head
+    {{ super() }}
+    <style type="text/css">
+        .important { color: #336699; }
+    </style>
+% endblock
+
+% block content
+    <h1>{{ title }}</h1>
+    <small class="text-muted"> которые:
+
+        % if PR().CREATED_FROM
+            созданны за период с {{ PR().CREATED_FROM }} по {{ PR().CREATED_TO }};
+        % endif
+
+        % if PR().CLOSED_IS_NULL is not none
+            % if PR().CLOSED_IS_NULL
+                еще не закрыты;
+            % else
+                уже закрыты;
+            % endif
+        % endif
+
+        % if PR().CLOSED_FROM
+            закрыты в период с {{ mark_date(PR().CLOSED_FROM) }} по {{ mark_date(PR().CLOSED_TO) }};
+        % endif
+
+        % if PR().PLANED_IS_NULL is not none
+            % if PR().PLANED_IS_NULL
+                еще не запланированы;
+            % else
+                имеют плановую дату окончания;
+            % endif
+        % endif
+
+        % if PR().NO_EXEC is not none
+            % if PR().NO_EXEC
+                не назначены исполнителю;
+            % else
+                только назначенные исполнителю;
+            % endif
+        % endif
+
+        % if PR().SERVICE_FILTER
+            созданны на сервисе: {{ LC().SERVICE_FILTER|join(', ') }};
+        % endif
+
+        % if PR().USER_FILTER
+            только с участием исполнителей: {{ LC().USER_FILTER|join(', ') }};
+        % endif
+
+    </small>
+
+% set Fields = rpt.Fields
+% set field_list = PR().FIELD_LIST
+
+<div class="row">
+    <div class="col-md-12">
+        <table class="table table-condensed">
+            <thead>
+                <tr>
+                    <th class="text-muted">#</th>
+                    <th>Задача</th>
+                    <th>Содержание / Исполнители</th>
+                    % if Fields.CREATED in field_list
+                        <th>Создана</th>
+                    % endif
+                    % if Fields.CREATOR in field_list
+                        <th>Инициатор</th>
+                    % endif
+                    % if Fields.CLOSED in field_list
+                        <th>Закрыта</th>
+                    % endif
+                    % if Fields.SERVICE in field_list
+                        <th>Сервис</th>
+                    % endif
+                    <th nowrap>{{ mark_title('ЧЧ', 'Все трудозатраты по заявке')}}</th>
+                    % if Fields.PLANED in field_list
+                        <th nowrap>{{ mark_title('План', 'Срок выполнения, план')}}</th>
+                    % endif
+                    % if Fields.EVALUATION in field_list
+                        <th>Оценка</th>
+                    % endif
+                </tr>
+            </thead>
+            <tbody>
+                {% set task_list = DT().task_list %}
+                {% set user_list = DT().user_list %}
+
+                % for task_rec in task_list
+                <tr>
+                    <td align="right" class="text-muted">{{loop.index}}.</td>
+                    <td nowrap>{{ ticket_link(task_rec.task_id) }}</td>
+
+                    <td>{{ task_rec.task_name|truncate(70) }}
+                        <p class="text-muted small">
+                            % if task_rec.task_descr
+                                {{(task_rec.task_descr)|truncate(200)}}
+                            % endif
+                            % for user_rec in user_list if (user_rec.task_id==task_rec.task_id) and (user_rec.minutes != none)
+                                <span class="label label-executor">
+                                    {{ user_rec.user_name }}:
+                                    {{ detail_link(mark_minutes(user_rec.minutes), user_rec.task_id~':'~user_rec.user_id, 'users') }}
+                                </span>
+                            % endfor
+                        </p>
+                    </td>
+
+                    % if Fields.CREATED in field_list
+                        <td nowrap>{{ mark_date(task_rec.created) }}</td>
+                    % endif
+
+                    % if Fields.CREATOR in field_list
+                        <td>{{ task_rec.creator }}</td>
+                    % endif
+
+                    % if Fields.CLOSED in field_list
+                        <td>{{ mark_date(task_rec.closed) }}</td>
+                    % endif
+
+                    % if Fields.SERVICE in field_list
+                        <td>{{ mark_service(task_rec.parent_service, task_rec.service) }}</td>
+                    % endif
+
+                    <td align="right">
+                        % if task_rec.minutes
+                            {{ detail_link(mark_minutes(task_rec.minutes), task_rec.task_id, 'tasks') }}
+                        % endif
+                    </td>
+
+                    % if Fields.PLANED in field_list
+                        <td nowrap>
+                        {% if task_rec.planed %}
+                            {{ mark_date(task_rec.planed) }}
+                        {% endif %}
+                        </td>
+                    % endif
+
+                    % if Fields.EVALUATION in field_list
+                        <td>{{ task_rec.evaluation or ''}}</td>
+                    % endif
+                </tr>
+                % endfor
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="3"></td>
+                    % if Fields.CREATED in field_list
+                        <td></td>
+                    % endif
+
+                    % if Fields.CREATOR in field_list
+                        <td></td>
+                    % endif
+
+                    % if Fields.CLOSED in field_list
+                        <td></td>
+                    % endif
+
+                    % if Fields.SERVICE in field_list
+                        <td></td>
+                    % endif
+
+                    <th align="right">{{ mark_minutes(task_list|sum(attribute='minutes')) }}</th>
+
+                    % if Fields.PLANED in field_list
+                        <td></td>
+                    % endif
+
+                    % if Fields.EVALUATION in field_list
+                        <td></td>
+                    % endif
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+% endblock

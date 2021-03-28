@@ -10,15 +10,23 @@ from activities.reg import *
 from report import *
 from connector import *
 
+from activities.reg import activity_list
+from lib.reports.report_reg import report_list
+from lib.mail import EmailActivity
+from lib.reports.items.service_board import ServiceBoardSender
+
+from lib.reports.items.service_board.report import ServiceBoardSender, ServiceBoard
+
 
 class TestActivities(TestCase):
     ldr: PGStarter
+
     @classmethod
     def setUpClass(cls):
-        cls.ldr = PGStarter(KeyChain.PG_STARTER_KEY)
+        cls.ldr = PGStarter(activity_list, report_list)
 
     def tearDown(self):
-        self.ldr.track_schedule()
+        pass  # self.ldr.track_schedule()
 
     def test_LoaderStateReporter2(self):
         rep = LoaderStateReporter2(self.ldr)
@@ -36,35 +44,34 @@ class TestActivities(TestCase):
         rep = IS404TaskCloser(self.ldr)
         rep.run()
 
-    def teest_EMail(self):
-        activity_id = 5489
-        params = self.ldr.id_to_params(activity_id)
-        activity = EmailActivity(self.ldr, params)
-        activity.run()
+    def test_report_sender(self):
+        ts = ServiceBoardSender(self.ldr)
+        ts.MAIL_LIST = (
+            ServiceBoardSender.MailerParams(
+                PRESET_NAME=ServiceBoard.PresetTypes.INTRATOOL,
+                SUBJECT='[{}]{}'.format(
+                    ServiceBoard._presets[ServiceBoard.PresetTypes.INTRATOOL].TAG,
+                    ServiceBoard._presets[ServiceBoard.PresetTypes.INTRATOOL].CAPTION,
+                ),
+                CC=[388],
+                TO=None,
+                SMTP='P12'
+            ),
+        )
+        ts.IMMEDIATE_SAND = True
+        # ts.run()
 
-    def test_EMail(self):
-        cn = HelpdeskReport.get_connection(KeyChain.PG_KEY)
-        li = ('it@bglogistic.ru',)
-        to = HelpdeskReport.users_to_email(cn, li)
-
-        mail = EmailActivity(self.ldr)
-        mail['to'] = to
-        mail.apply()
-
-
-
-    def test_SMTP(self):
-        params = {
-            'smtp': 'RRT',
-            'to': ('belov78@gmail.com',),
-            # 'cc': ('i.belov@prosto12.ru',),
-            'subject': 'smpt test',
-            'body': 'Body'
-        }
-        activity = EmailActivity(self.ldr, params)
-        activity.run()
+    def test_service_board_sender(self):
+        sbs = ServiceBoardSender(self.ldr)
+        sbs.run()
 
 
+    def test_email_activity(self):
+        em = EmailActivity(self.ldr)
+        em['smtp'] = 'P12'
+        em['to'] = ['belov78@gmail.com']
+        em['subject'] = 'Test'
+        # em.run()
 
 class TestReports(TestCase):
     def setUp(self):
@@ -74,7 +81,7 @@ class TestReports(TestCase):
         cn = report_cls.get_connection(KeyChain.PG_KEY)
         report = Report.factory(cn, {'idx': param_idx})
         report.request_data(cn)
-        template_ldr = jinja2.FileSystemLoader(searchpath="./templates")
+        template_ldr = jinja2.FileSystemLoader(searchpath="./flask_common")
         template_env = jinja2.Environment(loader=template_ldr)
         template_name = report.get_template()
         template = template_env.get_template(template_name)

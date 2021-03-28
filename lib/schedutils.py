@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from datetime import datetime
 
 import simplejson as json
+from lib.reports.manager import Manager
 
 
 class Starter:
@@ -17,17 +18,16 @@ class Starter:
         TODO = 'todo'
         WORKING = 'working'
 
-    def __init__(self, db_key):
+    def __init__(self, activity_list=None, report_list=None):
         """ Default constructor """
-        self._registry = {}
-
-    def register(self, factory):
-        """ Activities register method for activities produce and schedule control """
-        activity = factory(self)
-        self._registry[activity.get_type()] = {
-            'factory': factory,
-            'crontab': activity.get_crontab(),
+        self._registry = {} if not activity_list else {
+            activity.get_type(): {
+                'factory': activity,
+                'crontab': activity.get_crontab()
+            }
+            for activity in activity_list
         }
+        self.report_manager = Manager(report_list if report_list else [])
 
     def to_plan(self, activity, due_date=None) -> int:
         """ Should returns activity ID """
@@ -121,10 +121,12 @@ class Activity:
             for key, value in json_params.items():
                 self[key] = value
 
-    def get_type(self):
-        return self.__class__.__name__
+    @classmethod
+    def get_type(cls):
+        return cls.__name__
 
-    def get_crontab(self):
+    @classmethod
+    def get_crontab(cls):
         return None
 
     def apply(self, due_date=None):
@@ -183,4 +185,3 @@ class TestActivity(TestCase):
         b = Activity(self._starter)
         b._fields = lambda: 'name descr'
         b.update_params(dump)
-

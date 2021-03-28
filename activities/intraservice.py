@@ -80,7 +80,8 @@ class ISSync(PGActivity):
 
 class ISActualizer(PGActivity):
 
-    def get_crontab(self):
+    @classmethod
+    def get_crontab(cls):
         return '0 */1 * * *'
 
     def _add_job(self, from_date: datetime, to_date: datetime, activity_id: int):

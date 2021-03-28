@@ -74,7 +74,7 @@ class PGSession(StorageSession, PGMix):
             sql.Identifier('type'), sql.Literal(badge.data_type),
             _gen_where_for(self._filter)
         )
-        cursor = self._cursor(named=True)
+        cursor = self.cursor(named=True)
         cursor.execute(check_query)
         rows = cursor.fetchall()
 
@@ -105,10 +105,10 @@ class PGSession(StorageSession, PGMix):
             sql.Identifier('id'),
             sql.Literal(file_id)
         )
-        cursor = self._cursor()
+        cursor = self.cursor()
         cursor.execute(delete_query)
         cursor.execute(update_query)
-        self._commit()
+        self.commit()
 
     def _create_file(self, badge: FileBadge) -> int:
         # return new id for file badge
@@ -131,9 +131,9 @@ class PGSession(StorageSession, PGMix):
             sql.Identifier('id'),
         )
 
-        cursor = self._cursor(named=True)
+        cursor = self.cursor(named=True)
         cursor.execute(insert_query)
-        self._commit()
+        self.commit()
         file_id = cursor.fetchone().id
         self._badges[file_id] = badge  # time for local cache
 
@@ -154,7 +154,7 @@ class PGSession(StorageSession, PGMix):
         return file_id
 
     def update_file_status(self, file_id: int, is_ok: bool, fail_reason: str = None):
-        cursor = self._cursor(named=True)
+        cursor = self.cursor(named=True)
         badge = self._id_to_badge(file_id)
 
         if len(self._batch_params):
@@ -186,7 +186,7 @@ class PGSession(StorageSession, PGMix):
         )
 
         cursor.execute(update_query)
-        self._commit()
+        self.commit()
 
     def submit_line(self, file_id: int, line_data: dict):
         self._batch_params.append(list(line_data.values()))

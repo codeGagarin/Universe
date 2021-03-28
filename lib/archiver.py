@@ -67,7 +67,8 @@ class Archiver(Activity):
     def run(self):
         to_pack(self.TARGET_PATH, [gen_pack_name(datetime.today().year, datetime.today().month)])
 
-    def get_crontab(self):
+    @classmethod
+    def get_crontab(cls):
         return '45 15 * * *'
 
 

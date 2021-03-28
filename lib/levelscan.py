@@ -15,7 +15,8 @@ class LevelScan(Activity):
     def run(self):
         scan_levels(KeyChain.PG_LEVEL_KEY)
 
-    def get_crontab(self):
+    @classmethod
+    def get_crontab(cls):
         return '20 * * * *'
 
 
@@ -50,7 +51,8 @@ def scan_levels(pg_key):
 
 
 class FZLevelScan(Activity):
-    def get_crontab(self):
+    @classmethod
+    def get_crontab(cls):
         return '*/30 * * * *'
 
     def run(self):

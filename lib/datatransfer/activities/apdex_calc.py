@@ -46,7 +46,7 @@ class ApdexUtils(PGMix):
             pgs.Identifier(self.APDEX_FIELD),
         )
 
-        cursor = self._cursor(named=True)
+        cursor = self.cursor(named=True)
         cursor.execute(select_query)
         rows = cursor.fetchone()
 
@@ -64,7 +64,7 @@ class ApdexUtils(PGMix):
             pgs.Literal(period.begin), pgs.Literal(period.end),
             pgs.Literal(self.base1s)
         )
-        cursor = self._cursor(named=True)
+        cursor = self.cursor(named=True)
         cursor.execute(n_query)
         return cursor.fetchall()
 
@@ -79,9 +79,9 @@ class ApdexUtils(PGMix):
             pgs.Literal(self.base1s),
             pgs.Literal(operation),
         )
-        cursor = self._cursor()
+        cursor = self.cursor()
         cursor.execute(update_query)
-        self._commit()
+        self.commit()
 
     def calculate(self, max_hours):
         for _ in range(max_hours):

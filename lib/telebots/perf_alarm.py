@@ -19,7 +19,7 @@ def _start(update, context):
 def _button(update, context):
     query = update.callback_query
     query.answer()
-    query.edit_message_text(text="Selected option: {}".format(query.data))
+    query.edit_message_text(text="Selected option: {}".format(query.get_data))
 
 
 def _add_handler(disp):

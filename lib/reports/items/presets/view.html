@@ -1,0 +1,41 @@
+% extends "base.html"
+
+% set title = "Default presets"
+
+{% block title %} {{ title }} {% endblock %}
+{% block head %} {{ super() }} {% endblock %}
+
+% block content
+
+<h1>{{ title }}</h1>
+<small class="text-muted">
+
+</small>
+
+
+<div class="row">
+    <div class="col-md-8">
+        <h4>NextGen Reports</h4>
+        <ol>
+            % for name, idx in DT().NG.items()
+                <li>
+                    <a href="{{ REPORT_URL(idx) }}">
+                        {{ name }}
+                    </a>
+                </li>
+            % endfor
+        </ol>
+        <h4>OldSchool Reports</h4>
+        <ol>
+            % for name, idx in DT().OS.items()
+                <li>
+                    <a href="{{ rpt.OS_REPORT_URL(idx) }}">
+                        {{ name }}
+                    </a>
+                </li>
+            % endfor
+        </ol>
+    </div>
+</div>
+
+% endblock

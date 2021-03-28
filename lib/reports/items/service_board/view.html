@@ -1,0 +1,224 @@
+% from 'macro.html' import detail_link, mark_title, mark_minutes, mark_date with context
+{% extends "base.html" %}
+
+{% set tag = PR().TAG or PR().CAPTION %}
+{% set caption = PR().CAPTION or 'Service report' %}
+
+{% block title %}
+   [{{ tag }}] {{ caption }}
+{% endblock %}
+
+{% block head %}
+    {{ super() }}
+{% endblock %}
+
+{% set srv_table_class='col-md-8' %}
+
+
+{% block content %}
+
+<h1>[{{ tag }}] <small>{{ caption }}</small></h1>
+<small class="text-muted">Период отчета: с {{ mark_date(LC().FROM) }} по {{ mark_date(LC().TO) }}</small>
+
+{% set frm = rpt.FrameNames %}
+{% set nav_caption =
+    {
+        LC().LAST_QTR: 'Прошлый квартал',
+        LC().CURRENT_QTR: 'Текущий квартал',
+        LC().LAST_MONTH: 'Прошлый месяц',
+        LC().CURRENT_MONTH: 'Текущий месяц',
+        LC().LAST_WEEK: 'Прошлая неделя',
+        LC().CURRENT_WEEK: 'Текущая неделя',
+
+    }
+%}
+
+<nav aria-label="Page navigation">
+    <ul class="pagination">
+        % for frame, params in NV().items()
+            % set style = 'active' if PR().FRAME_NAME == frame else ''
+            <li class="{{ style }}">
+                <a href="{{ REPORT_URL(params) }}">{{ nav_caption[frame] }}</a>
+            </li>
+        % endfor
+    </ul>
+</nav>
+
+{% if DT().srv|length  %}
+<div class="row">
+    <div class="{{ srv_table_class }}">
+        <table class="table table-condensed">
+            <caption>Движения по сервисам</caption>
+            <thead>
+                <tr>
+                    <th colspan="2"></th>
+                    <th colspan="3">Запериод отчета</th>
+                    <th colspan="4">На текущий момент</th>
+                </tr>
+            </thead>
+
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Сервис</th>
+                    <th class="info">Принято</th>
+                    <th colspan="2" class="info">Закрыто</th>
+                    <th colspan="2">В работе</th>
+                    <th>Без движения</th>
+                    <th>Без плана</th>
+                </tr>
+            </thead>
+            <tbody>
+                % for r in DT().srv
+                <tr>
+                    <td align="right" class="text-muted">{{ loop.index }}.</td>
+                    <td>{% if r.pid %} -- {% endif %} {{ r.name }}</td>
+                    <td class="info" align="right">{{ detail_link(r.created, r.id, 'created') }}</td>
+                    <td class="info" align="right">{{ detail_link(r.closed, r.id, 'closed')}}</td>
+                    <td class="info" align="left">({{ detail_link(mark_minutes(r.closed_exp), r.id, 'closed_exp') }})</td>
+                    <td align="right">{{ detail_link(r.open, r.id, 'open') }}</td>
+                    <td align="left">({{ detail_link(mark_minutes(r.open_exp), r.id, 'open_exp') }})</td>
+                    <td align="right">{{ detail_link(r.no_exec, r.id, 'no_exec') }}</td>
+                    <td align="right">{{ detail_link(r.no_planed, r.id, 'no_planed') }}</td>
+                </tr>
+                % endfor
+            </tbody>
+
+        </table>
+    </div>
+</div>
+{% endif %}
+
+% macro task_util_pair(id, t_val, t_kind, u_val, u_kind)
+    {{ detail_link(t_val or 0, id, t_kind) }}<br>{{ detail_link(mark_minutes(u_val), id, u_kind) }}
+% endmacro
+
+% set ns = namespace(stile="")
+
+% macro switch(need=false, start = false)
+    % if need
+        % if ns.style == "info" or start
+            % set ns.style = ""
+        % else
+            % set ns.style = "info"
+        % endif
+    % endif
+    {{ ns.style }}
+% endmacro
+
+% set util_table_class='col-md-10' if LC().IS_WEEK else 'col-md-7'
+
+{% if DT().utl %}
+<div class="row">
+    <div class="{{ util_table_class }}">
+        <table class="table">
+            <caption>Задачи и оценки</caption>
+            <thead>
+                <tr>
+                    <td colspan="2"></td>
+                    % if LC().IS_WEEK
+                        <td colspan="8"><b>
+                            {{ mark_title("Данные за неделю", "ТТ / ЧЧ, где ТТ -- закрытые заявки, ЧЧ -- трудозатраты за период") }}
+                        </b></td>
+                        <td colspan="3"><b>
+                            {{ mark_title("Предыдущие недели", "ТТ / ЧЧ, где ТТ -- закрытые заявки, ЧЧ -- трудозатраты за период") }}
+                        </b></td>
+                    % elif LC().IS_MONTH
+                        <td></td>
+                        <td colspan="3"><b>
+                           {{ mark_title("Предыдущие месяцы", "ТТ / ЧЧ, где ТТ -- закрытые заявки, ЧЧ -- трудозатраты за период") }}
+                        </b></td>
+                    % elif LC().IS_QTR
+                        <td></td>
+                        <td colspan="3"><b>
+                           {{ mark_title("Предыдущие кварталы", "ТТ / ЧЧ, где ТТ -- закрытые заявки, ЧЧ -- трудозатраты за период") }}
+                        </b></td>
+                    % endif
+                    <td colspan="5"><b>{{ mark_title("Оценки", "5 -- очень хорошо, 1 -- совсем плохо") }}</b></td>
+                </tr>
+                <tr>
+                    <th class="{{ switch(true, true) }}">#</th>
+                    <th class="{{ switch(true) }}">{{ mark_title('ФИО', 'Исполнитель [T], где T - заявки, открытые на исполнителя') }}</th>
+                    % if LC().IS_WEEK
+                        <th class="{{ switch(true) }}">ПН</th>
+                        <th class="{{ switch() }}">ВТ</th>
+                        <th class="{{ switch() }}">СР</th>
+                        <th class="{{ switch() }}">ЧТ</th>
+                        <th class="{{ switch() }}">ПТ</th>
+                        <th class="{{ switch() }}">СБ</th>
+                        <th class="{{ switch() }}">ВС</th>
+                        <th class="{{ switch() }}">Итого</th>
+                        <th class="{{ switch(true) }}">{{ LC().UTL_PERIODS.wh1.id }}</th>
+                        <th class="{{ switch() }}">{{ LC().UTL_PERIODS.wh2.id }}</th>
+                        <th class="{{ switch() }}">{{ LC().UTL_PERIODS.wh3.id }}</th>
+                    % elif LC().IS_MONTH
+                        <th class="{{ switch(true) }}">Итого</th>
+                        <th class="{{ switch(true) }}">{{ LC().UTL_PERIODS.mh1.id }}</th>
+                        <th class="{{ switch() }}">{{ LC().UTL_PERIODS.mh2.id }}</th>
+                        <th class="{{ switch() }}">{{ LC().UTL_PERIODS.mh3.id }}</th>
+                    % elif LC().IS_QTR
+                        <th class="{{ switch(true) }}">Итого</th>
+                        <th class="{{ switch(true) }}">{{ LC().UTL_PERIODS.qh1.id }}</th>
+                        <th class="{{ switch() }}">{{ LC().UTL_PERIODS.qh2.id }}</th>
+                        <th class="{{ switch() }}">{{ LC().UTL_PERIODS.qh3.id }}</th>
+                    % endif
+                    <th class="{{ switch(true) }}">5</th>
+                    <th class="{{ switch() }}">4</th>
+                    <th class="{{ switch() }}">3</th>
+                    <th class="{{ switch() }}">2</th>
+                    <th class="{{ switch() }}">1</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in DT().utl %}
+                <tr>
+                    <td align="right" class="{{ switch(true, true) }}">{{ loop.index }}.</td>
+                    <td class="{{ switch(true) }}">{{ r.name }} [{{ detail_link(r.own_task or 0, r.id, 'own_task') }}]</td>
+                    % if LC().IS_WEEK
+                    <td align="right" class="{{ switch(true) }}">{{ task_util_pair(r.id, r.mot, 'mot', r.mou, 'mou') }}</td>
+                    <td align="right" class="{{ switch() }}">{{ task_util_pair(r.id, r.tut, 'tut', r.tuu, 'tuu') }}</td>
+                    <td align="right" class="{{ switch() }}">{{ task_util_pair(r.id, r.wet, 'wet', r.weu, 'weu') }}</td>
+                    <td align="right" class="{{ switch() }}">{{ task_util_pair(r.id, r.tht, 'tht', r.thu, 'thu') }}</td>
+                    <td align="right" class="{{ switch() }}">{{ task_util_pair(r.id, r.frt, 'frt', r.fru, 'fru') }}</td>
+                    <td align="right" class="{{ switch() }}">{{ task_util_pair(r.id, r.sat, 'sat', r.sau, 'sau') }}</td>
+                    <td align="right" class="{{ switch() }}">{{ task_util_pair(r.id, r.sut, 'sut', r.suu, 'suu') }}</td>
+                    <td align="right" class="{{ switch() }}">{{ task_util_pair(r.id, r.ttlt, 'ttlt', r.ttlu, 'ttlu') }}</td>
+                    <td align="right" class="{{ switch(true) }}">{{ task_util_pair(r.id, r.wh1t, 'wh1t', r.wh1u, 'wh1u') }}</td>
+                    <td align="right" class="{{ switch() }}">{{ task_util_pair(r.id, r.wh2t, 'wh2t', r.wh2u, 'wh2u') }}</td>
+                    <td align="right" class="{{ switch() }}">{{ task_util_pair(r.id, r.wh3t, 'wh3t', r.wh3u, 'wh3u') }}</td>
+                    % elif LC().IS_MONTH
+                    <td align="right" class="{{ switch(true) }}">{{ task_util_pair(r.id, r.ttlt, 'ttlt', r.ttlu, 'ttlu') }}</td>
+                    <td align="right" class="{{ switch(true) }}">{{ task_util_pair(r.id, r.mh1t, 'mh1t', r.mh1u, 'mh1u') }}</td>
+                    <td align="right" class="{{ switch() }}">{{ task_util_pair(r.id, r.mh2t, 'mh2t', r.mh2u, 'mh2u') }}</td>
+                    <td align="right" class="{{ switch() }}">{{ task_util_pair(r.id, r.mh3t, 'mh3t', r.mh3u, 'mh3u') }}</td>
+                    % elif LC().IS_QTR
+                    <td align="right" class="{{ switch(true) }}">{{ task_util_pair(r.id, r.ttlt, 'ttlt', r.ttlu, 'ttlu') }}</td>
+                    <td align="right" class="{{ switch(true) }}">{{ task_util_pair(r.id, r.qh1t, 'qh1t', r.qh1u, 'qh1u') }}</td>
+                    <td align="right" class="{{ switch() }}">{{ task_util_pair(r.id, r.qh2t, 'qh2t', r.qh2u, 'qh2u') }}</td>
+                    <td align="right" class="{{ switch() }}">{{ task_util_pair(r.id, r.qh3t, 'qh3t', r.qh3u, 'qh3u') }}</td>
+                    % endif
+
+                    <td class="{{ switch(true) }}">
+                        {{ detail_link(r.ev5 or 0, r.id, 'ev5') }}
+                    </td>
+                    <td class="{{ switch() }}">
+                        {{ detail_link(r.ev4 or 0, r.id, 'ev4') }}
+                    </td>
+                    <td class="{{ switch() }}">
+                        {{ detail_link(r.ev3 or 0, r.id, 'ev3') }}
+                    </td>
+                    <td class="{{ switch() }}">
+                        {{ detail_link(r.ev2 or 0, r.id, 'ev2') }}
+                    </td>
+                    <td class="{{ switch() }}">
+                        {{ detail_link(r.ev1 or 0, r.id, 'ev1') }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% endblock %}

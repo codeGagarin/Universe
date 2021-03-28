@@ -1,4 +1,5 @@
 from datetime import datetime, date, timedelta
+from dataclasses import dataclass
 
 
 def _dt_min(d: date) -> datetime:
@@ -21,6 +22,10 @@ def get_period(now: date, period_type: str, delta: int, with_time=False) -> dict
         'to' -- дата окончания
         'id' -- идентификатор периода 1945 (45 неделя 19-го года)
         'type' -- тип периода (см: period_type)
+
+    >>> get_period(date(2021, 3, 9), 'qtr', -1)
+    {'from': datetime.date(2020, 10, 1), 'to': datetime.date(2020, 12, 31), 'type': 'qtr', 'id': '4q20'}
+
     """
     result = {'from': None, 'to': None, 'type': period_type, 'id': None}
     if period_type is 'month':
@@ -50,7 +55,37 @@ def get_period(now: date, period_type: str, delta: int, with_time=False) -> dict
         result['from'] = now + timedelta(days=delta)
         result['to'] = result['from']
         result['id'] = result['from'].strftime('%m%d')
+    elif period_type is 'qtr':
+        qtr_num = (now.month-1)//3 + 1
+        qtr_first_month = (qtr_num-1)*3+1
+        result['from'] = get_period(date(now.year, qtr_first_month, 1), 'month', delta*3 )['from']
+        result['to'] = get_period(result['from'], 'month', 2)['to']
+        new_qtr_num = (result['from'].month - 1) // 3 + 1
+        result['id'] = result['to'].strftime(f'{new_qtr_num}q%y')
     if with_time:
         result['from'] = _dt_min(result['from'])
         result['to'] = _dt_max(result['to'])
     return result
+
+
+@dataclass
+class Period:
+    @dataclass
+    class Type:
+        DAY = 'day'
+        WEEK = 'week'
+        MONTH = 'month'
+        QTR = 'qtr'
+
+    begin: datetime
+    end: datetime
+    id: str
+    period_type: Type
+
+    def __init__(self, now: date, period_type: Type, delta: int = 0):
+        period_data = get_period(now, str(period_type), delta)
+        self.begin = period_data['from']
+        self.end = period_data['to']
+        self.id = period_data['id']
+        self.period_type = period_type
+

@@ -17,6 +17,8 @@
     <noscript><div><img src="https://mc.yandex.ru/watch/62855878" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
     <!-- /Yandex.Metrika counter -->
 
+    <script src="https://cdn.rawgit.com/google/code-prettify/master/loader/run_prettify.js"></script>
+
     {% block head %}
     {% if not eml %}
         <link rel="stylesheet" href= {{ rpt.url_for_static("css/bootstrap.css") }} crossorigin="anonymous">
@@ -27,7 +29,9 @@
     {% endblock %}
 </head>
 <body>
-    <div class="container">{% block content %}{% endblock %}</div>
+    <div class="container">{% block content %}{% endblock %}
+    </div>
+
     <div id="footer" align="center">
         {% block footer %} <br>
         <p class="text-muted">orbita40.space</p>

@@ -617,7 +617,9 @@ class PGAdapter(ABaseAdapter):
 
 class DutyActivity(Activity):
     """ CLASS for some random duty actions """
-    def get_crontab(self):
+
+    @classmethod
+    def get_crontab(cls):
         return '' #  '*/5 * * * *'
 
     def run(self):

@@ -1,0 +1,61 @@
+% from 'macro.html' import mark_title
+% extends "base.html"
+
+% set title = "Report title specify here"
+
+{% block title %} {{ title }} {% endblock %}
+{% block head %} {{ super() }} {% endblock %}
+
+% block content
+
+<div class="row">
+    <div class="col-md-8">
+
+        <h1>{{ title }}</h1>
+        <small class="text-muted">
+            Report filter specify here
+        </small>
+
+        % set field_list = PR().FIELD_LIST
+        % set Fields = rpt.Fields
+
+        <table class="table">
+            <thead>
+                <tr>
+                    <th class="text-muted">#</th>
+                    <th>Caption</th>
+                    <th nowrap>Date field</th>
+                    <th>Bool field</th>
+                    % if Fields.USELESS_FIELD in field_list
+                        <th> Useless field </th>
+                    % endif
+                    <th>{{ mark_title('Measure', 'Measure popup hint detail')}}</th>
+                </tr>
+            </thead>
+            <tbody>
+                % for rec in DT().lines
+                <tr>
+                    <td align="right" class="text-muted">{{ loop.index }}.</td>
+                    <td>{{ rec.caption }}</td>
+                    <td>{{ rec.date_field }}</td>
+                    <td>{{ rec.bool_field }}</td>
+                    % if Fields.USELESS_FIELD in field_list
+                        <td>{{ rec.useless }}</td>
+                    % endif
+                    <td align="right">{{ (rec.measure)|round(2) }}</td>
+                </tr>
+                % endfor
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="4"></td>
+                    % if Fields.USELESS_FIELD in field_list
+                        <td></td>
+                    % endif
+                    <td align="right"><b>{{ (DT().lines|sum(attribute='measure'))|round(1) }}</b></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+% endblock

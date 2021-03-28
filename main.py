@@ -1,5 +1,8 @@
 from lib.pg_starter import PGStarter
 from keys import KeyChain
+from lib.reports.report_reg import report_list
+from activities.reg import activity_list
 
-starter = PGStarter(KeyChain.PG_STARTER_KEY)
+
+starter = PGStarter(activity_list=activity_list,  report_list=report_list)
 starter.track_schedule()

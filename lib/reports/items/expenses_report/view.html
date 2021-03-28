@@ -1,0 +1,116 @@
+% extends "base.html"
+
+% from 'macro.html' import mark_title, mark_date, mark_service, mark_minutes, detail_link, ticket_link with context
+
+% set title = "Отчет по трудозатратам"
+% block title
+    {{ title }}
+% endblock
+
+{% block content %}
+    <h1>{{ title }}</h1>
+    <small class="text-muted">
+        % if PR().DATE_EXP_FROM
+            учтенные за период с {{ mark_date(PR().DATE_EXP_FROM) }} по {{ mark_date(PR().DATE_EXP_TO) }};
+        % endif
+        % if PR().CREATED_FROM
+            для задач, созданных за период с {{ mark_date(PR().CREATED_FROM) }} по {{ mark_date(PR().CREATED_TO) }};
+        % endif
+        % if PR().CLOSED_IS_NULL is not none
+            % if PR().CLOSED_IS_NULL
+                для незакрытых задач;
+            % else
+                для закрытых задач;
+            % endif
+        % endif
+        % if PR().CLOSED_FROM
+            для задач, закрырытых в период с {{ mark_date(PR().CLOSED_FROM) }} по {{ mark_date(PR().CLOSED_TO) }};
+        % endif
+        % if PR().SERVICE_FILTER
+            принадлежащих сервисам: {{ LC().SERVICE_FILTER|join(', ') }};
+        % endif
+        % if PR().USER_FILTER
+            только для исполнителей: {{ LC().USER_FILTER|join(', ') }};
+        % endif
+    </small>
+
+% set field_list = PR().FIELD_LIST
+% set Fields = rpt.Fields
+
+<table class="table">
+    <thead>
+        <tr>
+            <th class="text-muted">#</th>
+            <th>Задача</th>
+            <th>Содержание</th>
+            % if Fields.CREATOR in field_list
+                <th>Инициатор</th>
+            % endif
+            % if Fields.SERVICE in field_list
+                <th>Сервис</th>
+            % endif
+            % if Fields.CREATED in field_list
+                <th>Создана</th>
+            % endif
+            % if Fields.CLOSED in field_list
+                <th>Закрыта</th>
+            % endif
+            % if Fields.EXECUTOR in field_list
+                <th>Исполнитель</th>
+            % endif
+            <th>{{ mark_title('ЧЧ', 'Трудозатраты исполнителя по задаче')}}</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for rec in DT().lines %}
+        <tr>
+            <td align="right" class="text-muted">{{ loop.index }}.</td>
+            <td nowrap>
+                {{ ticket_link(rec.task_id) }}
+            </td>
+            <td>{{ rec.task_name|truncate(70) }}
+                <p class="text-muted small">{% if rec.task_descr %}{{(rec.task_descr)|truncate(200)}}{% endif %}</p>
+            </td>
+            % if Fields.CREATOR in field_list
+                <td>{{ rec.creator }}</td>
+            % endif
+            % if Fields.SERVICE in field_list
+                <td>{{ mark_service(rec.parent_service, rec.service) }}</td>
+            % endif
+            % if Fields.CREATED in field_list
+                <td nowrap>{{ mark_date(rec.created) }}</td>
+            % endif
+            % if Fields.CLOSED in field_list
+                <td nowrap>{{ mark_date(rec.closed) }}</td>
+            % endif
+            % if Fields.EXECUTOR in field_list
+                <td nowrap>{{ rec.executor }}</td>
+            % endif
+            <td align="right">{{ detail_link(mark_minutes(rec.minutes), rec.details_key) }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+    <tfoot>
+        <tr>
+            <th colspan="3"></th>
+            % if Fields.CREATOR in field_list
+            <th></th>
+            % endif
+            % if Fields.SERVICE in field_list
+            <th></th>
+            % endif
+            % if Fields.CREATED in field_list
+            <th></th>
+            % endif
+            % if Fields.CLOSED in field_list
+            <th></th>
+            % endif
+            % if Fields.EXECUTOR in field_list
+            <th></th>
+            % endif
+
+            <th align="right">{{ mark_minutes(DT().lines|sum(attribute='minutes')) }}</th>
+        </tr>
+    </tfoot>
+</table>
+{% endblock %}
