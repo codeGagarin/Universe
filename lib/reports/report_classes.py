@@ -19,8 +19,9 @@ class Report:
     ABSOLUTE_WEB_PATH = ''
 
     @classmethod
-    def anchor_path(cls):
+    def anchor_path(cls) -> str:
         assert False, f'Must override in class {cls.__name__}  [ @classmethod def file(cls): return __file__ ]'
+        pass
 
     @dataclass
     class Params:
@@ -200,7 +201,7 @@ class Report:
         target_path = pathlib.Path(self.anchor_path()).parent.joinpath(query_path).resolve()
         current_folder = target_path.parent
         file_name = target_path.name
-
+        print('BUG_PATH:{}'.format(current_folder))
         env = Environment(loader=FileSystemLoader(current_folder), line_statement_prefix='%')
         template = env.get_template(file_name)
         params = asdict(params) if is_dataclass(params) else params
