@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, jsonify, redirect, flash, get_flashed_messages
+from flask import Flask, request, render_template, jsonify, redirect, flash, get_flashed_messages, g
 
 from keys import KeyChain
 from report import Report
@@ -12,6 +12,13 @@ import lib.telebots as bots
 app = Flask(__name__)
 app.secret_key = KeyChain.FLASK_SECRET_KEY
 path_root = 'bot_root'
+
+
+def get_report_manager():
+    manager = getattr(g, '_manager', None)
+    if manager is None:
+        manager = g._manager = Manager(report_list)
+    return manager
 
 
 @app.route('/')
@@ -35,7 +42,7 @@ def report():
 
 @app.route('/report_v2/')
 def report_v2():
-    rpt = manager.report_factory(request.args['idx'])
+    rpt = get_report_manager().report_factory(request.args['idx'])
     return report_v2_render(rpt) if rpt else render_template('index.html')
 
 
@@ -48,7 +55,7 @@ def report_v2_render(rpt):
 @app.route('/action/', methods=['POST'])
 def action():
     if request.method == 'POST':
-        rpt = manager.report_factory(request.form['idx'])
+        rpt = get_report_manager().report_factory(request.form['idx'])
         target_idx = rpt.do_action(request.form['action'], request.form, flash)
         return redirect(rpt.report_url_for(target_idx))
 
@@ -56,10 +63,10 @@ def action():
 @app.route('/default/')
 def default():
     def update_data(_params, _locals, _data):
-        _data['NG'] = {_name: _idx for _name, _idx in manager.preset_map().items()}
+        _data['NG'] = {_name: _idx for _name, _idx in get_report_manager().preset_map().items()}
         _data['OS'] = {_name: _params_dict for _name, _params_dict in Report.default_map(conn).items()}
 
-    rpt = PresetReport(manager)
+    rpt = PresetReport(get_report_manager())
     rpt.update_data = update_data
 
     os_report = Report()
@@ -93,6 +100,5 @@ def inject_debug():
 
 
 if __name__ == '__main__':
-    manager = Manager(report_list)
     bots.init(path_root)
     app.run(debug=KeyChain.FLASK_DEBUG_MODE)
