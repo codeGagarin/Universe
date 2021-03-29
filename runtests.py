@@ -13,9 +13,28 @@ from connector import *
 from activities.reg import activity_list
 from lib.reports.report_reg import report_list
 from lib.mail import EmailActivity
-from lib.reports.items.service_board import ServiceBoardSender
 
 from lib.reports.items.service_board.report import ServiceBoardSender, ServiceBoard
+from lib.pg_utils import PGMix
+from lib.intraservice.closed_fix import ClosedFix
+
+
+class TestPGMix(TestCase):
+
+    def test_init_key(self):
+        a = PGMix(KeyChain.PG_STARTER_KEY)
+        with a.cursor() as c:
+            c.execute('select count(*) from "Loader"')
+            self.assertEqual(c.rowcount, 1)
+
+    def test_default_key(self):
+        class BarMix(PGMix):
+            PG_KEY = KeyChain.PG_STARTER_KEY
+
+        a = BarMix()
+        with a.cursor() as c:
+            c.execute('select count(*) from "Loader"')
+            self.assertEqual(c.rowcount, 1)
 
 
 class TestActivities(TestCase):
@@ -25,9 +44,6 @@ class TestActivities(TestCase):
     def setUpClass(cls):
         cls.ldr = PGStarter(activity_list, report_list)
 
-    def tearDown(self):
-        pass  # self.ldr.track_schedule()
-
     def test_LoaderStateReporter2(self):
         rep = LoaderStateReporter2(self.ldr)
         rep.run()
@@ -36,42 +52,35 @@ class TestActivities(TestCase):
         rep = HelpdeskWeekly(self.ldr)
         rep.run()
 
+    def test_ISSync(self):
+        sy = ISSync(self.ldr)
+        sy['from'] = datetime(2020, 10, 26, 13, 00)
+        sy['to'] = sy['from'] + timedelta(minutes=10)
+        sy.run()
+
     def test_ISActualizer(self):
-        rep = ISActualizer(self.ldr)
-        rep.run()
+        act = ISActualizer(self.ldr)
+        act.run()
 
     def test_IS404TaskCloser(self):
         rep = IS404TaskCloser(self.ldr)
         rep.run()
 
-    def test_report_sender(self):
-        ts = ServiceBoardSender(self.ldr)
-        ts.MAIL_LIST = (
-            ServiceBoardSender.MailerParams(
-                PRESET_NAME=ServiceBoard.PresetTypes.INTRATOOL,
-                SUBJECT='[{}]{}'.format(
-                    ServiceBoard._presets[ServiceBoard.PresetTypes.INTRATOOL].TAG,
-                    ServiceBoard._presets[ServiceBoard.PresetTypes.INTRATOOL].CAPTION,
-                ),
-                CC=[388],
-                TO=None,
-                SMTP='P12'
-            ),
-        )
-        ts.IMMEDIATE_SAND = True
-        # ts.run()
+    def test_ClosedFix(self):
+        cf = ClosedFix(self.ldr)
+        cf.run()
 
-    def test_service_board_sender(self):
+    def test_ServiceBoardSender(self):
         sbs = ServiceBoardSender(self.ldr)
         sbs.run()
-
 
     def test_email_activity(self):
         em = EmailActivity(self.ldr)
         em['smtp'] = 'P12'
         em['to'] = ['belov78@gmail.com']
         em['subject'] = 'Test'
-        # em.run()
+        em.run()
+
 
 class TestReports(TestCase):
     def setUp(self):

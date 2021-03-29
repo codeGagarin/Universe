@@ -294,13 +294,4 @@ class PGStarterTest(TestCase):
         print(self._starter._registry)
 
 
-from activities.intraservice import ISActualizer
-
-class ISActualizerTest(TestCase):
-    def test_run(self):
-        a = ISActualizer(PGStarter(KeyChain.PG_STARTER_KEY))
-        a.run()
-
-
-
 

@@ -7,9 +7,7 @@ from connector import PGConnector, ISConnector, Task
 
 
 class ClosedFix(Activity, PGMix):
-    def __init__(self, ldr, params=None):
-        Activity.__init__(self, ldr, params)
-        PGMix.__init__(self, KeyChain.PG_KOMTET_KEY)
+    PG_KEY = KeyChain.PG_IS_SYNC_KEY
 
     @classmethod
     def get_crontab(cls):
@@ -17,7 +15,7 @@ class ClosedFix(Activity, PGMix):
 
     def run(self):
         is_connector = ISConnector(KeyChain.IS_KEY)
-        pg_connector = PGConnector(KeyChain.PG_KOMTET_KEY)
+        pg_connector = PGConnector(KeyChain.PG_IS_SYNC_KEY)
         now = datetime.now()
 
         # mark new open task
@@ -70,46 +68,3 @@ class ClosedFix(Activity, PGMix):
                     pg_connector.update(task)
 
         self.commit()
-
-
-from unittest import TestCase
-from lib.schedutils import NullStarter
-
-
-class TestClosedFix(TestCase):
-    def setUp(self) -> None:
-        self.a = ClosedFix(NullStarter())
-        self.isc = ISConnector(KeyChain.IS_KEY)
-        self.pgc = PGConnector(KeyChain.PG_KOMTET_KEY)
-
-    def test_run(self):
-        self.a.run()
-
-    def test_pack(self):
-        pg_con = self.pgc
-        is_con = self.isc
-        b = e = datetime(2020, 7, 2)
-        update_pack = is_con.get_update_pack(b, e)
-        for task in update_pack['Tasks'].values():
-            pg_con.delete_task_actuals(task)
-            pg_con.delete_task_executors(task)
-            pg_con.update(task)
-
-        for user in update_pack['Users'].values():
-            pg_con.update(user)
-
-        for actual in update_pack['Actuals']:
-            pg_con.update(actual)
-
-        for service in update_pack['Services'].values():
-            pg_con.update(service)
-
-        for executor in update_pack['Executors']:
-            pg_con.update(executor)
-
-        print(f"Ts:{len(update_pack['Tasks'])}, "
-              f"Us:{len(update_pack['Users'])}, "
-              f"Ac:{len(update_pack['Actuals'])}, "
-              f"Sr:{len(update_pack['Services'])}, "
-              f"Ex:{len(update_pack['Executors'])}.")
-

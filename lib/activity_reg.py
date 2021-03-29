@@ -8,6 +8,7 @@ from .datatransfer import VGPerf, ApdexCalc
 from .intraservice import ClosedFix
 from .archiver import Archiver
 from .reports.report_reg import activity_list as report_activity_list
+from .intraservice.sync_lib import ISSync, ISActualizer
 
 activity_list = [
     EmailActivity,
@@ -21,6 +22,8 @@ activity_list = [
     ApdexCalc,
     ClosedFix,
     Archiver,
+    ISActualizer,
+    ISSync,
 ]
 
 activity_list.extend(report_activity_list)

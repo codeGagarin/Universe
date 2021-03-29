@@ -15,29 +15,39 @@ __all__ = \
 
 
 class PGMix:
-    def connect(self) -> psycopg2.extensions.connection:
+    PG_KEY = None
+    """ 
+        Field using for non __init__ db key initialization 
+        
+        class SomeClass(PGMin):
+            PG_KEY = KeyChain.BLA_BLA # Second priority, optional   
+    
+        def __init__(self):
+            PGMix.__init__(self, KeyChain.BLA_BLA)  # First priority, optional
+    
+    """
+
+    def __connect(self) -> psycopg2.extensions.connection:
         return psycopg2.connect(
-            dbname=self._pg_key["db_name"],
-            user=self._pg_key["user"],
-            password=self._pg_key["pwd"],
-            host=self._pg_key["host"],
-            port=self._pg_key.get('port')
+            dbname=self.PG_KEY["db_name"],
+            user=self.PG_KEY["user"],
+            password=self.PG_KEY["pwd"],
+            host=self.PG_KEY["host"],
+            port=self.PG_KEY.get('port')
         )
 
-    def __init__(self, key):
-        self._pg_key = key
-        self._pg_conn = self.connect()
-        self._extras = psycopg2.extras
-        self._extensions = psycopg2.extensions
+    def __init__(self, pg_key=None):
+        assert pg_key or self.PG_KEY, 'PG_KEY is not defined. Pls, use __init__ or PG_KEY usage'
+        if pg_key:
+            self.PG_KEY = pg_key
+        self._conn = self.__connect()
 
     def cursor(self, named=True) -> psycopg2.extensions.cursor:
-        if self._pg_conn.closed:
-            self._pg_conn = self.connect()
-        return self._pg_conn.cursor(
+        if not hasattr(self, '_conn') or self._conn.closed:
+            self._conn = self.__connect()
+        return self._conn.cursor(
             cursor_factory=psycopg2.extras.NamedTupleCursor if named else None)
 
     def commit(self):
-        self._pg_conn.commit()
+        self._conn.commit()
 
-    # def _connection(self) -> psycopg2.extensions.connection:
-    #     return self._pg_conn
