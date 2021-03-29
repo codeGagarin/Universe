@@ -78,8 +78,8 @@
                     {{ row.duration }}
                 {% endif %}
             </td>
-            <td title="{{row.params}}"><small>{{ (row.params if row.params else "")|truncate(40, True)|escape() }}</small></td>
-            <td title="{{row.result}}"><small>{{ (row.result if row.result else "")|truncate(120, True)|escape() }}</small></td>
+            <td><small>{{ (row.params if row.params else "")|truncate(40, True)|escape() }}</small></td>
+            <td><small>{{ (row.result if row.result else "")|truncate(120, True)|escape() }}</small></td>
             </tr>
         {% endfor %}
     </tbody>
