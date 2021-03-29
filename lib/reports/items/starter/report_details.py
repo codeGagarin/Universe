@@ -10,7 +10,7 @@ class JobDetails(PGReport):
     def anchor_path(cls):
         return __file__
 
-    _DEFAULT_VIEW = 'view_job_details'
+    _DEFAULT_VIEW = 'view_job'
 
     @dataclass
     class Params:
