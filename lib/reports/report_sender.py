@@ -22,7 +22,7 @@ class ReportSender(Activity, PGMix):
         SUBJECT: str or None
 
     REPORT_TYPE = None
-    IMMEDIATE_SAND = True
+    IMMEDIATE_SEND = False
     MAIL_LIST = (
         # MailerParams(
         #     PRESET_NAME=report.PresetTypes.STATION,
@@ -43,7 +43,7 @@ class ReportSender(Activity, PGMix):
             email['to'] = report.validate_email_list(mail_params.TO)
             email['cc'] = report.validate_email_list(mail_params.CC)
             email['body'] = report_to_html(report)
-            if self.IMMEDIATE_SAND:
+            if self.IMMEDIATE_SEND:
                 email.run()
             else:
                 email.apply()
