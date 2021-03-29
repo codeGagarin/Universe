@@ -6,17 +6,18 @@ from flask import url_for
 
 from keys import KeyChain
 from lib.pg_starter import PGStarter
-from activities.reg import *
 from report import *
 from connector import *
 
-from activities.reg import activity_list
+from lib.activity_reg import activity_list
 from lib.reports.report_reg import report_list
 from lib.mail import EmailActivity
 
 from lib.reports.items.service_board.report import ServiceBoardSender, ServiceBoard
 from lib.pg_utils import PGMix
 from lib.intraservice.closed_fix import ClosedFix
+from lib.intraservice.sync_lib import ISSync, ISActualizer
+
 
 
 class TestPGMix(TestCase):
@@ -44,14 +45,6 @@ class TestActivities(TestCase):
     def setUpClass(cls):
         cls.ldr = PGStarter(activity_list, report_list)
 
-    def test_LoaderStateReporter2(self):
-        rep = LoaderStateReporter2(self.ldr)
-        rep.run()
-
-    def test_HelpdeskWeekly(self):
-        rep = HelpdeskWeekly(self.ldr)
-        rep.run()
-
     def test_ISSync(self):
         sy = ISSync(self.ldr)
         sy['from'] = datetime(2020, 10, 26, 13, 00)
@@ -61,10 +54,6 @@ class TestActivities(TestCase):
     def test_ISActualizer(self):
         act = ISActualizer(self.ldr)
         act.run()
-
-    def test_IS404TaskCloser(self):
-        rep = IS404TaskCloser(self.ldr)
-        rep.run()
 
     def test_ClosedFix(self):
         cf = ClosedFix(self.ldr)
