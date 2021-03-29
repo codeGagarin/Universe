@@ -7,7 +7,6 @@ import premailer
 from lib.schedutils import Activity
 from lib.pg_utils import PGMix
 from lib.mail import EmailActivity
-from .manager import Manager
 from static import WEB_STATIC_PATH
 from keys import KeyChain
 
@@ -16,7 +15,7 @@ class ReportSender(Activity, PGMix):
     @dataclass
     class MailerParams:
         PRESET_NAME: str
-        SMTP: str or None  # name of KeyChain.SMTP_KEY dict, 'DEF' in case None value
+        SMTP: str or None  # name of KeyChain.SMTP_KEY dict
         TO: list or None
         CC: list or None
         SUBJECT: str or None
