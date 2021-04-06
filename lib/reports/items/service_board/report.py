@@ -166,7 +166,7 @@ class ServiceBoard(ISReport):
             ('mo tu we th fr sa su', Period.Type.DAY, True),
             ('wh1 wh2 wh3', Period.Type.WEEK, False),  # week history
             ('mh1 mh2 mh3', Period.Type.MONTH, False),  # month history
-            ('qh1 qh2 qh3', Period.Type.MONTH, False),  # qtr history
+            ('qh1 qh2 qh3', Period.Type.QTR, False),  # qtr history
         )
 
         _locals.UTL_PERIODS = {'ttl': report_period}
