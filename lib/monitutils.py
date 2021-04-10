@@ -43,7 +43,7 @@ class Monitoring(Activity, PGMix):
     def check_komtet_503_error(self):
         url = 'https://orbita40.space/'
         s = requests.session()
-        r = s.get(url, headers={'User-Agent': 'Monitoring Activity'})
+        r = s.get(url, verify=False, headers={'User-Agent': 'Monitoring Activity'})
 
         print(f'Status code:{r.status_code}')
         if r.status_code in (503, 502, 501, 500):
@@ -55,17 +55,3 @@ class Monitoring(Activity, PGMix):
     def run(self):
         self.check_income_counter_data('vgunf')
         self.check_komtet_503_error()
-
-
-from unittest import TestCase
-
-
-class MonitoringTest(TestCase):
-    def setUp(self) -> None:
-        self.activity = Monitoring(NullStarter())
-
-    def test_activity(self):
-        self.activity.run()
-
-    def test_check_komtet_503_error(self):
-        self.activity.check_komtet_503_error()
