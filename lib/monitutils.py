@@ -4,6 +4,8 @@ from datetime import datetime, timedelta
 import subprocess
 
 import requests
+import urllib3
+
 
 from keys import KeyChain
 from lib.schedutils import Activity, NullStarter
@@ -43,6 +45,8 @@ class Monitoring(Activity, PGMix):
     def check_komtet_503_error(self):
         url = 'https://orbita40.space/'
         s = requests.session()
+        urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
         r = s.get(url, verify=False, headers={'User-Agent': 'Monitoring Activity'})
 
         print(f'Status code:{r.status_code}')
