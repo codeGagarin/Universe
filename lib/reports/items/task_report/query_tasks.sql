@@ -85,3 +85,5 @@ from "Tasks" t
             and t."Deadline" is not NULL
         % endif
     % endif
+
+    order by t."Id" desc
