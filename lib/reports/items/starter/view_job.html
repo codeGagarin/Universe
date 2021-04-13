@@ -26,15 +26,18 @@
                 </th>
 
                 <td>
-                % set style = style_map[field_name]
-                % if style == 'json'
-                    <code>{{ DT().job[field_name]|e or '' }}</code>
-                % elif style == 'raw'
-                    <pre>{{ DT().job[field_name] or '' }}</pre>
-                % else
-                    {{ DT().job[field_name] or '' }}
-                % endif
+                    % set style = style_map[field_name]
+                    % set value =  DT().job[field_name]
 
+                    % if value
+                        % if style == 'json'
+                            <code>{{ value|e }}</code>
+                        % elif style == 'raw'
+                            <pre>{{ value }}</pre>
+                        % else
+                            {{ value }}
+                        % endif
+                    % endif
                 </td>
             </tr>
         {% endfor %}
