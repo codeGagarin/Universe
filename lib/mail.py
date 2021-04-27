@@ -38,9 +38,15 @@ class EmailActivity(Activity):
         msg.attach(body)
 
         try:
-            server = smtplib.SMTP_SSL(host=acc_key['host'], port=acc_key['port'])
-            if acc_key['port'] == 587:
+            server = None
+            if acc_key['port'] == 465:
+                server = smtplib.SMTP_SSL(host=acc_key['host'], port=acc_key['port'])
+            elif acc_key['port'] == 587:
+                server = smtplib.SMTP(host=acc_key['host'], port=acc_key['port'])
                 server.starttls()
+            else:
+                assert True, 'SMTP:{} default port not found'.format(acc_key['host'])
+
             server.login(acc_key['user'], acc_key['pwd'])
             server.sendmail(msg["From"], msg["To"].split(",") +
                             msg["Cc"].split(","), msg.as_string())
@@ -58,8 +64,9 @@ from lib.schedutils import NullStarter
 class EmailActivityTest(TestCase):
     def setUp(self) -> None:
         self.a = EmailActivity(NullStarter())
-        self.a['to'] = tuple('i.belov@prosto12.ru')
-        self.a['subject'] = 'test'
 
     def test_send(self):
+        self.a['to'] = ['belov78@gmail.com']
+        self.a['subject'] = 'test'
+        self.a['smtp'] = 'P12'
         self.a.run()
