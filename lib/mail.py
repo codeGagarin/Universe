@@ -39,6 +39,8 @@ class EmailActivity(Activity):
 
         try:
             server = smtplib.SMTP_SSL(host=acc_key['host'], port=acc_key['port'])
+            if acc_key['port'] == 587:
+                server.starttls()
             server.login(acc_key['user'], acc_key['pwd'])
             server.sendmail(msg["From"], msg["To"].split(",") +
                             msg["Cc"].split(","), msg.as_string())
