@@ -84,7 +84,7 @@ class ServiceBoard(ISReport):
            FRAME_NAME=Locals.LAST_WEEK,
            SERVICE_FILTER=[66, 118, 134, 136, 137, 169],
            REPORT_DATE=date.today(),
-           EXECUTORS=[7379, 5329, 7988, 396, 5731, 8882, 7154, 5372, 5994, 5912, 8958, 8949]
+           EXECUTORS=[7379, 5329, 7988, 396, 5731, 8882, 7154, 5372, 5994, 5912, 8958, 8949, 9626]
         ),
         PresetTypes.BGL: Params(
             TAG='БиДжи',
@@ -256,28 +256,28 @@ class ServiceBoardSender(ReportSender):
         ),
         ReportSender.MailerParams(
             PRESET_NAME=ServiceBoard.PresetTypes.PROSTO12,
-            SMTP='STH',
+            SMTP='P12',
             TO=ServiceBoard.presets()[ServiceBoard.PresetTypes.PROSTO12].EXECUTORS,
-            CC=['v.ulianov@prosto12.ru', 'i.belov@prosto12.ru'],
+            CC=['v.ulianov@prosto12.ru', 'a.zhuk@prosto12.ru', 'i.belov@prosto12.ru'],
             SUBJECT=ServiceBoard.pretty_caption(ServiceBoard.PresetTypes.PROSTO12),
         ),
         ReportSender.MailerParams(
             PRESET_NAME=ServiceBoard.PresetTypes.INTRATOOL,
-            SMTP='STH',
-            TO=[8827],
-            CC=['v.ulianov@prosto12.ru', 'i.belov@prosto12.ru'],
+            SMTP='NTR',
+            TO=ServiceBoard.presets()[ServiceBoard.PresetTypes.PROSTO12].EXECUTORS,
+            CC=[8827, 'v.ulianov@prosto12.ru', 'a.zhuk@prosto12.ru', 'i.belov@prosto12.ru'],
             SUBJECT=ServiceBoard.pretty_caption(ServiceBoard.PresetTypes.INTRATOOL),
         ),
         ReportSender.MailerParams(
             PRESET_NAME=ServiceBoard.PresetTypes.BGL,
-            SMTP='STH',
+            SMTP='P12',
             TO=['it@bglogistic.ru'],
             CC=['v.ulianov@prosto12.ru', 'i.belov@prosto12.ru'],
             SUBJECT=ServiceBoard.pretty_caption(ServiceBoard.PresetTypes.BGL),
         ),
         ReportSender.MailerParams(
             PRESET_NAME=ServiceBoard.PresetTypes.PRJ_OAK_01,
-            SMTP='STH',
+            SMTP='P12',
             TO=['v.ulianov@prosto12.ru', 'i.belov@prosto12.ru'],
             CC=None,
             SUBJECT=ServiceBoard.pretty_caption(ServiceBoard.PresetTypes.PRJ_OAK_01),
@@ -291,101 +291,6 @@ class ServiceBoardSender(ReportSender):
         ),
     )
 
-    tmp = {
-        "RRTWeekly": {
-            'smtp': 'RRT',
-            'to': (9377, 9380, 9379, 9423),
-            'cc': ('sn@rrt.ru', 'igor.belov@rrt.ru',),
-            'subj': '[Weekly] Утилизация за неделю',
-            'params': {
-                'services': (188,),
-                'executors': (9377, 9380, 9379, 9423),
-                'frame': 'weekly'
-            }
-        },
-        "StationITWeekly": {
-            'smtp': 'STH',
-            'to': (7162, 9131, 9070),
-            'cc': ('alexey.makarov@station-hotels.ru', 'igor.belov@station-hotels.ru'),
-            'subj': '[Weekly] Недельный отчет Helpdesk',
-            'params': {
-                'services': (139,),
-                'executors': (7162, 9131, 9070),
-                'frame': 'weekly'
-            }
-        },
-        'Prosto12': {
-            'smtp': 'DEF',
-            'to': (396, 5994, 405, 7154, 5995, 390, 43),
-            'cc': ('v.ulianov@prosto12.ru', 'i.belov@prosto12.ru'),
-            'subj': '[Weekly] Недельный отчет Helpdesk',
-            'params': {
-                'services': (),
-                'executors': (396, 5994, 405, 7154, 5995, 390, 43, 9423),
-                'frame': 'weekly',
-            },
-        },
-        'Intratool': {
-            'smtp': 'DEF',
-            'to': (8827,  # MaG
-                   ),
-            'cc': ('v.ulianov@prosto12.ru', 'i.belov@prosto12.ru',),
-            'subj': '[Weekly] Недельный отчет Helpdesk',
-            'params': {
-                'services': (66, 118, 134, 136, 137, 169),
-                'executors': (
-                    7379,  # DrA
-                    5329,  # VaL
-                    # 5599, # LaA - RIP
-                    7988,  # PlE
-                    396,  # KrS
-                    5731,  # PoI
-                    8882,  # MaA
-                    7154,  # StM
-                    5372,  # GoV
-                    5994,  # LaA
-                    5912,  # FeM
-                    8958,  # DeA
-                    8949,  # KaI
-                ),
-                'frame': 'weekly',
-            },
-        },
-        'BGL': {
-            'smtp': 'DEF',
-            'to': ['it@bglogistic.ru'],
-            'cc': ('v.ulianov@prosto12.ru', 'i.belov@prosto12.ru',),
-            'subj': '[Weekly] Недельный отчет о заявках',
-            'params': {
-                'services': (198, ),
-                'executors': tuple(),
-                'frame': 'weekly',
-            },
-        },
-        'PRJ_OAK_01': {
-            'smtp': 'DEF',
-            'to': ('v.ulianov@prosto12.ru', 'i.belov@prosto12.ru',),
-            'subj': '[PRJ_OAK_01] Отчет о проекте',
-            'params': {
-                'services': (200, ),
-                'executors': tuple(),
-                'frame': 'weekly',
-            },
-        },
-        'MINVODY': {
-            'smtp': 'DEF',
-            'to': (9632,),
-            'cc': ('alsep975@gmail.com', 'olgaavalishvili@minvody.net', 'igor.belov@station-hotels.ru'),
-            'subj': '[Минеральные воды] Отчет о задачах',
-            'params': {
-                'services': (201,),
-                'executors': (9632,),
-                'frame': 'weekly',
-            },
-        }
-    }
-
     @classmethod
     def get_crontab(cls):
         return '0 7 * * 1'
-
