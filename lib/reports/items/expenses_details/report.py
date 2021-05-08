@@ -23,13 +23,13 @@ class ExpensesDetails(ISReport):
         EXECUTOR_ID: [int, None]
         FIELD_LIST: [list, None]
 
-    _presets = {
-        'Some test': Params(
-            TASK_ID=161905,
-            EXECUTOR_ID=None,
-            FIELD_LIST=(Fields.EXECUTOR,)
-        )
-    }
+    # _presets = {
+    #     'Some test': Params(
+    #         TASK_ID=161905,
+    #         EXECUTOR_ID=None,
+    #         FIELD_LIST=(Fields.EXECUTOR,)
+    #     )
+    # }
 
     def update_locals(self, _params, _locals) -> None:
         mark_data = self.query_mark(self.MarkTypes.TASKS, (self._params.TASK_ID,))[0]
