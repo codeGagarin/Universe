@@ -4,8 +4,8 @@ from keys import KeyChain
 from lib.schedutils import Activity
 from lib.schedutils import Starter
 from lib.pg_utils import PGMix, sql
-from connector import ISConnector
-from connector import PGConnector
+from lib.connectors.connector import ISConnector
+from lib.connectors.connector import PGConnector
 
 
 class ISSync(Activity, PGMix):
@@ -48,7 +48,7 @@ class ISActualizer(Activity, PGMix):
 
     @classmethod
     def get_crontab(cls):
-        return '0 */1 * * *'
+        return '*/15 * * * *'
 
     def _add_job(self, from_date: datetime, to_date: datetime, activity_id: int):
         with self.cursor() as cursor:
