@@ -424,7 +424,7 @@ def _inw_d_set(value: str):
 
 
 def _inw_d_get(value: datetime):
-    return value if not value else value.strftime('%Y-%m-%d %H:%M:%S')
+    return value if not value else value.strftime('%Y-%m-%d %H:%M')
 
 
 class _INW:
