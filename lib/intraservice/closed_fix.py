@@ -3,7 +3,7 @@ from datetime import datetime
 from lib.schedutils import Activity
 from lib.pg_utils import PGMix, sql
 from keys import KeyChain
-from connector import PGConnector, ISConnector, Task
+from lib.connectors.connector import PGConnector, ISConnector, Task
 
 
 class ClosedFix(Activity, PGMix):
