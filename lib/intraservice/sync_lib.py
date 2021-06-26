@@ -81,7 +81,7 @@ class ISActualizer(Activity, PGMix):
                 last_update_tic = job_params.to
 
         from_date = last_update_tic
-        d = timedelta(hours=6)
+        d = timedelta(hours=12)
         to_date = from_date + d
         if to_date > datetime.now():
             to_date = datetime.now()
