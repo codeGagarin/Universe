@@ -244,7 +244,7 @@ class ServiceBoardSender(ReportSender):
             PRESET_NAME=ServiceBoard.PresetTypes.BA_OAK,
             SMTP='RRT',
             TO=ServiceBoard.presets()[ServiceBoard.PresetTypes.BA_OAK].EXECUTORS,
-            CC=['sn@rrt.ru', 'igor.belov@rrt.ru'],
+            CC=['ekaterina.alekseeva@rrt.ru', 'sn@rrt.ru', 'igor.belov@rrt.ru'],
             SUBJECT=ServiceBoard.pretty_caption(ServiceBoard.PresetTypes.BA_OAK),
         ),
         ReportSender.MailerParams(
