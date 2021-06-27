@@ -20,6 +20,9 @@ def get_report_manager():
         manager = g._manager = Manager(report_list)
     return manager
 
+@app.route(KeyChain.SSL_CRT_VALIDATION['path'])
+def ssl_crt_validation():
+    return KeyChain.SSL_CRT_VALIDATION['key']
 
 @app.route('/')
 def index():
