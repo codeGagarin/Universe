@@ -48,7 +48,7 @@ class ISActualizer(Activity, PGMix):
 
     @classmethod
     def get_crontab(cls):
-        return '* */30 * * *'
+        return '*/30 * * * *'
 
     def _add_job(self, from_date: datetime, to_date: datetime, activity_id: int):
         with self.cursor() as cursor:
