@@ -60,7 +60,7 @@ class ServiceBoard(ISReport):
             FRAME_NAME=Locals.LAST_WEEK,
             SERVICE_FILTER=[188],
             REPORT_DATE=date.today(),
-            EXECUTORS=[9377, 9380, 9379]
+            EXECUTORS=[9377, 9380, 9758]
         ),
         PresetTypes.STATION: Params(
             TAG='УК Стация',
@@ -244,7 +244,7 @@ class ServiceBoardSender(ReportSender):
             PRESET_NAME=ServiceBoard.PresetTypes.BA_OAK,
             SMTP='RRT',
             TO=ServiceBoard.presets()[ServiceBoard.PresetTypes.BA_OAK].EXECUTORS,
-            CC=['ekaterina.alekseeva@rrt.ru', 'sn@rrt.ru', 'igor.belov@rrt.ru'],
+            CC=['k.kondrashevich@rrt.ru', 'igor.belov@rrt.ru'],
             SUBJECT=ServiceBoard.pretty_caption(ServiceBoard.PresetTypes.BA_OAK),
         ),
         ReportSender.MailerParams(
