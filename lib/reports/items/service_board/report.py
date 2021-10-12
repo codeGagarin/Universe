@@ -240,13 +240,13 @@ class ServiceBoard(ISReport):
 class ServiceBoardSender(ReportSender):
     REPORT_TYPE = ServiceBoard
     MAIL_LIST = (
-        ReportSender.MailerParams(
-            PRESET_NAME=ServiceBoard.PresetTypes.BA_OAK,
-            SMTP='RRT',
-            TO=ServiceBoard.presets()[ServiceBoard.PresetTypes.BA_OAK].EXECUTORS,
-            CC=['k.kondrashevich@rrt.ru', 'igor.belov@rrt.ru'],
-            SUBJECT=ServiceBoard.pretty_caption(ServiceBoard.PresetTypes.BA_OAK),
-        ),
+        # ReportSender.MailerParams(
+        #     PRESET_NAME=ServiceBoard.PresetTypes.BA_OAK,
+        #     SMTP='RRT',
+        #     TO=ServiceBoard.presets()[ServiceBoard.PresetTypes.BA_OAK].EXECUTORS,
+        #     CC=['k.kondrashevich@rrt.ru', 'igor.belov@rrt.ru'],
+        #     SUBJECT=ServiceBoard.pretty_caption(ServiceBoard.PresetTypes.BA_OAK),
+        # ),
         ReportSender.MailerParams(
             PRESET_NAME=ServiceBoard.PresetTypes.STATION,
             SMTP='STH',
