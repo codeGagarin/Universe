@@ -282,13 +282,13 @@ class ServiceBoardSender(ReportSender):
             CC=None,
             SUBJECT=ServiceBoard.pretty_caption(ServiceBoard.PresetTypes.PRJ_OAK_01),
         ),
-        ReportSender.MailerParams(
-            PRESET_NAME=ServiceBoard.PresetTypes.MINVODY,
-            SMTP='STH',
-            TO=ServiceBoard.presets()[ServiceBoard.PresetTypes.MINVODY].EXECUTORS,
-            CC=['alsep975@gmail.com', 'olgaavalishvili@minvody.net', 'igor.belov@station-hotels.ru'],
-            SUBJECT=ServiceBoard.pretty_caption(ServiceBoard.PresetTypes.MINVODY),
-        ),
+        # ReportSender.MailerParams(
+        #     PRESET_NAME=ServiceBoard.PresetTypes.MINVODY,
+        #     SMTP='STH',
+        #     TO=ServiceBoard.presets()[ServiceBoard.PresetTypes.MINVODY].EXECUTORS,
+        #     CC=['alsep975@gmail.com', 'olgaavalishvili@minvody.net', 'igor.belov@station-hotels.ru'],
+        #     SUBJECT=ServiceBoard.pretty_caption(ServiceBoard.PresetTypes.MINVODY),
+        # ),
     )
 
     @classmethod
