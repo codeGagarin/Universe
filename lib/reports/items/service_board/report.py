@@ -76,7 +76,7 @@ class ServiceBoard(ISReport):
             FRAME_NAME=Locals.LAST_WEEK,
             SERVICE_FILTER=None,
             REPORT_DATE=date.today(),
-            EXECUTORS=[396, 5994, 405, 7154, 5995, 390, 43]
+            EXECUTORS=[396, 5994, 405, 7154, 5995, 43, 9858]
         ),
         PresetTypes.INTRATOOL: Params(
            TAG='Интратул',
