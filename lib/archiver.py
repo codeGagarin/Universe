@@ -69,7 +69,7 @@ class Archiver(Activity):
 
     @classmethod
     def get_crontab(cls):
-        return '45 15 * * *'
+        return '0 0 * * 0'
 
 
 from unittest import TestCase
