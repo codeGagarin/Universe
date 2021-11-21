@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 import time
 import tarfile
 
@@ -28,26 +28,25 @@ def _pack_list(file_list: list) -> dict:
     return result
 
 
-def _file_list(path: str):
+def _file_list(path: str, days_ignore_count):
     return [
         file for file in
         [
             os.path.join(path, file) for file in os.listdir(path)
             if file[-len(ARC_EXTENSION):] != ARC_EXTENSION
         ]
-        if os.path.isfile(file)
+        if os.path.isfile(file) and datetime.strptime(
+                    time.ctime(os.path.getmtime(file)), "%a %b %d %H:%M:%S %Y"
+                    ) < datetime.now() - timedelta(days=days_ignore_count)
     ]
 
 
-def to_pack(target_path: list, ignore_list=None):
+def to_pack(target_path: list, days_ignore_count: int = 0):
     for path in target_path:
         path = os.path.expanduser(path)
         print(f'Target path: {path}')
-        packs = _pack_list(_file_list(path))
+        packs = _pack_list(_file_list(path, days_ignore_count))
         for pack_name, file_list in packs.items():
-            # skip ignore list
-            if pack_name in (ignore_list or []):
-                continue
             with tarfile.open(os.path.join(path, pack_name), 'w:gz') as tar:
                 for file in file_list:
                     file_name = os.path.basename(file)
@@ -65,7 +64,7 @@ class Archiver(Activity):
     ]
 
     def run(self):
-        to_pack(self.TARGET_PATH, [gen_pack_name(datetime.today().year, datetime.today().month)])
+        to_pack(self.TARGET_PATH, 7)
 
     @classmethod
     def get_crontab(cls):
