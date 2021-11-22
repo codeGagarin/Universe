@@ -12,10 +12,14 @@ def gen_pack_name(year: int, month: int) -> str:
     return f'{year}-{month:02}.{ARC_EXTENSION}'
 
 
-def _path_to_pack(file_path) -> str:
-    modify_date = datetime.strptime(
+def _get_modify_date(file_path):
+    return datetime.strptime(
         time.ctime(os.path.getmtime(file_path)), "%a %b %d %H:%M:%S %Y"
     )
+
+
+def _path_to_pack(file_path) -> str:
+    modify_date = _get_modify_date(file_path)
     return gen_pack_name(modify_date.year, modify_date.month)
 
 
@@ -35,9 +39,7 @@ def _file_list(path: str, days_ignore_count):
             os.path.join(path, file) for file in os.listdir(path)
             if file[-len(ARC_EXTENSION):] != ARC_EXTENSION
         ]
-        if os.path.isfile(file) and datetime.strptime(
-                    time.ctime(os.path.getmtime(file)), "%a %b %d %H:%M:%S %Y"
-                    ) < datetime.now() - timedelta(days=days_ignore_count)
+        if os.path.isfile(file) and _get_modify_date(file) < datetime.now() - timedelta(days=days_ignore_count)
     ]
 
 
