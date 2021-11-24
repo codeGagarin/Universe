@@ -3,12 +3,13 @@
 """
 from datetime import datetime, timedelta
 from typing import List
+import cProfile
+
 
 from lib.pg_utils import PGMix, sql as pgs
 from lib.schedutils import Activity
 from keys import KeyChain
 
-import cProfile
 
 class _Period:
     def __init__(self, stamp: datetime):
@@ -69,22 +70,33 @@ class ApdexUtils(PGMix):
         cursor.execute(n_query)
         return cursor.fetchall()
 
-    def _set_apdex_for(self, operation, period: _Period, apdex_value):  # set APDEX value for ops/hour
-        update_query = pgs.SQL(
-            'UPDATE {} SET {}={} WHERE start>={} AND start<{} AND base1s={} AND ops_uid={}'
+    # todo: should be removed
+    # def _set_apdex_for(self, operation, period: _Period, apdex_value):  # set APDEX value for ops/hour
+    #     update_query = pgs.SQL(
+    #         'UPDATE {} SET {}={} WHERE start>={} AND start<{} AND base1s={} AND ops_uid={}'
+    #     ).format(
+    #         pgs.Identifier(self.APDEX_TABLE),
+    #         pgs.Identifier(self.APDEX_FIELD),
+    #         pgs.Literal(apdex_value),
+    #         pgs.Literal(period.begin), pgs.Literal(period.end),
+    #         pgs.Literal(operation),
+    #     )
+    #     cursor = self.cursor()
+    #     cursor.execute(update_query)
+    #     self.commit()
+
+    def calculate(self, max_hours):
+        batch_cursor = self.cursor()
+
+        batch_update_query = pgs.SQL(
+            'UPDATE {} SET {}=%s WHERE start>=%s AND start<%s AND base1s={} AND ops_uid=%s'
         ).format(
             pgs.Identifier(self.APDEX_TABLE),
             pgs.Identifier(self.APDEX_FIELD),
-            pgs.Literal(apdex_value),
-            pgs.Literal(period.begin), pgs.Literal(period.end),
             pgs.Literal(self.base1s),
-            pgs.Literal(operation),
         )
-        cursor = self.cursor()
-        cursor.execute(update_query)
-        self.commit()
+        batch_params_list = []
 
-    def calculate(self, max_hours):
         for _ in range(max_hours):
             period = self._get_next_period()
 
@@ -93,9 +105,12 @@ class ApdexUtils(PGMix):
 
             ops_map = self._ops_apdex_for(period)
             for ops in ops_map or ():
-                self._set_apdex_for(ops.id, period, ops.apdex)
+                # self._set_apdex_for(ops.id, period, ops.apdex)
+                batch_params_list.append((ops.apdex, period.begin, period.end, ops.id))
 
             self.log.append(period)
+        self._extras.execute_batch(batch_cursor, batch_update_query, batch_params_list)
+        self.commit()
 
 
 class ApdexCalc(Activity):
