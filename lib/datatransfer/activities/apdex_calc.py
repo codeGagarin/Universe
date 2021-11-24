@@ -8,6 +8,7 @@ from lib.pg_utils import PGMix, sql as pgs
 from lib.schedutils import Activity
 from keys import KeyChain
 
+import cProfile
 
 class _Period:
     def __init__(self, stamp: datetime):
@@ -104,9 +105,13 @@ class ApdexCalc(Activity):
         return 'base1s'
 
     def run(self):
+        prf = cProfile.Profile()
+        prf.enable()
         calc = ApdexUtils(KeyChain.PG_PERF_KEY, self['base1s'])
         calc.calculate(self.DEFAULT_MAX_HOURS)
         print(calc.log)
+        prf.disable()
+        prf.print_stats(sort=2)
 
 
 from unittest import TestCase
