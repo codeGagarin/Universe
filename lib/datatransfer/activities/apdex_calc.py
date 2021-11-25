@@ -53,7 +53,7 @@ class ApdexUtils(PGMix):
 
         return _Period(rows.start) if rows else None
 
-    # totd: old version should be removed after new version compliance check
+    # todo: old version should be removed after new version compliance check
     def ops_apdex_for(self, period: _Period):  # return dict
         sq_case = pgs.SQL('COUNT(CASE WHEN status={} THEN 1 END)')
         sq_ns_case = sq_case.format(pgs.Literal('NS'))
