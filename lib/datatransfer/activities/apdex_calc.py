@@ -5,7 +5,6 @@ from datetime import datetime, timedelta
 from typing import List
 import cProfile
 
-
 from lib.pg_utils import PGMix, sql as pgs
 from lib.schedutils import Activity
 from keys import KeyChain
@@ -39,7 +38,7 @@ class ApdexUtils(PGMix):
         self.log = _Log(base1s)
 
     ''' Return next empty APDEX period for calc or None '''
-    def _get_next_period(self) -> _Period:
+    def get_next_period(self) -> _Period:
 
         select_query = pgs.SQL(
             'SELECT start FROM {} WHERE base1s={} AND {} IS Null ORDER BY start ASC').format(
@@ -54,7 +53,8 @@ class ApdexUtils(PGMix):
 
         return _Period(rows.start) if rows else None
 
-    def _ops_apdex_for(self, period: _Period):  # return dict
+    # totd: old version should be removed after new version compliance check
+    def ops_apdex_for(self, period: _Period):  # return dict
         sq_case = pgs.SQL('COUNT(CASE WHEN status={} THEN 1 END)')
         sq_ns_case = sq_case.format(pgs.Literal('NS'))
         sq_nt_case = sq_case.format(pgs.Literal('NT'))
@@ -70,20 +70,36 @@ class ApdexUtils(PGMix):
         cursor.execute(n_query)
         return cursor.fetchall()
 
-    # todo: should be removed
-    # def _set_apdex_for(self, operation, period: _Period, apdex_value):  # set APDEX value for ops/hour
-    #     update_query = pgs.SQL(
-    #         'UPDATE {} SET {}={} WHERE start>={} AND start<{} AND base1s={} AND ops_uid={}'
-    #     ).format(
-    #         pgs.Identifier(self.APDEX_TABLE),
-    #         pgs.Identifier(self.APDEX_FIELD),
-    #         pgs.Literal(apdex_value),
-    #         pgs.Literal(period.begin), pgs.Literal(period.end),
-    #         pgs.Literal(operation),
-    #     )
-    #     cursor = self.cursor()
-    #     cursor.execute(update_query)
-    #     self.commit()
+    def ops_apdex_for2(self, period: _Period):
+        apdex_calc_query = pgs.SQL(
+            ''' WITH
+                    empty_uid AS (
+                        SELECT ops_uid AS id FROM {0} WHERE
+                                start >= {1}::TIMESTAMP AND start < {2}::TIMESTAMP
+                            AND
+                                base1s = {3}
+                            AND
+                                apdex IS Null
+                        GROUP BY ops_uid
+                    )
+                SELECT ops_uid AS id,
+                       (COUNT(CASE WHEN status='NS' THEN 1 END) + (COUNT(CASE WHEN status='NT' THEN 1 END)::REAL/2))::REAL
+                           / COUNT(*)::REAL AS apdex FROM {0}
+                    WHERE
+                            start >= {1}::TIMESTAMP AND start < {2}::TIMESTAMP
+                        AND
+                            base1s = {3}
+                        AND
+                            ops_uid IN (SELECT id FROM empty_uid)
+                        GROUP BY ops_uid '''
+        ).format(
+            pgs.Identifier(self.APDEX_TABLE),
+            pgs.Literal(period.begin), pgs.Literal(period.end),
+            pgs.Literal(self.base1s),
+        )
+        cursor = self.cursor(named=True)
+        cursor.execute(apdex_calc_query)
+        return cursor.fetchall()
 
     def calculate(self, max_hours):
         batch_cursor = self.cursor()
@@ -98,19 +114,19 @@ class ApdexUtils(PGMix):
         batch_params_list = []
 
         for _ in range(max_hours):
-            period = self._get_next_period()
+            period = self.get_next_period()
 
             if not period:
                 break
 
-            ops_map = self._ops_apdex_for(period)
+            ops_map = self.ops_apdex_for2(period)
             for ops in ops_map or ():
-                # self._set_apdex_for(ops.id, period, ops.apdex)
                 batch_params_list.append((ops.apdex, period.begin, period.end, ops.id))
 
             self.log.append(period)
-        self._extras.execute_batch(batch_cursor, batch_update_query, batch_params_list)
-        self.commit()
+
+            self._extras.execute_batch(batch_cursor, batch_update_query, batch_params_list)
+            self.commit()
 
 
 class ApdexCalc(Activity):
@@ -135,13 +151,16 @@ from lib.schedutils import NullStarter
 
 class _ApdexUtilsTest(TestCase):
     def setUp(self) -> None:
-        self.util = ApdexUtils(KeyChain.PG_PERF_KEY, 'tjtest')
+        self.utils = ApdexUtils(KeyChain.PG_PERF_KEY, 'tjtest')
 
-    def test_calculate(self):
-        u = self.util
-        hours = 1
-        u.calculate(hours)
-        print(u.log)
+    def test_calc_results(self):
+        period = self.utils.get_next_period()
+        self.assertIsNotNone(period, 'Period is empty, test is impossible!')
+        result_foo = self.utils.ops_apdex_for(period)
+        result_bar = self.utils.ops_apdex_for2(period)
+        self.assertEqual(len(result_foo), len(result_bar), 'Results are not equals!')
+        self.assertNotEqual(len(result_foo), 0, 'Results len is 0, test is impossible!')
+        self.assertEqual(set(result_foo), set(result_bar))
 
 
 class _ApdexCalcTest(TestCase):
@@ -152,3 +171,4 @@ class _ApdexCalcTest(TestCase):
         self.a['base1s'] = 'tjtest'
         self.a.DEFAULT_MAX_HOURS = 3
         self.a.run()
+
