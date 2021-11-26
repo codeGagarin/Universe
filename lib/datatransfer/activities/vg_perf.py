@@ -65,7 +65,7 @@ class VGPerf(Activity):
 
         calc = ApdexCalc(self._ldr)
         calc['base1s'] = base1s
-        # calc.apply()
+        calc.apply()
 
         if validator.left and validator.right:  # check if Apdex file is an empty
             roll = CounterLinesRoll(self._ldr)
