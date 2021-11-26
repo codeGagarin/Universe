@@ -130,7 +130,7 @@ class ApdexUtils(PGMix):
 
 
 class ApdexCalc(Activity):
-    DEFAULT_MAX_HOURS = 4
+    DEFAULT_MAX_HOURS = 24
 
     def _fields(self) -> str:
         return 'base1s'
