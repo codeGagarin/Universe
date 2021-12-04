@@ -13,9 +13,37 @@ class ClosedFix(Activity, PGMix):
     def get_crontab(cls):
         return '30 */2 * * *'
 
+    def remove_task_expenses(self, task_id, cursor):
+        cursor.execute(
+            sql.SQL(
+                'delete from {} where {}={} returning {}'
+            ).format(
+                sql.Identifier('Expenses'),
+                sql.Identifier('TaskId'),
+                sql.Literal(task_id),
+                sql.Identifier('Minutes')
+            )
+        )
+        minutes_sum = minutes_count = 0
+        for minutes in cursor.fetchall():
+            minutes_sum += minutes[0]
+            minutes_count += 1
+
+        print("#{}{}".format(
+            task_id,
+            '(c:{}-s:{})'.format(minutes_count, minutes_sum) if minutes_count else ''
+        ))
+        manual_task_close_query = sql.SQL(
+            'UPDATE "Tasks" SET "Closed"={}, "m_lastClosedTouch"={} WHERE "Id"={}').format(
+            sql.Literal(datetime.now()),
+            sql.Literal(datetime(1111, 11, 11)),  # manual closed marker
+            sql.Literal(task_id)
+        )
+        cursor.execute(manual_task_close_query)
+
     def run(self):
         is_connector = ISConnector(KeyChain.IS_KEY)
-        pg_connector = PGConnector(KeyChain.PG_IS_SYNC_KEY)
+        pg_connector = PGConnector(self.PG_KEY)
         now = datetime.now()
 
         # mark new open task
@@ -49,22 +77,29 @@ class ClosedFix(Activity, PGMix):
             cursor.execute(mark_task_query)
             self.commit()
 
-        for task_id in task_list:
-            task = Task({'Id': task_id})
-            if is_connector.is_404(task['Id']):
-                # closed 404 tasks
-                print("#{}".format(task_id))
-                manual_task_close_query = sql.SQL(
-                    'UPDATE "Tasks" SET "Closed"={}, "m_lastClosedTouch"={} WHERE "Id"={}').format(
-                        sql.Literal(datetime.now()),
-                        sql.Literal(datetime(1111, 11, 11)),  # manual closed marker
-                        sql.Literal(task_id)
-                    )
-                self.cursor().execute(manual_task_close_query)
-            else:
-                is_connector.select(task)
-                if task['Closed']:
-                    print(',{}'.format(task['Id']))
-                    pg_connector.update(task)
+            for task_id in task_list:
+                task = Task({'Id': task_id})
+                if is_connector.is_404(task['Id']):  # closed 404 tasks
+                    self.remove_task_expenses(task_id, cursor)
+                else:
+                    is_connector.select(task)
+                    if task['Closed']:
+                        print(',{}'.format(task['Id']))
+                        pg_connector.update(task)
 
-        self.commit()
+            self.commit()
+
+
+from unittest import TestCase
+from lib.schedutils import NullStarter
+
+
+class _ClosedFixTest(TestCase):
+    def setUp(self) -> None:
+        pass
+
+    def test_remove_expenses(self):
+        task_id = 133738
+        a = ClosedFix(NullStarter)
+        with a.cursor() as cursor:
+            a.remove_task_expenses(task_id, cursor)
