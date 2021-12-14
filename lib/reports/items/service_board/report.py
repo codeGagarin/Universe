@@ -251,7 +251,11 @@ class ServiceBoardSender(ReportSender):
             PRESET_NAME=ServiceBoard.PresetTypes.STATION,
             SMTP='STH',
             TO=ServiceBoard.presets()[ServiceBoard.PresetTypes.STATION].EXECUTORS,
-            CC=['alexey.makarov@station-hotels.ru', 'igor.belov@station-hotels.ru'],
+            CC=[
+                'alexey.makarov@station-hotels.ru',
+                'igor.belov@station-hotels.ru',
+                'kseniya.bubnova@station-hotels.ru'
+            ],
             SUBJECT=ServiceBoard.pretty_caption(ServiceBoard.PresetTypes.STATION),
         ),
         ReportSender.MailerParams(
