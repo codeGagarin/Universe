@@ -31,7 +31,7 @@
 </head>
 <body>
     <div class="container">{% block content %}{% endblock %}
-        % if debug
+        % if True
             Debug mode: [ON]
             % for file, query in DB().items()
             <details>
