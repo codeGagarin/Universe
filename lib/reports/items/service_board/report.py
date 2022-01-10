@@ -96,7 +96,7 @@ class ServiceBoard(ISReport):
         ),
         PresetTypes.PRJ_OAK_01: Params(
             TAG='OAK',
-            CAPTION='Оптимизация инраструктуры',
+            CAPTION='Оптимизация инфраструктуры',
             FRAME_NAME=Locals.LAST_WEEK,
             SERVICE_FILTER=[200],
             REPORT_DATE=date.today(),
