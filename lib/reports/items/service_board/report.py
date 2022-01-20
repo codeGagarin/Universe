@@ -68,7 +68,7 @@ class ServiceBoard(ISReport):
             FRAME_NAME=Locals.LAST_WEEK,
             SERVICE_FILTER=[139],
             REPORT_DATE=date.today(),
-            EXECUTORS=[7162, 9131, 9070]
+            EXECUTORS=[7162, 9131]
         ),
         PresetTypes.PROSTO12: Params(
             TAG='Легкие решения',
