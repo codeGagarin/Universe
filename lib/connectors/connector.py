@@ -10,6 +10,7 @@ from requests.auth import HTTPBasicAuth
 from requests.adapters import HTTPAdapter
 
 import psycopg2
+import psycopg2.extras
 from psycopg2 import sql
 
 from keys import KeyChain
@@ -23,6 +24,31 @@ class DataEntity:
         self._data = {}
         for i in self.get_fields():
             self._data[i] = data.get(i)
+
+    def get_value(self, name, default=None):
+        if self._fields.get(name) is None:
+            return default
+        else:
+            return self._data[name] or default
+
+    def diff(self, another_entity):
+        """
+        Return difference between two entities same types
+            @return: {
+                field_name: {
+                    "own": own_value,
+                    "another": another_value
+                }
+            }
+            @return: None  # no difference in case of
+        """
+        if self.get_type() != another_entity.get_type():
+            raise TypeError
+
+        return dict({
+            field: {'own': self[field], 'another': another_entity[field]}
+            for field in self.get_fields() if self[field] != another_entity[field]
+        }) or None
 
     def get_fields(self):
         return list(self._fields.keys())
@@ -243,18 +269,23 @@ class PGConnector(DataConnector):
         self._db_conn.commit()
         self._db_conn.close()
 
-    def _sql_exec(self, sql_str: str):
-        cursor = self._db_conn.cursor()
-        # try:
-        cursor.execute(sql_str)
-        # except Exception:
-        #     pass
-        try:
-            result = cursor.fetchall()
-        except Exception:
-            result = None
+    def _sql_exec(self, sql_str: [str, sql.SQL], result_factory=None, result=None, named_cursor=False):
+        if result is None:
+            result = []
+        with self._db_conn.cursor(cursor_factory=psycopg2.extras.NamedTupleCursor if named_cursor else None) as cursor:
+            cursor.execute(sql_str)
+            try:
+                if result_factory is not None:
+                    while True:
+                        raw = cursor.fetchmany(1000)
+                        if not raw:
+                            break
+                        result_factory(result, raw)
+                else:
+                    result = cursor.fetchall()
+            except psycopg2.ProgrammingError:
+                pass
 
-        cursor.close()
         self._db_conn.commit()
         return result
 
@@ -361,6 +392,25 @@ class PGConnector(DataConnector):
         sql_str = f'DELETE FROM "{resource}" WHERE "{resource_field}" = {value}'
         self._sql_exec(sql_str)
 
+    def get_service_list(self):
+        sql_str = sql.SQL('SELECT {} FROM {}').format(
+            sql.SQL(',').join([sql.Identifier(field) for field in Service().get_fields()]),
+            sql.Identifier('Services')
+        )
+
+        return self._sql_exec(
+            sql_str,
+            result_factory=lambda res, raw:
+                res.extend([
+                    Service(
+                        data={
+                            field: getattr(record, field) for field in list(Service().get_fields())
+                        }
+                    )
+                    for record in raw
+                ]),
+            named_cursor=True
+        )
 
 
 # ToDo: need to rename field 'Expenses' to 'Actuals' in database
@@ -460,9 +510,42 @@ class ISConnector(DataConnector):
 
         session.close()
         return True if r.status_code == 404 else False
+    # TODO: remove bottom if U read this
+    # def _api_request_get(self, resource: str, params: dict, result_factory, result=None):
+    #     if not result:
+    #         result = {}
+    #
+    #     base_url = self._acc_key['url']
+    #     session = requests.Session()
+    #     retries = Retry(total=25,
+    #                     backoff_factor=0.0001,
+    #                     status_forcelist=[500, 502, 503, 504])
+    #     session.mount('https://', HTTPAdapter(max_retries=retries))
+    #
+    #     # Make API request
+    #     url = f"{base_url}{resource}"
+    #     r = session.get(url=url, auth=self._auth, params=params, verify=self._certVerify)
+    #     raw_data = dict(r.json())
+    #     session.close()
+    #     if r.status_code != 200:
+    #         print(f"IS API Request error: {url}\r Response: {raw_data}")
+    #         raise EnvironmentError
+    #
+    #     result_factory(result, raw_data)
+    #     if raw_data.get('Paginator'):
+    #         page_count = raw_data['Paginator']['PageCount']
+    #
+    #         if page_count > 1:
+    #             for page in range(page_count, 0, -1):
+    #                 params.update({'Page': page})
+    #                 r = session.get(url=url, auth=self._auth, params=params, verify=self._certVerify)
+    #                 raw_data = dict(r.json())
+    #                 result_factory(result, raw_data)
+    #
+    #     return result
 
     def _api_request_get(self, resource: str, params: dict, result_factory, result=None):
-        if not result:
+        if result is None:
             result = {}
 
         base_url = self._acc_key['url']
@@ -491,40 +574,7 @@ class ISConnector(DataConnector):
                     r = session.get(url=url, auth=self._auth, params=params, verify=self._certVerify)
                     raw_data = dict(r.json())
                     result_factory(result, raw_data)
-
-        return result
-
-    def _api_request_get(self, resource: str, params: dict, result_factory, result=None):
-        if not result:
-            result = {}
-
-        base_url = self._acc_key['url']
-        session = requests.Session()
-        retries = Retry(total=25,
-                        backoff_factor=0.0001,
-                        status_forcelist=[500, 502, 503, 504])
-        session.mount('https://', HTTPAdapter(max_retries=retries))
-
-        # Make API request
-        url = f"{base_url}{resource}"
-        r = session.get(url=url, auth=self._auth, params=params, verify=self._certVerify)
-        raw_data = dict(r.json())
         session.close()
-        if r.status_code != 200:
-            print(f"IS API Request error: {url}\r Response: {raw_data}")
-            raise EnvironmentError
-
-        result_factory(result, raw_data)
-        if raw_data.get('Paginator'):
-            page_count = raw_data['Paginator']['PageCount']
-
-            if page_count > 1:
-                for page in range(page_count, 0, -1):
-                    params.update({'Page': page})
-                    r = session.get(url=url, auth=self._auth, params=params, verify=self._certVerify)
-                    raw_data = dict(r.json())
-                    result_factory(result, raw_data)
-
         return result
 
     def _api_request_put(self, resource: str, params: dict):
@@ -595,6 +645,24 @@ class ISConnector(DataConnector):
             if k is 'Comments':
                 val = 'Comment'  # Intraservice API bug!
             entity[k] = raw[val]
+
+    def get_service_list(self):
+        result = []
+
+        def factory(res, raw):
+            res.extend(
+                [Service(data) for data in raw['Services']]
+            )
+
+        return self._api_request_get(
+            'service',
+            params={
+                'fields': ','.join(Service().get_fields())
+                    },
+            result_factory=factory,
+            result=result
+        )
+
 
     def get_update_pack(self, start: datetime, finish: datetime):
         """ Returns updated tasks for the period """
@@ -755,9 +823,36 @@ class Service(DataEntity):
 from unittest import TestCase
 
 
-class ISConnectorTest(TestCase):
+class ConnectorTest(TestCase):
+    def setUp(self) -> None:
+        self.isc = ISConnector(KeyChain.IS_KEY)
+        self.pgc = PGConnector(KeyChain.PG_KEY)
+
     def _test_api_request_put(self):
-        c = ISConnector(KeyChain.IS_KEY)
         upd_params = {'AssetIds': ' '}
         # upd_params = {'ServiceId': 192}
-        c._api_request_put('task/162899', upd_params)
+        self.isc._api_request_put('task/162899', upd_params)
+
+
+    def test_diff(self):
+        s1 = Service(
+            data={
+                'Id': 132,
+                'Name': 'Service 1',
+                'Description': 'Bla-bla-bla'
+            }
+        )
+
+        s2 = Service(
+            data={
+                'Id': 132,
+                'Name': 'Service 1',
+                'Description': 'Bla-bla-bla'
+            }
+        )
+
+        print(s1.diff(s2))
+
+        pass
+
+

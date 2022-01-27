@@ -5,7 +5,7 @@ from .levelscan import LevelScan, FZLevelScan
 from .monitutils import Monitoring
 from .datarollup import CounterLinesRoll
 from .datatransfer import VGPerf, ApdexCalc
-from .intraservice import ClosedFix
+from .intraservice import ClosedFix, ISServiceUpdater
 from .archiver import Archiver
 from .reports.report_reg import activity_list as report_activity_list
 from .intraservice.sync_lib import ISSync, ISActualizer
@@ -24,6 +24,7 @@ activity_list = [
     Archiver,
     ISActualizer,
     ISSync,
+    ISServiceUpdater,
 ]
 
 activity_list.extend(report_activity_list)
