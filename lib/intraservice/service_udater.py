@@ -6,7 +6,7 @@ from keys import KeyChain
 class ISServiceUpdater(Activity):
     @classmethod
     def get_crontab(cls):
-        return '0 18 * * *'
+        return '0 0 * * *'
 
     def run(self):
         is_con = ISConnector(KeyChain.IS_KEY)
