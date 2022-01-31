@@ -6,7 +6,8 @@ with
     period as (select begin, finish + '1 day'::interval as finish from _period),
     unfold_srv as (select "Id" as id, "Name", "ParentId", "IsArchive",
         case when "ParentId" is Null then 1 else 2 end as level
-        from "Services" where "Id" in (select * from srv) or "ParentId" in (select * from srv) order by "Id"),
+        from "Services" where ("Id" in (select * from srv) or "ParentId" in (select * from srv))
+        and "IsArchive"=FALSE order by "Id"),
     tasks_spid as (
         select t.*, s."ParentId" as spid from "Tasks" as t
         left join "Services" as s on s."Id"=t."ServiceId"
