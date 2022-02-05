@@ -29,7 +29,6 @@
         LC().CURRENT_MONTH: 'Текущий месяц',
         LC().LAST_WEEK: 'Прошлая неделя',
         LC().CURRENT_WEEK: 'Текущая неделя',
-
     }
 %}
 
@@ -69,10 +68,10 @@
                 </tr>
             </thead>
             <tbody>
-                % for r in DT().srv
+                % for r in DT().srv if (not r.arc) or (r.sum_all>0)
                 <tr>
                     <td align="right" class="text-muted">{{ loop.index }}.</td>
-                    <td>{% if r.pid %} -- {% endif %} {{ r.name }}</td>
+                    <td>{% if r.pid %} -- {% endif %} {{ r.name }} {% if r.arc %} <small class="">[aрх]</small> {% endif %}</td>
                     <td class="info" align="right">{{ detail_link(r.created, r.id, 'created') }}</td>
                     <td class="info" align="right">{{ detail_link(r.closed, r.id, 'closed')}}</td>
                     <td class="info" align="left">({{ detail_link(mark_minutes(r.closed_exp), r.id, 'closed_exp') }})</td>
