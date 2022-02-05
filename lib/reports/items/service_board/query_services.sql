@@ -6,8 +6,7 @@ with
     period as (select begin, finish + '1 day'::interval as finish from _period),
     unfold_srv as (select "Id" as id, "Name", "ParentId", "IsArchive",
         case when "ParentId" is Null then 1 else 2 end as level
-        from "Services" where ("Id" in (select * from srv) or "ParentId" in (select * from srv))
-        and "IsArchive"=FALSE order by "Id"),
+        from "Services" where ("Id" in (select * from srv) or "ParentId" in (select * from srv))),
     tasks_spid as (
         select t.*, s."ParentId" as spid from "Tasks" as t
         left join "Services" as s on s."Id"=t."ServiceId"
@@ -83,4 +82,4 @@ with
         left join no_exec as ne on (ne.id=ufs.id)
         left join no_planed as np on (np.id=ufs.id)
         order by id, pid)
-select * from report
+select *, created+closed+closed_exp+open+open_exp+no_exec+no_planed as sum_all from report
