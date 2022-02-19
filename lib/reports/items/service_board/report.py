@@ -2,7 +2,7 @@ from dataclasses import dataclass, replace
 from datetime import date
 
 from ...report_classes import ISReport
-from ...period_utils import Period
+from lib.period_utils import Period
 from ...report_sender import ReportSender
 from .details import details
 
@@ -49,6 +49,7 @@ class ServiceBoard(ISReport):
         STATION = 'Станция ФУЛ'
         PROSTO12 = 'Легкие решения'
         INTRATOOL = 'Интратул ФУЛ'
+        INTRATOOL22 = 'Интратул ФУЛ'
         BGL = 'БиДжи 2-я линия'
         PRJ_OAK_01 = 'ОАК Инфраструткура'
         MINVODY = 'Минеральные воды'

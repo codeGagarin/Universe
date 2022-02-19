@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import date
 from typing import Union
 
-from ...period_utils import Period
+from lib.period_utils import Period
 from ...report_classes import ISReport
 
 from ..expenses_details import ExpensesDetails
