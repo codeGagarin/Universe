@@ -4,9 +4,17 @@ with
     srv as (select id from unnest(Array[{{ service_list }}]) as id),
     -- cut -- params header -- cut --
     period as (select begin, finish + '1 day'::interval as finish from _period),
-    unfold_srv as (select "Id" as id, "Name", "ParentId", "IsArchive",
+    expand_srv as (select "Id" as id from "Services" where "ParentId" in (select * from srv)),
+    parent_srv as (select distinct "ParentId" as id from "Services"
+        where
+            "ParentId" is not NULL and
+            "ParentId" not in (select * from srv) and
+            "Id" in (select * from srv)
+    ),
+    union_srv as (select * from expand_srv union distinct select * from parent_srv union distinct select * from srv),
+    unfold_srv as (select "Id" as id, "Name", "ParentId", "IsArchive", "Path" as path,
         case when "ParentId" is Null then 1 else 2 end as level
-        from "Services" where ("Id" in (select * from srv) or "ParentId" in (select * from srv))),
+        from "Services" where ("Id" in (select * from union_srv) or "ParentId" in (select * from union_srv))),
     tasks_spid as (
         select t.*, s."ParentId" as spid from "Tasks" as t
         left join "Services" as s on s."Id"=t."ServiceId"
@@ -81,5 +89,5 @@ with
         left join open_exp as ote on (ote.id=ufs.id)
         left join no_exec as ne on (ne.id=ufs.id)
         left join no_planed as np on (np.id=ufs.id)
-        order by id, pid)
+        order by path)
 select *, created+closed+closed_exp+open+open_exp+no_exec+no_planed as sum_all from report
