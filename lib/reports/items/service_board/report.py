@@ -83,7 +83,7 @@ class ServiceBoard(ISReport):
            TAG='Интратул',
            CAPTION='Сервисы и утилизация',
            FRAME_NAME=Locals.LAST_WEEK,
-           SERVICE_FILTER=[66, 118, 134, 136, 137, 169],
+           SERVICE_FILTER=[207, 216, 213, 66, 204],
            REPORT_DATE=date.today(),
            EXECUTORS=[7379, 5329, 7988, 396, 5731, 8882, 7154, 5372, 5994, 5912, 8958, 8949, 9626]
         ),
