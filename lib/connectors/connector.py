@@ -219,6 +219,7 @@ _PG_CONNECTOR_MAPPING = {
             'Id': 'Id',
             'Name': 'Name',
             'Email': 'Email',
+            'CompanyName': 'CompanyName'
         },
         'executor': {
             'TaskId': 'TaskId',
@@ -441,6 +442,7 @@ _INTRA_CONNECTOR_MAPPING = {
             'Id': 'Id',
             'Name': 'Name',
             'Email': 'Email',
+            'CompanyName': 'CompanyName',
         },
         'executor': {
             'TaskId': 'TaskId',
@@ -663,7 +665,6 @@ class ISConnector(DataConnector):
             result=result
         )
 
-
     def get_update_pack(self, start: datetime, finish: datetime):
         """ Returns updated tasks for the period """
         result = {
@@ -771,6 +772,7 @@ class User(DataEntity):
             'Id': 'i',
             'Name': 's',
             'Email': 's',
+            'CompanyName': 's',
         }
         super().__init__(data)
 
