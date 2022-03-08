@@ -1,5 +1,7 @@
 from email.mime.multipart import MIMEMultipart
+from email.mime.application import MIMEApplication
 from email.mime.text import MIMEText
+from email.utils import COMMASPACE
 import smtplib
 
 from lib.schedutils import Activity
@@ -8,35 +10,41 @@ from keys import KeyChain
 
 class EmailActivity(Activity):
     def _fields(self):
-        return 'subject from to cc body smtp'
+        return 'subject from to cc body smtp attachment'
 
     def run(self):
-        html_body = self['body']
-
         acc_key = KeyChain.SMTP_KEY[self['smtp']]
 
-        msg = MIMEMultipart('alternative')
+        msg = MIMEMultipart()
         msg['Subject'] = self['subject']
         msg['From'] = acc_key['from'] if acc_key.get('from', None) else acc_key['user']
         test_address = KeyChain.SMTP_KEY.get('DEBUG')
+
+        def address_adapter(address_line): return COMMASPACE.join(
+            [address_line] if isinstance(address_line, str) else address_line or []
+        )
+
+        to = address_adapter(self['to'])
+        cc = address_adapter(self['cc'])
+
         if test_address == 'Nope':
             print("Successfully sent [Nope] email")
             return
         if test_address:
-            msg['Subject'] += ' TO:{' + (", ".join(self['to']) if self['to'] else '') + '}' + \
-                              ' CC:{' + (", ".join(self['cc']) if self['cc'] else '') + '}'
+            msg['Subject'] += f' TO:{to} CC:{cc}'
             msg['To'] = test_address
             msg['Cc'] = ''
         else:
-            msg['To'] = ", ".join(self['to']) if self['to'] else ''
-            msg['Cc'] = ", ".join(self['cc']) if self['cc'] else ''
-
-        # Record the MIME type of html - text/html.
-        body = MIMEText(html_body or '', 'html')
+            msg['To'] = to
+            msg['Cc'] = cc
 
         # Attach HTML part into message container.
-        msg.attach(body)
+        msg.attach(MIMEText(self['body'] or '', 'html'))
 
+        for name, data in (self['attachment'] or {}).items():
+            part = MIMEApplication((data if isinstance(data, str) else data.getbuffer()), Name=name)
+            part['Content-Disposition'] = f'attachment; filename={name}'
+            msg.attach(part)
         try:
             server = None
             if acc_key['port'] == 465:
@@ -69,4 +77,8 @@ class EmailActivityTest(TestCase):
         self.a['to'] = ['belov78@gmail.com']
         self.a['subject'] = 'test'
         self.a['smtp'] = 'P12'
+        self.a['body'] = 'FInd it enclosure'
+        self.a['attachment'] = {
+            'hello.txt': 'I\'m file from email attachment'
+        }
         self.a.run()
