@@ -1,0 +1,36 @@
+---
+agents:
+  SK: { IS: 396, rate: ЭК1 }
+  GS: { IS: 1665, rate: ПР3 }
+#  AP: { IS: 405 }
+
+clients:
+  NT:
+    IS: 8
+    sheet_prefix: НТР
+    rates:
+      ЭК1: 1200
+  VG:
+    IS: 12
+    sheet_prefix: ВГЭР
+    rates:
+      ПР3: 2500
+  BG:
+    IS: 30
+    sheet_prefix: БЛР
+    rates:
+      ПР3: 2500
+
+groups:
+  Group_01: NT
+  Group_02: VG
+  Group_03: BG
+
+xls:
+  Тикет: [task_id, 7]
+  Содержание: [name, 50]
+  Инициатор: [creator, 20]
+  ЧЧ: [hours, 5]
+  Ставка: [rate, 6]
+  Исполнитель: [agent_name, 20]
+  Стоимость: [value, 10]
