@@ -6,6 +6,8 @@ from report import Report
 from lib.reports.manager import Manager
 from lib.reports.report_reg import report_list
 from lib.reports.items.presets import PresetReport
+from lib.clientbase.cost_transfer import CostTransfer
+from lib.schedutils import NullStarter
 
 import lib.telebots as bots
 
@@ -20,13 +22,24 @@ def get_report_manager():
         manager = g._manager = Manager(report_list)
     return manager
 
+
 @app.route(KeyChain.SSL_CRT_VALIDATION['path'])
 def ssl_crt_validation():
     return KeyChain.SSL_CRT_VALIDATION['key']
 
+
 @app.route('/')
 def index():
     return render_template('index.html')
+
+
+@app.route('/transfer/')
+def transfer():
+    ct = CostTransfer(NullStarter(), config_root='./lib/clientbase/')
+    ct['early_opened'] = True
+    ct['period_delta'] = -2
+    cp = ct.get_cost_pack()
+    return f"""<html> {ct.report_total(cp)} </html>"""
 
 
 @app.route('/report/')
