@@ -1,0 +1,11 @@
+% from 'macro.html' import mark_title
+% extends "base.html"
+
+% set title = "Report title specify here"
+
+{% block title %} {{ title }} {% endblock %}
+{% block head %} {{ super() }} {% endblock %}
+
+% block content
+    {{ content }}
+% endblock
