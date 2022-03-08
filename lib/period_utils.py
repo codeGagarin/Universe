@@ -71,18 +71,22 @@ def get_period(now: date, period_type: str, delta: int, with_time=False) -> dict
 @dataclass
 class Period:
     @dataclass
-    class Type:
+    class Types:
         DAY = 'day'
         WEEK = 'week'
         MONTH = 'month'
         QTR = 'qtr'
+
+    # TODO: deprecated, backward compatibility
+    Type = Types
 
     begin: datetime
     end: datetime
     id: str
     period_type: Type
 
-    def __init__(self, now: date, period_type: Type, delta: int = 0):
+    def __init__(self, now: date = None, period_type: Types = Types.MONTH, delta: int = 0):
+        now = now or datetime.now()
         period_data = get_period(now, str(period_type), delta)
         self.begin = period_data['from']
         self.end = period_data['to']
