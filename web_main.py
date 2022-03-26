@@ -35,11 +35,11 @@ def index():
 
 @app.route('/transfer/')
 def transfer():
-    ct = CostTransfer(NullStarter(), config_root='./lib/clientbase/')
+    ct = CostTransfer(NullStarter())
     ct['early_opened'] = True
     ct['period_delta'] = -2
     cp = ct.get_cost_pack()
-    return f"""<html> {ct.report_total(cp)} </html>"""
+    return f"""<html> {ct.cost_total_htm(cp)} </html>"""
 
 
 @app.route('/report/')

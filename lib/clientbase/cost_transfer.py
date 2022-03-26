@@ -3,6 +3,7 @@ import io
 import pandas as pd
 import yaml
 
+from cfg import CONFIG_COMMON_PATH
 from lib.schedutils import Activity
 from lib.period_utils import Period
 from keys import KeyChain
@@ -77,10 +78,10 @@ class CostTransfer(Activity, PGMix):
         """
         @param config_root: specify root for config
         """
-        self.CONFIG_ROOT = config_root or ''
+        self.CONFIG_ROOT = config_root or CONFIG_COMMON_PATH
 
         Activity.__init__(self, ldr, params)
-        self.cfg = _Config(f'{self.CONFIG_ROOT}{CONFIG_PATH}')
+        self.cfg = _Config(f'{self.CONFIG_ROOT}/{CONFIG_PATH}')
 
     def get_service_filter(self):
         with self.cursor() as cursor:
@@ -140,14 +141,14 @@ class CostTransfer(Activity, PGMix):
         writer.save()
         return xls_io
 
-    def report_total(self, cost_pack: pd.DataFrame):
+    def cost_total_htm(self, cost_pack: pd.DataFrame):
         total = cost_pack.append(  # add empty record for all client names
             pd.DataFrame.from_dict({
                 'work sheet': self.work_sheets().values()
             })
         )
         total_clients = total.groupby('work sheet', as_index=False).agg(
-            {'minutes': 'sum', 'task_id': 'count'}
+            {'minutes': 'sum', 'task_id': 'count', 'value': 'sum'}
         ).rename(columns={'task_id': 'tasks count'})
         total_clients['work hours'] = total_clients['minutes'].apply(lambda m: round(m/60, 1))
 
@@ -230,6 +231,22 @@ class CostTransfer(Activity, PGMix):
         )
         return raw
 
+    def run(self):
+        cp = self.get_cost_pack()
+
+        attachment = {}
+        for client, sheet_name in self.work_sheets().items():
+            client_cost_pack = cp[(cp['client'] == client)]
+            if not client_cost_pack.empty:
+                attachment[f'{sheet_name}.xlsx'] = self.work_hours_xls(client_cost_pack)
+
+        e = EmailActivity(self._ldr)
+        e['to'] = 'belov78@gmail.com'
+        e['subject'] = 'Orbita report'
+        e['smtp'] = 'P12'
+        e['body'] = f"<html>{self.cost_total_htm(cp)}</html>"
+        e['attachment'] = attachment
+        e.run()
 
 
 from datetime import datetime as dt
@@ -255,6 +272,7 @@ def update_users(user_list):
 class TestCostTransfer(TestCase):
     def setUp(self) -> None:
         self.t = CostTransfer(NS())
+
 
     def test_get_period(self):
         print(self.t.get_actual_period())
@@ -300,5 +318,12 @@ class TestCostTransfer(TestCase):
         e['attachment'] = {'sheet.xlsx': xls}
         e['body'] = sheet.style.to_html(doctype_html=True)
         e.run()
+
+    def test_send_report(self):
+        self.t['period_delta'] = -2
+        self.t['early_opened'] = True
+        self.t.run()
+
+
 
 
