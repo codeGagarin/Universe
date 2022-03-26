@@ -26,6 +26,7 @@ activity_list = [
     ISActualizer,
     ISSync,
     ISServiceUpdater,
+    CostTransfer
 ]
 
 activity_list.extend(report_activity_list)
