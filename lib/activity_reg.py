@@ -9,6 +9,7 @@ from .intraservice import ClosedFix, ISServiceUpdater
 from .archiver import Archiver
 from .reports.report_reg import activity_list as report_activity_list
 from .intraservice.sync_lib import ISSync, ISActualizer
+from .clientbase.cost_transfer import CostTransfer
 
 activity_list = [
     EmailActivity,
