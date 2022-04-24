@@ -172,7 +172,7 @@ class CostTransfer(Activity, PGMix):
                 """
                     WITH
                          current_expenses AS (
-                            SELECT e."TaskId" task_id, e."UserId" agent_id,
+                            SELECT e."TaskId" task_id, e."UserId" agent_id, e."DateExp" date_exp,
                             e."Minutes" minutes, t."ServiceId" service_id
                             FROM "Expenses" e LEFT JOIN "Tasks" t ON t."Id"=e."TaskId"
                             WHERE t."ServiceId" IN ({0})
@@ -180,7 +180,7 @@ class CostTransfer(Activity, PGMix):
                             AND e."DateExp" BETWEEN {2} AND {3}
                          ),
                          prev_expenses AS (
-                            SELECT e."TaskId" task_id, e."UserId" agent_id,
+                            SELECT e."TaskId" task_id, e."UserId" agent_id, e."DateExp" date_exp,
                             e."Minutes" minutes, t."ServiceId" service_id
                             FROM "Expenses" e LEFT JOIN "Tasks" t ON t."Id"=e."TaskId"
                             WHERE t."ServiceId" IN ({0})
@@ -195,8 +195,8 @@ class CostTransfer(Activity, PGMix):
                             SELECT * FROM prev_expenses
                          ),
                          task_exp AS (
-                            SELECT service_id, task_id, agent_id, sum(minutes) AS minutes FROM union_expenses
-                            GROUP BY service_id, task_id, agent_id
+                            SELECT service_id, task_id, agent_id, date_exp, sum(minutes) AS minutes FROM union_expenses
+                            GROUP BY service_id, task_id, agent_id, date_exp
                         )
                     SELECT task_exp.*, t."Name" AS name, ex."Name" AS agent_name,
                         cr."Name" AS creator, cr."Id" AS creator_id, cr."CompanyName" AS client_name
@@ -210,7 +210,7 @@ class CostTransfer(Activity, PGMix):
                 sql.SQL(', ').join(map(sql.Literal, filter_agents)),
                 sql.Literal(p.begin), sql.Literal(p.end), sql.Literal(self['early_opened'] or False)
             )
-            csv_query = sql.SQL("COPY ({0}) TO STDOUT WITH CSV HEADER").format(cost_query)
+            csv_query = sql.SQL("COPY ({}) TO STDOUT WITH CSV HEADER").format(cost_query)
 
             with io.StringIO() as data:
                 cursor.copy_expert(csv_query, data)
