@@ -42,6 +42,15 @@ def transfer():
     return f"""<html> {ct.cost_total_htm(cp)} </html>"""
 
 
+@app.route('/transfer/csv')
+def transfer_csv():
+    ct = CostTransfer(NullStarter())
+    ct['early_opened'] = True
+    ct['period_delta'] = -2
+    cp = ct.get_cost_pack()
+    return cp.to_csv()
+
+
 @app.route('/report/')
 def report():
     conn = Report.get_connection(KeyChain.PG_KEY)
