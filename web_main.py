@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, jsonify, redirect, flash, get_flashed_messages, g
+from flask import Flask, request, Response, render_template, jsonify, redirect, flash, get_flashed_messages, g
 
 from keys import KeyChain
 from report import Report
@@ -48,7 +48,8 @@ def transfer_csv():
     ct['early_opened'] = True
     ct['period_delta'] = -2
     cp = ct.get_cost_pack()
-    return cp.to_csv()
+
+    return Response(cp.to_csv(), mimetype='text/csv')
 
 
 @app.route('/report/')
