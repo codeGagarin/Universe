@@ -45,7 +45,7 @@ def transfer():
 @app.route('/transfer/csv')
 def transfer_csv():
     ct = CostTransfer(NullStarter())
-    ct['early_opened'] = True
+    ct['early_opened'] = False
     ct['period_delta'] = -2
     cp = ct.get_cost_pack()
 

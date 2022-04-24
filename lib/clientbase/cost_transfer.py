@@ -195,8 +195,11 @@ class CostTransfer(Activity, PGMix):
                             SELECT * FROM prev_expenses
                          ),
                          task_exp AS (
-                            SELECT service_id, task_id, agent_id, date_exp, sum(minutes) AS minutes FROM union_expenses
-                            GROUP BY service_id, task_id, agent_id, date_exp
+                            SELECT service_id, task_id, agent_id, sum(minutes) minutes, 
+                            array_agg(date_part('day', date_exp)::integer) days_exp_details,
+                            array_agg(minutes) minutes_exp_details                              
+                            FROM union_expenses
+                            GROUP BY service_id, task_id, agent_id
                         )
                     SELECT task_exp.*, t."Name" AS name, ex."Name" AS agent_name,
                         cr."Name" AS creator, cr."Id" AS creator_id, cr."CompanyName" AS client_name
@@ -217,6 +220,26 @@ class CostTransfer(Activity, PGMix):
                 data.seek(0)
                 raw = pd.read_csv(data)
 
+        def to_hr_mm(minutes: int) -> str:
+            """ Convert minutes sum to HH:MM format
+            >>> to_hr_mm(122)
+            '2:02' """
+            return f'{minutes // 60}:{minutes % 60:02}'
+
+        def adapter(value) -> tuple:
+            """ Convert postgress array value to Python tuple
+            >>> adapter('{1,2,3}')
+            tuple(1,2,3) """
+            return tuple(int(i) for i in value.replace('{', '').replace('}', '').split(',') if i != '')
+
+        def combine(days: tuple, minutes: tuple) -> str:
+            """ Combine expense days with minutes
+            >>> combine((1, 10, 26), (15, 109, 30))
+            '01-0:15, 10-1:49, 26-0:30' """
+            return ', '.join(f"{days[i]:02}-{to_hr_mm(minutes[i])}" for i in range(len(days)))
+
+        raw["days_exp_details"] = raw["days_exp_details"].apply(adapter)
+        raw["minutes_exp_details"] = raw["minutes_exp_details"].apply(adapter)
         raw['client_id'] = raw['service_id'].apply(filter_services.get)
         raw['client'] = raw['client_id'].apply(self.cfg.ids_clients().get)
         raw['agent'] = raw['agent_id'].apply(self.cfg.ids_agents().get)
@@ -224,19 +247,25 @@ class CostTransfer(Activity, PGMix):
         raw['rate_value'] = raw.apply(
             lambda r: self.cfg.get_rate_value(r['client'], r['rate']), axis=1
         )
-        raw['hours'] = raw['minutes'].apply(lambda mm: f'{mm // 60}:{mm % 60:02}')
+        raw['hours'] = raw['minutes'].apply(to_hr_mm)
         raw['value'] = raw.apply(lambda r: round(r['rate_value']*r['minutes']/60), axis=1)
+        raw['exp_details'] = raw.apply(lambda row: combine(row['days_exp_details'], row['minutes_exp_details']), axis=1)
+
         raw['work sheet'] = raw['client'].apply(
             lambda client: self.work_sheets()[client]
         )
         return raw
 
+    @staticmethod
+    def work_sheet_data(cost_pack, client):
+        return cost_pack[(cost_pack['client'] == client)]
+
     def run(self):
-        cp = self.get_cost_pack()
+        cost_pack = self.get_cost_pack()
 
         attachment = {}
         for client, sheet_name in self.work_sheets().items():
-            client_cost_pack = cp[(cp['client'] == client)]
+            client_cost_pack = self.work_sheet_data(cost_pack, client)
             if not client_cost_pack.empty:
                 attachment[f'{sheet_name}.xlsx'] = self.work_hours_xls(client_cost_pack)
 
@@ -244,7 +273,7 @@ class CostTransfer(Activity, PGMix):
         e['to'] = 'belov78@gmail.com'
         e['subject'] = 'Orbita report'
         e['smtp'] = 'P12'
-        e['body'] = f"<html>{self.cost_total_htm(cp)}</html>"
+        e['body'] = f"<html>{self.cost_total_htm(cost_pack)}</html>"
         e['attachment'] = attachment
         e.run()
 
