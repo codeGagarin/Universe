@@ -14,11 +14,13 @@ clients:
     IS: 12
     sheet_prefix: ВГЭР
     rates:
+      ЭК1: 1300
       ПР3: 2500
   BG:
     IS: 30
     sheet_prefix: БЛР
     rates:
+      ЭК1: 1300
       ПР3: 2500
 
 groups:
