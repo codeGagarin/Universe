@@ -234,9 +234,17 @@ class CostTransfer(Activity, PGMix):
 
         def combine(days: tuple, minutes: tuple) -> str:
             """ Combine expense days with minutes
-            >>> combine((1, 10, 26), (15, 109, 30))
-            '01-0:15, 10-1:49, 26-0:30' """
-            return ', '.join(f"{days[i]:02}-{to_hr_mm(minutes[i])}" for i in range(len(days)))
+            >>> combine((1, 26, 10), (15, 109, 30))
+            '01-0:15, 10-0:30, 26-1:49' """
+            return ', '.join(
+                f"{dd:02}-{to_hr_mm(mm)}" for dd, mm
+                in sorted(
+                    (
+                        (days[i], minutes[i])
+                        for i in range(len(days))
+                    ), key=lambda pair: pair[0]
+                )
+            )
 
         raw["days_exp_details"] = raw["days_exp_details"].apply(adapter)
         raw["minutes_exp_details"] = raw["minutes_exp_details"].apply(adapter)
