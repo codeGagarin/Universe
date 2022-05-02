@@ -1,32 +1,38 @@
----
 agents:
-  SK: { IS: 396, rate: ЭК1 }
-  GS: { IS: 1665, rate: ПР3 }
-#  AP: { IS: 405 }
+  SK:
+    intra_id: 396
+    default_rate_type: EK1
+  GS:
+    intra_id: 1665
+    default_rate_type: PR3
 
 clients:
   NT:
-    IS: 8
+    intra_id: 8
     sheet_prefix: НТР
+    report_group: Group_01
     rates:
-      ЭК1: 1200
+      EK1: 1200
   VG:
-    IS: 12
+    intra_id: 12
     sheet_prefix: ВГЭР
+    report_group: Group_02
     rates:
-      ЭК1: 1300
-      ПР3: 2500
+      EK1: 1300
+      PR3: 2500
   BG:
-    IS: 30
+    report_group: Group_03
+    intra_id: 30
     sheet_prefix: БЛР
     rates:
-      ЭК1: 1300
-      ПР3: 2500
+      EK1: 1300
+      PR3: 2500
 
-groups:
-  Group_01: NT
-  Group_02: VG
-  Group_03: BG
+rate_description:
+  EK1: ЭК1
+  EK2: ЭК2
+  EK3: ЭК3
+  PR3: ПР3
 
 xls:
   Тикет: [task_id, 7]
@@ -37,3 +43,7 @@ xls:
   Исполнитель: [agent_name, 20]
   Стоимость: [value, 10]
   Детализация: [exp_details, 50]
+
+
+
+

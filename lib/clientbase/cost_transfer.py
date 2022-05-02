@@ -1,7 +1,11 @@
 import io
 
+from enum import Enum
+from typing import List, Dict
+
 import pandas as pd
 import yaml
+from pydantic import BaseModel, validator
 
 from cfg import CONFIG_COMMON_PATH
 from lib.schedutils import Activity
@@ -10,62 +14,59 @@ from keys import KeyChain
 from lib.pg_utils import PGMix, sql
 from lib.mail import EmailActivity
 
-CONFIG_PATH = 'cost_config.yaml'
+CONFIG_PATH_NEW = 'cost_config.yaml'
 
 
-class _Config:
-    def __init__(self, cfg_path):
-        with open(cfg_path, 'r') as cfg_file:
-            cfg = yaml.safe_load(cfg_file)
-        self._clients = cfg['clients']
-        self._groups = cfg['groups']
-        self._agents = cfg['agents']
-        self._xls = cfg['xls']
+class RateEnum(str, Enum):
+    EK1 = 'EK1'
+    EK2 = 'EK2'
+    EK3 = 'EK3'
+    PR3 = 'PR3'
 
-    def groups_clients(self):
-        return {
-            key: self._clients[value]['IS']
-            for key, value
-            in self._groups.items()
-        }
 
-    def ids_clients(self):
-        return {
-            self._clients[key]['IS']: key
-            for key, value
-            in self._clients.items()
-        }
+class Agent(BaseModel):
+    name: str
+    intra_id: int
+    default_rate_type: RateEnum
 
-    def clients_params(self):
-        return self._clients
 
-    def ids_agents(self):
-        return {
-            params['IS']: agent
-            for agent, params
-            in self._agents.items()
-        }
+class Client(BaseModel):
+    name: str
+    intra_id: int
+    sheet_prefix: str
+    rates: Dict[RateEnum, int]
+    report_group: str
 
-    def agents_list(self):
-        return list(
-            self.ids_agents().keys()
-        )
 
-    def agents_rates(self):
-        return {
-            agent: params['rate']
-            for agent, params
-            in self._agents.items()
-        }
+class ReportColumn(BaseModel):
+    query_field_id: str
+    caption: str
+    column_size: int
 
-    def get_rate_value(self, client, rate):
-        return self._clients[client]['rates'][rate]
 
-    def aliases_columns(self):
-        return {alias: params[0] for alias, params in self._xls.items()}.items()
+class Config(BaseModel):
+    agents: List[Agent]
+    clients: List[Client]
+    rate_description: Dict[RateEnum, str]
+    xls: List[ReportColumn]
 
-    def aliases_ids_sizes(self):
-        return enumerate((params[1] for params in self._xls.values()))
+    @validator('agents', pre=True)
+    def agents_dict_to_list(cls, value):
+        return [Agent(
+            name=k, **v
+        ) for k, v in value.items()]
+
+    @validator('clients', pre=True)
+    def clients_dict_to_list(cls, value):
+        return [Client(
+            name=k, **v
+        ) for k, v in value.items()]
+
+    @validator('xls', pre=True)
+    def xls_dict_to_list(cls, value):
+        return [ReportColumn(
+            query_field_id=v[0], caption=k, column_size=v[1]
+        ) for k, v in value.items()]
 
 
 class CostTransfer(Activity, PGMix):
@@ -78,24 +79,25 @@ class CostTransfer(Activity, PGMix):
         """
         @param config_root: specify root for config
         """
-        self.CONFIG_ROOT = config_root or CONFIG_COMMON_PATH
-
         Activity.__init__(self, ldr, params)
-        self.cfg = _Config(f'{self.CONFIG_ROOT}/{CONFIG_PATH}')
+        self.CONFIG_ROOT = config_root or CONFIG_COMMON_PATH
+        with open(f'{CONFIG_COMMON_PATH}/{CONFIG_PATH_NEW}', 'r') as cfg_file:
+            cfg_dict = yaml.safe_load(cfg_file)
+            self.cfg = Config(**cfg_dict)
 
     def get_service_filter(self):
         with self.cursor() as cursor:
             raw_services = {}
-            for group_name, client_id in self.cfg.groups_clients().items():
+            for client in self.cfg.clients:
                 cursor.execute(
                     sql.SQL(
                         """ SELECT "Id" FROM "Services" WHERE "Description" LIKE {} """
                     ).format(
-                        sql.Literal(f'%[{group_name}]%')
+                        sql.Literal(f'%[{client.report_group}]%')
                     )
                 )
                 for rec in cursor:
-                    raw_services[rec.Id] = client_id
+                    raw_services[rec.Id] = client.intra_id
 
             unfold_services = {}
             for service_id, client_id in raw_services.items():
@@ -119,14 +121,22 @@ class CostTransfer(Activity, PGMix):
 
     def work_sheets(self) -> dict:
         return {
-            client: f'{params["sheet_prefix"]}{self.get_actual_period().begin:%y%m}'
-            for client, params in self.cfg.clients_params().items()
+            client.name: f'{client.sheet_prefix}{self.get_actual_period().begin:%y%m}'
+            for client in self.cfg.clients
         }
 
     def work_hours_xls(self, cost_pack):
+        """ Make readable: rename, adapt and resize xls-columns """
         work_hours = pd.DataFrame()
-        for alias, column in self.cfg.aliases_columns():
-            work_hours[alias] = cost_pack[column]
+        column_adapters = {
+            'rate': lambda enum_rate: self.cfg.rate_description[enum_rate]
+        }
+
+        for column in self.cfg.xls:
+            target_column = cost_pack[column.query_field_id]
+            work_hours[column.caption] = target_column.apply(column_adapters[column.query_field_id]) \
+                if column_adapters.get(column.query_field_id) \
+                else target_column
 
         xls_sheet_name = 'Expenses'
         xls_io = io.BytesIO()
@@ -135,8 +145,9 @@ class CostTransfer(Activity, PGMix):
 
         # adjust column width
         xls_sheet = writer.sheets[xls_sheet_name]
-        for column_id, size in self.cfg.aliases_ids_sizes():  # loop through all columns
-            xls_sheet.set_column(column_id, column_id, size)  # set column width
+
+        for column_id, size in enumerate(i.column_size for i in self.cfg.xls):
+            xls_sheet.set_column(column_id, column_id, size)  # set column size
 
         writer.save()
         return xls_io
@@ -165,14 +176,13 @@ class CostTransfer(Activity, PGMix):
 
     def get_cost_pack(self):
         p = self.get_actual_period()
-        filter_agents = self.cfg.agents_list()
         filter_services = self.get_service_filter()
         with self.cursor() as cursor:
             cost_query = sql.SQL(
                 """
                     WITH
                          current_expenses AS (
-                            SELECT e."TaskId" task_id, e."UserId" agent_id, e."DateExp" date_exp,
+                            SELECT e."TaskId" task_id, e."UserId" agent_id, e."DateExp" date_exp, e."Id" exp_id,
                             e."Minutes" minutes, t."ServiceId" service_id
                             FROM "Expenses" e LEFT JOIN "Tasks" t ON t."Id"=e."TaskId"
                             WHERE t."ServiceId" IN ({0})
@@ -180,7 +190,7 @@ class CostTransfer(Activity, PGMix):
                             AND e."DateExp" BETWEEN {2} AND {3}
                          ),
                          prev_expenses AS (
-                            SELECT e."TaskId" task_id, e."UserId" agent_id, e."DateExp" date_exp,
+                            SELECT e."TaskId" task_id, e."UserId" agent_id, e."DateExp" date_exp, e."Id" exp_id,
                             e."Minutes" minutes, t."ServiceId" service_id
                             FROM "Expenses" e LEFT JOIN "Tasks" t ON t."Id"=e."TaskId"
                             WHERE t."ServiceId" IN ({0})
@@ -196,8 +206,9 @@ class CostTransfer(Activity, PGMix):
                          ),
                          task_exp AS (
                             SELECT service_id, task_id, agent_id, sum(minutes) minutes, 
-                            array_agg(date_part('day', date_exp)::integer) days_exp_details,
-                            array_agg(minutes) minutes_exp_details                              
+                               array_agg(right(to_char(date_part('day', date_exp)::integer, '00'), 
+                               2)||'-'||minutes/60||':'||right(to_char(minutes%60, '00'), 
+                               2) order by exp_id) exp_details
                             FROM union_expenses
                             GROUP BY service_id, task_id, agent_id
                         )
@@ -210,7 +221,7 @@ class CostTransfer(Activity, PGMix):
                 """
             ).format(
                 sql.SQL(', ').join(map(sql.Literal, filter_services)),
-                sql.SQL(', ').join(map(sql.Literal, filter_agents)),
+                sql.SQL(', ').join(map(sql.Literal, (agent.intra_id for agent in self.cfg.agents))),
                 sql.Literal(p.begin), sql.Literal(p.end), sql.Literal(self['early_opened'] or False)
             )
             csv_query = sql.SQL("COPY ({}) TO STDOUT WITH CSV HEADER").format(cost_query)
@@ -226,38 +237,32 @@ class CostTransfer(Activity, PGMix):
             '2:02' """
             return f'{minutes // 60}:{minutes % 60:02}'
 
-        def adapter(value) -> tuple:
+        def adapter(value) -> str:
             """ Convert postgress array value to Python tuple
-            >>> adapter('{1,2,3}')
-            tuple(1,2,3) """
-            return tuple(int(i) for i in value.replace('{', '').replace('}', '').split(',') if i != '')
+            >>> adapter('{1-2:20,2-1:13,3-0:45}')
+            1-2:20, 2-1:13, 3-0:45 """
+            return value.replace('{', '').replace('}', '').replace(',', ', ')
 
-        def combine(days: tuple, minutes: tuple) -> str:
-            """ Combine expense days with minutes
-            >>> combine((1, 26, 10), (15, 109, 30))
-            '01-0:15, 10-0:30, 26-1:49' """
-            return ', '.join(
-                f"{dd:02}-{to_hr_mm(mm)}" for dd, mm
-                in sorted(
-                    (
-                        (days[i], minutes[i])
-                        for i in range(len(days))
-                    ), key=lambda pair: pair[0]
-                )
-            )
-
-        raw["days_exp_details"] = raw["days_exp_details"].apply(adapter)
-        raw["minutes_exp_details"] = raw["minutes_exp_details"].apply(adapter)
+        raw['client_name'].fillna('', inplace=True)
         raw['client_id'] = raw['service_id'].apply(filter_services.get)
-        raw['client'] = raw['client_id'].apply(self.cfg.ids_clients().get)
-        raw['agent'] = raw['agent_id'].apply(self.cfg.ids_agents().get)
-        raw['rate'] = raw['agent'].apply(self.cfg.agents_rates().get)
+        raw['client'] = raw['client_id'].apply(
+            {c.intra_id: c.name for c in self.cfg.clients}.get
+        )
+        raw['agent'] = raw['agent_id'].apply(
+            {a.intra_id: a.name for a in self.cfg.agents}.get
+        )
+        raw['rate'] = raw['agent'].apply(
+            {a.name: a.default_rate_type for a in self.cfg.agents}.get
+        )
+
         raw['rate_value'] = raw.apply(
-            lambda r: self.cfg.get_rate_value(r['client'], r['rate']), axis=1
+            lambda row: {c.name: c.rates for c in self.cfg.clients}[row.client][row.rate]
+            # lambda r: self.cfg.get_rate_value(r['client'], r['rate'])
+            , axis=1
         )
         raw['hours'] = raw['minutes'].apply(to_hr_mm)
         raw['value'] = raw.apply(lambda r: round(r['rate_value']*r['minutes']/60), axis=1)
-        raw['exp_details'] = raw.apply(lambda row: combine(row['days_exp_details'], row['minutes_exp_details']), axis=1)
+        raw['exp_details'] = raw['exp_details'].apply(adapter)
 
         raw['work sheet'] = raw['client'].apply(
             lambda client: self.work_sheets()[client]
@@ -309,6 +314,7 @@ def update_users(user_list):
 class TestCostTransfer(TestCase):
     def setUp(self) -> None:
         self.t = CostTransfer(NS())
+        pass
 
 
     def test_get_period(self):
@@ -360,6 +366,10 @@ class TestCostTransfer(TestCase):
         self.t['period_delta'] = -2
         self.t['early_opened'] = True
         self.t.run()
+
+
+
+
 
 
 
