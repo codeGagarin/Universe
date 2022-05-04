@@ -1,11 +1,9 @@
-"""
-    Postgres Connection Utils
-"""
-
+import io
 import psycopg2
 import psycopg2.extensions
 import psycopg2.extras
 from psycopg2 import sql
+
 
 __all__ = \
     (
@@ -24,7 +22,6 @@ class PGMix:
     
         def __init__(self):
             PGMix.__init__(self, KeyChain.BLA_BLA)  # First priority, optional
-    
     """
 
     def __connect(self) -> psycopg2.extensions.connection:
@@ -57,4 +54,13 @@ class PGMix:
 
     def commit(self):
         self._conn.commit()
+
+    def to_csv(self, query):
+        """ Return query result as csv-stream """
+        csv_query = sql.SQL("COPY ({}) TO STDOUT WITH CSV HEADER").format(query)
+        data = io.StringIO()
+        with self.cursor() as cursor:
+            cursor.copy_expert(csv_query, data)
+            data.seek(0)
+        return data
 

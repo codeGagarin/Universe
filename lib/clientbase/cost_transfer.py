@@ -1,11 +1,10 @@
-import io
-
 from enum import Enum
 from typing import List, Dict
 
 import pandas as pd
 import yaml
 from pydantic import BaseModel, validator
+
 
 from cfg import CONFIG_COMMON_PATH
 from lib.schedutils import Activity
@@ -224,12 +223,10 @@ class CostTransfer(Activity, PGMix):
                 sql.SQL(', ').join(map(sql.Literal, (agent.intra_id for agent in self.cfg.agents))),
                 sql.Literal(p.begin), sql.Literal(p.end), sql.Literal(self['early_opened'] or False)
             )
-            csv_query = sql.SQL("COPY ({}) TO STDOUT WITH CSV HEADER").format(cost_query)
 
-            with io.StringIO() as data:
-                cursor.copy_expert(csv_query, data)
-                data.seek(0)
-                raw = pd.read_csv(data)
+            raw = pd.read_csv(
+                self.to_csv(cost_query)
+            )
 
         def to_hr_mm(minutes: int) -> str:
             """ Convert minutes sum to HH:MM format
@@ -316,7 +313,6 @@ class TestCostTransfer(TestCase):
         self.t = CostTransfer(NS())
         pass
 
-
     def test_get_period(self):
         print(self.t.get_actual_period())
 
@@ -364,8 +360,12 @@ class TestCostTransfer(TestCase):
 
     def test_send_report(self):
         self.t['period_delta'] = -2
-        self.t['early_opened'] = True
+        self.t['early_opened'] = False
         self.t.run()
+
+
+
+
 
 
 
