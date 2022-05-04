@@ -55,7 +55,7 @@ class Starter:
 
 
 class Activity:
-    def __init__(self, ldr, params=None):
+    def __init__(self, ldr=None, params=None):
         if params:
             self._params = params
         else:
@@ -129,8 +129,10 @@ class Activity:
     def get_crontab(cls):
         return None
 
-    def apply(self, due_date=None):
-        return self._ldr.to_plan(self, due_date)
+    def apply(self, ldr: Starter = None, due_date=None):
+        _loader: Starter = ldr if ldr else self._ldr
+        assert _loader, "Param loader= must be inited"
+        return _loader.to_plan(self, due_date)
 
     def run(self):
         pass
@@ -185,3 +187,18 @@ class TestActivity(TestCase):
         b = Activity(self._starter)
         b._fields = lambda: 'name descr'
         b.update_params(dump)
+
+    def test_wo_ldr_run(self):
+        NS = NullStarter
+
+        Activity().run()
+        Activity(ldr=NS()).apply()
+        Activity().apply(ldr=NS())
+
+        # check empty loader assertion
+        try:
+            Activity().apply()
+        except AssertionError:
+            pass
+        else:
+            self.assertTrue(False, 'Test failed :-(')
