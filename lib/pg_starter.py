@@ -11,7 +11,6 @@ from psycopg2 import extras
 
 from lib.schedutils import Starter
 from lib.schedutils import Activity
-import lib.tablesync as tablesync
 
 from keys import KeyChain
 
@@ -24,15 +23,6 @@ class PGStarter(Starter):
         super().__init__(activity_list, report_list)
         self._db_conn = psycopg2.connect(dbname=pg_key["db_name"], user=pg_key["user"],
                                          password=pg_key["pwd"], host=pg_key["host"], port=pg_key.get("port", None))
-
-        self.external_tabs = {}
-        # download external crontabs setting
-        _tab = tablesync.download_table(pg_key['cron_tabs'])
-        for rec in _tab['data']:
-            _type = rec[0]
-            _cron = rec[1]
-            if croniter.is_valid(_cron):
-                self.external_tabs[_type]=_cron
 
     def to_plan(self, activity: Activity, due_date=None) -> int:
         query_params = {
@@ -290,8 +280,6 @@ class PGStarterTest(TestCase):
     def test_track_schedule(self):
         self._starter.track_schedule()
 
-    def test_external_crontabs(self):
-        print(self._starter._registry)
 
 
 
