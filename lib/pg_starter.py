@@ -9,8 +9,10 @@ import psycopg2
 from psycopg2 import sql
 from psycopg2 import extras
 
+from lib.abs import Alarmer
 from lib.schedutils import Starter
 from lib.schedutils import Activity
+from lib.reports.items.starter import JobDetails
 
 from keys import KeyChain
 
@@ -18,9 +20,15 @@ from keys import KeyChain
 class PGStarter(Starter):
     _table_name = "Loader"
 
-    def __init__(self, activity_list=None, report_list=None):
+    def __init__(
+            self,
+            activity_list=None,
+            report_list=None,
+            alarmer: Alarmer = None
+                 ):
         pg_key = KeyChain.PG_STARTER_KEY
         super().__init__(activity_list, report_list)
+        self.alarmer = alarmer
         self._db_conn = psycopg2.connect(dbname=pg_key["db_name"], user=pg_key["user"],
                                          password=pg_key["pwd"], host=pg_key["host"], port=pg_key.get("port", None))
 
@@ -122,6 +130,18 @@ class PGStarter(Starter):
         cursor.execute(q_clear_all)
         self._db_conn.commit()
 
+    def alarm_message(self, activity_id, activity_type, activity_params, trace_back):
+        idx = self.report_manager.params_to_idx(
+            JobDetails.Params(
+                ID=activity_id,
+                BACK_PAGE_IDX=0
+            )
+        )
+        report = JobDetails(self.report_manager)
+        report.ABSOLUTE_WEB_PATH = KeyChain.WEB_PATH
+        url = report.report_url_for(idx)
+        return f"Starter fail: {activity_type} {activity_params}\n{url}\n{trace_back}"
+
     def track_schedule(self):
         self._update_current_crontab_schedule()
 
@@ -170,8 +190,13 @@ class PGStarter(Starter):
                     activity.update_params(act_dump)
                     activity.run()
                 except Exception:
+                    tb = traceback.format_exc()
                     print('Fail:\n', traceback.format_exc())
                     status = self.JobStatus.FAIL
+                    if self.alarmer:
+                        self.alarmer.alarm(
+                            self.alarm_message(act_id, act_type, act_dump, tb)
+                        )
                 else:
                     status = self.JobStatus.DONE
             finish = datetime.now()
@@ -279,6 +304,42 @@ class PGStarterTest(TestCase):
 
     def test_track_schedule(self):
         self._starter.track_schedule()
+
+    def test_alarmer(self):
+        class TestAlarmer(Alarmer):
+            last_msg: str = None
+
+            def alarm(self, msg: str):
+                self.last_msg = msg[: msg.find('Traceback')]  # cut traceback section
+
+        alarmer = TestAlarmer()
+
+        act_params = {
+            'p_str': 'Hello',
+            'p_int': '12',
+            'p_datetime': datetime(2022, 5, 5)
+        }
+
+        class FailActivity(Activity):
+            def _fields(self) -> str:
+                return ' '.join(k for k in act_params.keys())
+
+            def run(self):
+                raise Exception('I am fail, ever fail!')
+
+        act = FailActivity(params=act_params)
+
+        ldr = PGStarter(activity_list=[FailActivity], report_list=[JobDetails], alarmer=alarmer)
+
+        activity_id = act.apply(ldr)
+        activity_type = act.get_type()
+        activity_params = act.dump_params()
+        ldr.track_schedule()
+        self.assertEqual(
+            alarmer.last_msg,
+            ldr.alarm_message(activity_id, activity_type, activity_params, '')
+        )
+        print(alarmer.last_msg)
 
 
 
