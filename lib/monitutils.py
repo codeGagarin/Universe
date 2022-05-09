@@ -42,7 +42,8 @@ class Monitoring(Activity, PGMix):
         if count == 0:
             alarm.alarm("[VGUNF]:No counters have been loaded in the past hour!")
 
-    def check_komtet_503_error(self):
+    @staticmethod
+    def check_komtet_503_error():
         url = 'https://orbita40.space/'
         s = requests.session()
         urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -57,5 +58,5 @@ class Monitoring(Activity, PGMix):
         s.close()
 
     def run(self):
-        self.check_income_counter_data('vgunf')
+        # self.check_income_counter_data('vgunf')
         self.check_komtet_503_error()
