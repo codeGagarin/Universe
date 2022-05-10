@@ -1,15 +1,26 @@
 import io
+from typing import Optional
+
 import psycopg2
 import psycopg2.extensions
 import psycopg2.extras
 from psycopg2 import sql
-
+from pydantic import BaseModel
 
 __all__ = \
     (
         'PGMix',
-        'sql'
+        'sql',
+        'DataBaseKey'
     )
+
+
+class DataBaseKey(BaseModel):
+    db_name: str
+    user: str
+    pwd: str
+    host: str
+    port: Optional[int] = None
 
 
 class PGMix:
@@ -25,12 +36,13 @@ class PGMix:
     """
 
     def __connect(self) -> psycopg2.extensions.connection:
+        key = self.PG_KEY if isinstance(self.PG_KEY, dict) else self.PG_KEY.dict()
         return psycopg2.connect(
-            dbname=self.PG_KEY["db_name"],
-            user=self.PG_KEY["user"],
-            password=self.PG_KEY["pwd"],
-            host=self.PG_KEY["host"],
-            port=self.PG_KEY.get('port')
+            dbname=key["db_name"],
+            user=key["user"],
+            password=key["pwd"],
+            host=key["host"],
+            port=key.get('port')
         )
 
     def __init_ext(self):
@@ -63,4 +75,14 @@ class PGMix:
             cursor.copy_expert(csv_query, data)
             data.seek(0)
         return data
+
+
+from unittest import TestCase
+
+
+class TestPGMix(TestCase):
+    def test_init(self):
+        from keys import KeyChain
+        PGMix(KeyChain.PG_KEY)
+        PGMix(DataBaseKey(**KeyChain.PG_KEY))
 
