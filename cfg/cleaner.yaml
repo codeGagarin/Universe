@@ -1,0 +1,7 @@
+jobs:
+  - db_key: PG_PERF_KEY
+    table_name: TJLines
+    stamp_field: stamp
+    storage_depth: 5m
+
+

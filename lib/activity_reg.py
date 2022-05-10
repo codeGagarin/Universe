@@ -10,6 +10,7 @@ from .archiver import Archiver
 from .reports.report_reg import activity_list as report_activity_list
 from .intraservice.sync_lib import ISSync, ISActualizer
 from .clientbase.cost_transfer import CostTransfer
+from .datatransfer.activities.cleaner import Cleaner
 
 activity_list = [
     EmailActivity,
@@ -26,7 +27,8 @@ activity_list = [
     ISActualizer,
     ISSync,
     ISServiceUpdater,
-    CostTransfer
+    CostTransfer,
+    Cleaner
 ]
 
 activity_list.extend(report_activity_list)
