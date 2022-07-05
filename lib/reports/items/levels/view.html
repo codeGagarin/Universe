@@ -1,0 +1,70 @@
+% from 'macro.html' import mark_title
+% extends "base.html"
+
+% set title = "FZ levels"
+
+{% block title %} {{ title }} {% endblock %}
+{% block head %} {{ super() }} {% endblock %}
+
+% macro vector(caption, data)
+    <h3 class="text-muted">{{ caption }}</h3>
+    <table class="table">
+        <thead>
+            <tr class="text-muted">
+                % for key in data.keys()
+                    <td>{{ key }}</td>
+                % endfor
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                % for delta in data.values()
+                    <td>{{ delta }}</td>
+                % endfor
+            </tr>
+        </tbody>
+    </table>
+% endmacro
+
+
+% block content
+
+<div class="row">
+    <div class="col-md-8">
+
+        <h1>{{ title }}</h1>
+
+<!--        {{ vector('C2 delta', DT().c2_delta) }}-->
+<!--        {{ vector('C1 delta', DT().c1_delta) }}-->
+<!--        {{ vector('C2-C1', DT().c2_c1_delta) }}-->
+<!--        {{ vector('C0 level', DT().c0_level) }}-->
+
+    % set param_list = ('c2_delta', 'c1_delta', 'c2_c1_delta', 'c0_level')
+
+
+    <table class="table">
+        <thead>
+            <tr class="text-muted">
+                <td>param</td>
+                % for key in DT('index')
+                    <td>{{ key }}</td>
+                % endfor
+            </tr>
+        </thead>
+        <tbody>
+            % for param in param_list
+                <tr>
+                    <td>{{ param }}</td>
+                    % for key in DT('index')
+                        <td>{{ DT(param)[key] }}</td>
+                    % endfor
+                </tr>
+            % endfor
+        </tbody>
+    </table>
+
+
+
+    </div>
+</div>
+% endblock

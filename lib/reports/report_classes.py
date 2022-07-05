@@ -31,6 +31,10 @@ class Report:
     class Locals:
         pass
 
+    def update_params(self, _params) -> None:
+        """ Override it bellow for updates report params """
+        pass
+
     def update_locals(self, _params, _locals) -> None:
         """ Override it bellow for updates report locals """
         pass
@@ -120,6 +124,7 @@ class Report:
         self.idx = idx
         self._params = params
 
+        self.update_params(self._params)
         self.update_locals(self._params, self._locals,)
         self.update_data(self._params, self._locals, self._data)
         self.update_details(self._params, self._locals, self._data)

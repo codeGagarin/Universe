@@ -6,6 +6,8 @@ from .items.task_report import TaskReport
 from .items.expenses_report import ExpensesReport
 from .items.presets import PresetReport
 from .items.expenses_details import ExpensesDetails
+from .items.levels import LevelsReport
+
 
 report_list = [
     PresetReport,
@@ -14,7 +16,8 @@ report_list = [
     ServiceBoard,
     TaskReport,
     ExpensesReport,
-    ExpensesDetails
+    ExpensesDetails,
+    LevelsReport,
 ]
 
 activity_list = [
