@@ -73,6 +73,10 @@ class Config(BaseModel):
 class CostTransfer(Activity, PGMix):
     PG_KEY = KeyChain.PG_COST_KEY
 
+    @classmethod
+    def get_crontab(cls):
+        return '0 5 3 * *'
+
     def _fields(self) -> str:
         return 'period_delta early_opened'
 
