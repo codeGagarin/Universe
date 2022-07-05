@@ -25,7 +25,7 @@ class LevelsReport(PGReport):
     @dataclass
     class Locals:
         """ Specify locals report params here """
-        HDR_MINUTES = 15  # initialization here is mandatory
+        HDR_MINUTES = 30  # initialization here is mandatory
         REPORT_DATE = None
 
     @dataclass
