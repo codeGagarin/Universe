@@ -78,9 +78,9 @@ class Report:
         self._marks = {}  # mark details
 
     #  BEGIN FLASK CALL SECTION  #
-    def get_data(self):
+    def get_data(self, key=None):
         """ Jinja call for report data """
-        return self._data
+        return self._data[key] if key else self._data
 
     def get_navigation(self, kind=None):
         """ Jinja call for navigation data """
