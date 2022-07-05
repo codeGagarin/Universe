@@ -1,8 +1,10 @@
 from dataclasses import dataclass
+from collections import namedtuple
 from datetime import datetime, timedelta
+import requests
+import re
 
-from ...report_classes import PGReport
-
+from lib.reports.report_classes import PGReport
 from keys import KeyChain
 
 
@@ -46,7 +48,7 @@ class LevelsReport(PGReport):
 
     def update_params(self, _params: Params) -> None:
         if not _params.STAMP:
-            _params.STAMP = datetime.now()
+            _params.STAMP = datetime.now().replace(second=0, microsecond=0)
 
     def update_details(self, _params, _locals, _data) -> None:
         """ self.add_detail(key, PARAMS, kind=some_kind) """
@@ -60,58 +62,112 @@ class LevelsReport(PGReport):
         """ self.add_nav_point(caption, params, kind) """
         pass
 
+    def get_data_from_site(self):
+        Setting = namedtuple('Setting', ['url', 're', 'names'])
+        parse_setting = (
+            Setting(
+                'http://spun.fkpkzs.ru/Level/C2',
+                r"<td class=\"timestampvalue\"><span>(.+)<\/span><\/td>\s+<td.+?>"
+                r"<span>(.+)<\/span><\/td>\s+<td.+?><span>(.+)<\/span><\/td",
+                ('Горбатый Город', 'Горбатый Море')
+            ),
+            Setting(
+                'http://spun.fkpkzs.ru/Level/C1',
+                r"<td class=\"timestampvalue\"><span>(.+)<\/span><\/td>\s+<td.+?>"
+                r"<span>(.+)<\/span><\/td>\s+<td.+?><span>(.+)<\/span><\/td",
+                ('Тунель Город', 'Тунель Море')
+            ),
+            Setting(
+                'http://spun.fkpkzs.ru',
+                r'<td class="timestampvalue"><span>(.+)<\/span><\/td>\s+<td.+?><span>(.+)<\/span>',
+                ('Горный институт', )
+            ),
+        )
+
+        LevelDataRecord = namedtuple('LevelDataRecord', ('point', 'stamp', 'value'))
+
+        def data_adapter(_data, field_names: list):
+            result = []
+            for rec in _data:
+                stamp = datetime.strptime(rec[0], "%d.%m.%Y %H:%M")
+                for i in range(0, len(field_names)):
+                    result.append(LevelDataRecord(field_names[i], stamp, int(rec[i + 1])))
+            return result
+
+        scanned_data = []
+        for record in parse_setting:
+            response = requests.get(record.url)
+            response.encoding = 'windows-1251'
+            html = response.text
+            scanned_data += data_adapter(
+                re.findall(record.re, html, re.MULTILINE), record.names
+            )
+        return scanned_data
+
+
     def update_data(self, _params: Params, _locals: Locals, _data) -> None:
-        with self.cursor() as cursor:
-            cursor.execute(self.load_query('query.sql', _params))
-            raw = cursor.fetchall()
-            point_map = {
-                'Горный институт': 'C0',
-                'Горбатый Город': ('C2', 'pre'),
-                'Горбатый Море': ('C2', 'post'),
-                'Тунель Город': ('C1', 'pre'),
-                'Тунель Море': ('C1', 'post'),
-            }
-            point_map = {v: k for k, v in point_map.items()}  # revert key <-> value in dict
 
-            def gen(index: tuple or str):
-                return {
-                    rec.stamp: rec.value
-                    for rec
-                    in raw
-                    if rec.point == point_map[index]
-                }
+        # with self.cursor() as cursor:
+        #     cursor.execute(self.load_query('query.sql', _params))
+        #     raw = cursor.fetchall()
 
-            index_minutes = {
-                _params.STAMP - timedelta(minutes=i): i
-                for i in range(_locals.HDR_MINUTES)
-            }
+        raw = self.get_data_from_site()
 
-            _data['index'] = index_minutes.values()
+        point_map = {
+            'Горный институт': 'C0',
+            'Горбатый Город': ('C2', 'pre'),
+            'Горбатый Море': ('C2', 'post'),
+            'Тунель Город': ('C1', 'pre'),
+            'Тунель Море': ('C1', 'post'),
+        }
+        point_map = {v: k for k, v in point_map.items()}  # revert key <-> value in dict
 
-            _data['c2_delta'] = {
-                index:
-                    gen(('C2', 'pre')).get(stamp, 0) - gen(('C2', 'post')).get(stamp, 0)  # levels delta
-                for stamp, index in index_minutes.items()
+        def gen(index: tuple or str):
+            return {
+                rec.stamp: rec.value
+                for rec
+                in raw
+                if rec.point == point_map[index]
             }
 
-            _data['c1_delta'] = {
-                index:
-                    gen(('C1', 'pre')).get(stamp, 0) - gen(('C1', 'post')).get(stamp, 0)  # levels delta
-                for stamp, index in index_minutes.items()
-            }
+        index_minutes = {
+            _params.STAMP - timedelta(minutes=i): i
+            for i in range(_locals.HDR_MINUTES)
+        }
 
-            _data['c2_c1_delta'] = {
-                index:
-                    gen(('C2', 'pre')).get(stamp, 0) - gen(('C1', 'pre')).get(stamp, 0)  # levels delta
-                for stamp, index in index_minutes.items()
-            }
+        _data['index'] = index_minutes.values()
 
-            _data['c0_level'] = {
-                index:
-                    gen('C0').get(stamp, 0)
-                for stamp, index in index_minutes.items()
-            }
+        _data['c2_delta'] = {
+            index:
+                gen(('C2', 'pre')).get(stamp, 0) - gen(('C2', 'post')).get(stamp, 0)  # levels delta
+            for stamp, index in index_minutes.items()
+        }
+
+        _data['c1_delta'] = {
+            index:
+                gen(('C1', 'pre')).get(stamp, 0) - gen(('C1', 'post')).get(stamp, 0)  # levels delta
+            for stamp, index in index_minutes.items()
+        }
+
+        _data['c2_c1_delta'] = {
+            index:
+                gen(('C2', 'pre')).get(stamp, 0) - gen(('C1', 'pre')).get(stamp, 0)  # levels delta
+            for stamp, index in index_minutes.items()
+        }
+
+        _data['c0_level'] = {
+            index:
+                gen('C0').get(stamp, 0)
+            for stamp, index in index_minutes.items()
+        }
 
     def do_action(self, action, form, flash) -> int:  # return target_idx
         """ Override bellow for report action handling """
         pass
+
+import unittest
+
+
+class ReportTest(unittest.TestCase):
+    def test_request(self):
+        LevelsReport.get_data_from_site(None)
