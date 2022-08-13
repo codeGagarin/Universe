@@ -3,9 +3,9 @@ from unittest import TestCase
 
 import requests
 
-from .config import Lambda, LambdasConfig
-from .sdk import Clients
-from .ops import get_function_id, create_function, update_function, set_function_access, create_version
+from config import Lambda, LambdasConfig
+from sdk import Clients
+from ops import get_function_id, create_function, update_function, set_function_access, create_version
 from keys import KeyChain
 
 

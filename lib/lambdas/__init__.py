@@ -1,5 +1,6 @@
-from .deploy import Deployer
+from .deploy import Deployer, load_config
 
 __all__ = [
-    Deployer
+    Deployer,
+    load_config,
 ]

@@ -10,9 +10,16 @@ from yandex.cloud.serverless.functions.v1.function_pb2 import Function, Resource
 from google.protobuf import duration_pb2
 
 
-from .config import Lambda
-from .sdk import Clients
+from config import Lambda
+from sdk import Clients
 from keys import KeyChain
+
+def pretty_file_size(num, suffix="B"):
+    for unit in ["", "Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi"]:
+        if abs(num) < 1024.0:
+            return f"{num:3.1f}{unit}{suffix}"
+        num /= 1024.0
+    return f"{num:.1f}Yi{suffix}"
 
 
 def check_public_access(function_id) -> bool:
@@ -136,11 +143,6 @@ def codes_to_pack(lambda_params: Lambda):
 
 def create_version(function_id: str, lambda_params: Lambda, fs_client):
     env = lambda_params.env or {}
-
-    """ Inject secrets """
-    for secret_name in lambda_params.secrets:
-        env[f'SECRET_{secret_name}'] = json.dumps(getattr(KeyChain, secret_name))
-
     op = fs_client.CreateVersion(
         fs.CreateFunctionVersionRequest(
             function_id=function_id,
@@ -153,7 +155,13 @@ def create_version(function_id: str, lambda_params: Lambda, fs_client):
             execution_timeout=duration_pb2.Duration(
                 seconds=lambda_params.execute_duration
             ),
-            environment=env,
+            environment=dict(
+                **env,
+                **{
+                    f'SECRET_{secret_name}': KeyChain.dump(secret_name)
+                    for secret_name in lambda_params.secrets or ()
+                },
+            ),
             service_account_id=service_account_name_to_id(
                 lambda_params.role
             ),
