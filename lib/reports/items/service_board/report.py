@@ -64,7 +64,7 @@ class ServiceBoard(ISReport):
             EXECUTORS=[9377, 9380, 9758]
         ),
         PresetTypes.STATION: Params(
-            TAG='УК Стация',
+            TAG='УК Станция',
             CAPTION='Отчет по сервисам и утилизация',
             FRAME_NAME=Locals.LAST_WEEK,
             SERVICE_FILTER=[139],
