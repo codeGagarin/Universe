@@ -2,7 +2,7 @@ import json
 import os
 
 
-class _KeyChainMeta:
+class _KeyChain:
     @staticmethod
     def _get_env(name):
         return os.getenv(f'SECRET_{name}')
@@ -12,9 +12,8 @@ class _KeyChainMeta:
         assert key_value, f'Key {name} does not exist'
         return json.loads(key_value)
 
-    @classmethod
-    def dump(cls, key_name: str):
-        return json.dumps(getattr(cls, key_name))
+    def dump(self, key_name: str):
+        return json.dumps(self.__getattr__(key_name))
 
 
-KeyChain = _KeyChainMeta()
+KeyChain = _KeyChain()
