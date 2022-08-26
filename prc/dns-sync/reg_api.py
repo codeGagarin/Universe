@@ -29,7 +29,6 @@ def _ext_ip():
     return response.text
 
 
-
 def api_request(cmd: str, **params) -> dict or str:
     end_point = 'https://api.reg.ru/api/regru2'
 
@@ -41,7 +40,6 @@ def api_request(cmd: str, **params) -> dict or str:
     response = requests.put(
         f'{end_point}/{cmd}?input_data={adapt_json(**auth, **params or {})}&input_format=json'
     )
-    print(response.text)
 
     response_body = json.loads(
         response.text
@@ -51,19 +49,18 @@ def api_request(cmd: str, **params) -> dict or str:
     return response_body
 
 
-def _extract_subdomains(raw_response: dict):
-    result = {}
+def _extract_subdomains(raw_response: dict, RRT: str = 'A'):
+    result = []
     for domain in raw_response['answer']['domains']:
         for record in domain['rrs']:
-            if record['rectype'] == 'A':
-                result[record['subname']] = {
-                    'domain': domain['dname'],
-                    'subname': record['content']
-                }
+            if record['rectype'] == RRT:
+                result.append(
+                    (record['subname'], record['content'])
+                )
     return result
 
 
-def get_sub_domains():
+def get_external_a_records():
     target_domain = RG_KEY['_ext_domain']
     response: dict = api_request(
         cmd='zone/get_resource_records',
@@ -74,4 +71,4 @@ def get_sub_domains():
         ]
     )
 
-    return _extract_subdomains(response)
+    return _extract_subdomains(response, 'A')
