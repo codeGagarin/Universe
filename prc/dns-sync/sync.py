@@ -1,6 +1,7 @@
+import io
+from contextlib import redirect_stdout
+
 import logging
-from logging import info, debug, warning
-import sys
 import traceback
 from datetime import datetime
 import json
@@ -25,17 +26,20 @@ report = {  # to be sent on report base
 }
 
 
-def configure_logging(level):
-    root = logging.getLogger()
-    root.setLevel(level)
+def _line(type, msg):
+    print(f'{type}: {msg}')
 
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setLevel(logging.DEBUG)
 
-    formatter = logging.Formatter('%(asctime)s-%(name)s-%(levelname)s-%(message)s')
-    handler.setFormatter(formatter)
+def info(msg):
+    _line('INFO', msg)
 
-    root.addHandler(handler)
+
+def debug(msg):
+    _line('DEBUG', msg)
+
+
+def error(msg):
+    _line('ERROR', msg)
 
 
 def dif(int_records, ext_records) -> list:
@@ -110,15 +114,17 @@ def main():
 
 
 if __name__ == '__main__':
-    begin = datetime.now()
-    configure_logging(logging.INFO)
-    try:
-        main()
-        info('Sync status: Ok')
-    except:
-        report['trace'] = traceback.format_exc()
-        info('Sync status: Fail')
-        traceback.print_exc()
+    log_stream = io.StringIO()
+    with redirect_stdout(log_stream):
+        begin = datetime.now()
+        try:
+            main()
+            info('Sync status: Ok')
+        except:
+            error(f'Sync status: Fail\n{traceback.format_exc()}')
+    print(log_stream.getvalue())
+
+    report['trace'] = log_stream.getvalue()
     report['exec_time'] = (datetime.now() - begin).seconds
 
     response = requests.post(
@@ -131,3 +137,4 @@ if __name__ == '__main__':
 
     assert response.status_code == 200, response.text
     info('Report has been sent')
+
