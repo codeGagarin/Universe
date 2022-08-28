@@ -19,7 +19,7 @@ report = {  # to be sent on report base
     'zone_ip': None,
     'zone_before': None,
     'zone_after': None,
-    'dif': [],
+    'diff': [],
     'trace': None,
     'is_ok': False,
     'exec_time': 0
@@ -42,7 +42,7 @@ def error(msg):
     _line('ERROR', msg)
 
 
-def dif(int_records, ext_records) -> list:
+def diff(int_records, ext_records) -> list:
     """ Return difference between two records for update record_list1 later """
     exclude_hosts = ('@', 'DomainDnsZones', 'ForestDnsZones')
 
@@ -104,9 +104,9 @@ def main():
 
     report['zone_ip'] = zone_ip(ext_records)
 
-    report['dif'] = dif(int_records, ext_records)
+    report['diff'] = diff(int_records, ext_records)
     update_internal_a_records(
-        report['dif']
+        report['diff']
     )
 
     report['zone_after'] = win_api.get_internal_a_records()
