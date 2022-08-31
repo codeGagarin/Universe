@@ -26,8 +26,12 @@ report = {  # to be sent on report base
 }
 
 
-def _line(type, msg):
-    print(f'{type}: {msg}')
+def _line(_type, msg):
+    print(
+        datetime.now().strftime(
+            f'%M:%S {_type}: {msg}'
+        )
+    )
 
 
 def info(msg):
