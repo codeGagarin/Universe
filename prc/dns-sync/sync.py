@@ -51,35 +51,22 @@ def diff(int_records, ext_records, sorter=None) -> list:
     """ Return difference between two records for update record_list1 later
         list((host, old_ip, new_ip), ...)
     """
-    exclude_hosts = ('@', 'DomainDnsZones', 'ForestDnsZones')
-
-    ext_index = {host: ip for host, ip in ext_records}
-    int_index = {host: ip for host, ip in int_records}
-
-    result = []
-    for host, old_ip in int_records:
-        if host in exclude_hosts:
-            continue
-
-        new_ip = ext_index.get(host)
-        if not new_ip or new_ip == old_ip:
-            continue
-
-        result.append(
-            (host, old_ip, new_ip)
+    exclude_hosts = (
+        name.lower() for name in
+        (
+            '@',
+            'DomainDnsZones',
+            'ForestDnsZones'
         )
+    )
 
-    for host, new_ip in ext_records:
-        if host in exclude_hosts:
-            continue
-
-        old_ip = int_index.get(host)
-        if new_ip == old_ip:
-            continue
-
-        result.append(
-            (host, old_ip, new_ip)
-        )
+    idx = {host: ip for host, ip in int_records}
+    result = tuple(
+        (host, idx.get(host), new_ip)
+        for host, new_ip in ext_records
+        if idx.get(host) != new_ip
+        and host.lower() not in exclude_hosts
+    )
 
     sorter = sorter or (lambda v: v)
     return sorter(result)
