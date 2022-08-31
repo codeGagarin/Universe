@@ -99,7 +99,7 @@ def zone_ip(ext_records):
 
 
 def _host_sorter(v):
-    return sorted(v, key=lambda i: i[0])
+    return sorted(v, key=lambda i: i[0].lower())
 
 
 def main():
