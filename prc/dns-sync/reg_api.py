@@ -60,7 +60,7 @@ def _extract_subdomains(raw_response: dict, RRT: str = 'A'):
     return result
 
 
-def get_external_a_records():
+def get_external_a_records(sorter=None):
     target_domain = RG_KEY['_ext_domain']
     response: dict = api_request(
         cmd='zone/get_resource_records',
@@ -70,5 +70,8 @@ def get_external_a_records():
             }
         ]
     )
+    sorter = sorter or (lambda v: v)
 
-    return _extract_subdomains(response, 'A')
+    return sorter(
+        _extract_subdomains(response, 'A')
+    )

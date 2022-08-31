@@ -42,8 +42,10 @@ def error(msg):
     _line('ERROR', msg)
 
 
-def diff(int_records, ext_records) -> list:
-    """ Return difference between two records for update record_list1 later """
+def diff(int_records, ext_records, sorter=None) -> list:
+    """ Return difference between two records for update record_list1 later
+        list((host, old_ip, new_ip), ...)
+    """
     exclude_hosts = ('@', 'DomainDnsZones', 'ForestDnsZones')
 
     ext_index = {host: ip for host, ip in ext_records}
@@ -74,7 +76,8 @@ def diff(int_records, ext_records) -> list:
             (host, old_ip, new_ip)
         )
 
-    return result
+    sorter = sorter or (lambda v: v)
+    return sorter(result)
 
 
 def update_internal_a_records(updates):
@@ -95,21 +98,25 @@ def zone_ip(ext_records):
     }['@']
 
 
+def _host_sorter(v):
+    return sorted(v, key=lambda i: i[0])
+
+
 def main():
     info('Request external records.')
-    ext_records = reg_api.get_external_a_records()
+    ext_records = reg_api.get_external_a_records(sorter=_host_sorter)
 
     info('Request internal records:')
-    int_records = report['zone_before'] = win_api.get_internal_a_records()
+    int_records = report['zone_before'] = win_api.get_internal_a_records(sorter=_host_sorter)
 
     report['zone_ip'] = zone_ip(ext_records)
 
-    report['diff'] = diff(int_records, ext_records)
+    report['diff'] = diff(int_records, ext_records, sorter=_host_sorter)
     update_internal_a_records(
         report['diff']
     )
 
-    report['zone_after'] = win_api.get_internal_a_records()
+    report['zone_after'] = win_api.get_internal_a_records(sorter=_host_sorter)
     report['is_ok'] = True
 
 

@@ -28,18 +28,21 @@ def _api_execute(pwsh_command: str):
     return response.std_out.decode('utf-8')
 
 
-def get_internal_a_records():
+def get_internal_a_records(sorter=None):
     raw_out = _api_execute(
         'Get-DnsServerResourceRecord -ZoneName "station-hotels.ru" -RRType "A"'
         ' | Select HostName, @{n="IP";E={$_.RecordData.IPV4Address}}'
     )
 
     """ Convert raw out result to list(pair(host_name, ip)) format"""
-    return list(
+    result = list(
         line.split() for line in
         raw_out.split('\r\n')
         if line != ''
     )[2:]  # skip two header lines
+
+    sorter = sorter or (lambda v: v)
+    return sorter(result)
 
 
 def add_internal_a_record(host, ip):
