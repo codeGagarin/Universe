@@ -20,6 +20,7 @@ report = {  # to be sent on report base
     'external_zone': None,
     'zone_before': None,
     'zone_after': None,
+    'raw_zone': '',
     'diff': [],
     'trace': None,
     'is_ok': False,
@@ -102,6 +103,8 @@ def main():
     int_records = report['zone_before'] = win_api.get_internal_a_records(sorter=_host_sorter)
 
     report['zone_ip'] = zone_ip(ext_records)
+
+    report['raw_zone'] = win_api.get_raw_zone()
 
     report['diff'] = diff(int_records, ext_records, sorter=_host_sorter)
     update_internal_a_records(

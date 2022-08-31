@@ -22,10 +22,15 @@ def _api_execute(pwsh_command: str):
     response = _session().run_ps(
         pwsh_command
     )
-
     assert response.status_code == 0, response.std_err.decode('utf-8')
 
     return response.std_out.decode('utf-8')
+
+
+def get_raw_zone():
+    return _api_execute(
+        'Get-DnsServerResourceRecord -ZoneName "station-hotels.ru"'
+    )
 
 
 def get_internal_a_records(sorter=None):
