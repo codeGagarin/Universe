@@ -96,14 +96,15 @@ def _host_sorter(v):
 
 
 def main():
-    info('Request external records.')
+    info('Request external records:')
     ext_records = report['external_zone'] = reg_api.get_external_a_records(sorter=_host_sorter)
+    info('Done')
 
     info('Request internal records:')
     int_records = report['zone_before'] = win_api.get_internal_a_records(sorter=_host_sorter)
+    info('Done')
 
     report['zone_ip'] = zone_ip(ext_records)
-
     report['raw_zone'] = win_api.get_raw_zone()
 
     report['diff'] = diff(int_records, ext_records, sorter=_host_sorter)
