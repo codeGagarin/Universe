@@ -109,7 +109,7 @@ def _host_sorter(v):
 
 def main():
     info('Request external records.')
-    ext_records, report['external_zone'] = reg_api.get_external_a_records(sorter=_host_sorter)
+    ext_records = report['external_zone'] = reg_api.get_external_a_records(sorter=_host_sorter)
 
     info('Request internal records:')
     int_records = report['zone_before'] = win_api.get_internal_a_records(sorter=_host_sorter)
