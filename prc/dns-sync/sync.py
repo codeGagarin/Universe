@@ -50,8 +50,8 @@ def error(msg):
 
 def diff(int_records, ext_records, sorter=None) -> list:
     """ Return difference between two records for update record_list1 later
-        list((host, old_ip, new_ip), ...)
-    """
+        list((host, old_ip, new_ip), ...)    """
+
     exclude_hosts = (
         name.lower() for name in
         (
@@ -60,6 +60,9 @@ def diff(int_records, ext_records, sorter=None) -> list:
             'ForestDnsZones'
         )
     )
+
+    int_records = ((host.lower(), ip) for host, ip in int_records)
+    ext_records = ((host.lower(), ip) for host, ip in ext_records)
 
     idx = {host: ip for host, ip in int_records}
     result = tuple(
