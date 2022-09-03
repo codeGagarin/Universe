@@ -74,8 +74,8 @@ def diff(int_records, ext_records, sorter=None) -> list:
 
 
 def update_internal_a_records(updates):
-    win_api.add_internal_a_record = lambda _host, ip: info(f'Fake add host:{host} ip:{ip}')
-    win_api.remove_internal_a_record = lambda _host, ip: info(f'Fake remove host:{host} ip:{ip}')
+    # win_api.add_internal_a_record = lambda _host, ip: info(f'Fake add host:{host} ip:{ip}')
+    # win_api.remove_internal_a_record = lambda _host, ip: info(f'Fake remove host:{host} ip:{ip}')
 
     for host, old_ip, new_ip in updates:
         if old_ip:
