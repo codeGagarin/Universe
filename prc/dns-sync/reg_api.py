@@ -52,6 +52,7 @@ def api_request(cmd: str, **params) -> dict or str:
 def _extract_subdomains(raw_response: dict, RRT: str = 'A'):
     result = []
     for domain in raw_response['answer']['domains']:
+        assert domain.get('error_code') is None, domain.get('error_code')
         for record in domain['rrs']:
             if record['rectype'] == RRT:
                 result.append(
