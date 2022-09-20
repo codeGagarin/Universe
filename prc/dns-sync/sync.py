@@ -13,7 +13,7 @@ import win_api
 import common
 from keys import KeyChain
 
-trace_function_id = 'd4ep1mofq0uq39tvjc76'
+trace_function_id = 'd4e9frgkrgbeiis1hm4g'
 
 report = {  # to be sent on report base
     'zone_ip': None,
@@ -136,7 +136,7 @@ if __name__ == '__main__':
     response = requests.post(
         **common.request_params(
             common.LAMBDA_TRACE,
-            KeyChain.YCF_STH_DNS_SYNC,
+            KeyChain.YCF_STH_DNS_SYNC_TRACE_INVOKER,
         ),
         data=json.dumps(report)
     )
