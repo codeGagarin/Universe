@@ -1,7 +1,6 @@
 import io
 from contextlib import redirect_stdout
 
-import logging
 import traceback
 from datetime import datetime
 import json
@@ -13,7 +12,6 @@ import win_api
 import common
 from keys import KeyChain
 
-trace_function_id = 'd4e9frgkrgbeiis1hm4g'
 
 report = {  # to be sent on report base
     'zone_ip': None,
