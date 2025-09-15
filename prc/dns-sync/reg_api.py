@@ -37,8 +37,14 @@ def api_request(cmd: str, **params) -> dict or str:
         if not k.startswith('_')
     }
 
-    response = requests.put(
-        f'{end_point}/{cmd}?input_data={adapt_json(**auth, **params or {})}&input_format=json'
+    # response = requests.put(
+    #     f'{end_point}/{cmd}?input_data={adapt_json(**auth, **params or {})}&input_format=json'
+    # )
+
+    response = requests.post(
+        url=f'{end_point}/{cmd}',
+        data=dict(
+            **auth, **params or {})
     )
 
     response_body = json.loads(
