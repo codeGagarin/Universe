@@ -43,8 +43,12 @@ def api_request(cmd: str, **params) -> dict or str:
 
     response = requests.post(
         url=f'{end_point}/{cmd}',
-        data=dict(
-            **auth, **params or {})
+        data={
+            'input_data': json.dumps(
+                {**auth, **(params or {})}
+            ),
+            'input_format': 'json'
+        }
     )
 
     response_body = json.loads(
